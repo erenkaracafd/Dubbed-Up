@@ -22,3 +22,4 @@ public interface IMediaPlayer
 
     event Action<double, double>? PlaybackProgress;
 }
+

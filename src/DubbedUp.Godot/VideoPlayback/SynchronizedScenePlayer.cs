@@ -217,3 +217,4 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         _takePlayers.Clear();
     }
 }
+
