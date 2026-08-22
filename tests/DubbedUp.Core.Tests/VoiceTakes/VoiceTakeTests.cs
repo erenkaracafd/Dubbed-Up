@@ -75,3 +75,4 @@ public sealed class VoiceTakeTests
         Assert.Equal(2, store.GetAllTakes().Count);
     }
 }
+

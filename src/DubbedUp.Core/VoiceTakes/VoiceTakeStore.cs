@@ -54,3 +54,4 @@ public sealed class VoiceTakeStore
         return _latestTakeBySlot.ContainsKey(voiceSlotId);
     }
 }
+

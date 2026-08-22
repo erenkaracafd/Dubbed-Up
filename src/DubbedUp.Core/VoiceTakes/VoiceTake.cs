@@ -75,3 +75,4 @@ public sealed class VoiceTake
 
     public DateTimeOffset RecordedAtUtc { get; }
 }
+
