@@ -46,7 +46,7 @@ Four concepts remain separate even when referenced by ID:
 3. Session state: active players, phase, votes, and scores.
 4. Player voice data: local audio files and capture metadata.
 
-Canonical project data is versioned JSON, not Godot resources. Media paths are relative logical references; session/player recordings are not embedded in official content metadata.
+Canonical project data is versioned JSON, not Godot resources. Media paths are relative logical references; session/player recordings are not embedded in official content metadata. The schema-v1 document boundaries and examples are defined in [PROJECT_FORMAT.md](PROJECT_FORMAT.md).
 
 ## Contracts
 
