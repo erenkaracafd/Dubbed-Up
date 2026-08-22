@@ -26,22 +26,45 @@ theme_override_constants/separation = 16
 [node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 36
-text = "Recording Phase"
+text = "Voice Recording Phase"
 horizontal_alignment = 1
 
-[node name="DescriptionLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="SlotInfoLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Voice take recording placeholder."
+theme_override_font_sizes/font_size = 18
+text = "Slot 1/2: Character (Player)\n\"Prompt text\""
 horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Status: Ready to record"
+horizontal_alignment = 1
+
+[node name="ErrorLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+text = "Error message placeholder"
+horizontal_alignment = 1
+
+[node name="RecordButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Start Recording"
+
+[node name="ReRecordButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Previous Slot / Re-record"
 
 [node name="ProceedButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
 text = "Complete Recording (Proceed to Playback)"
 
 [node name="CancelButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
 text = "Cancel to Main Menu"
-
