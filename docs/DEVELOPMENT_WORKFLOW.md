@@ -2,6 +2,8 @@
 
 GitHub Issues and Pull Requests are the coordination layer. An assigned issue with `status: in-progress` is the work lock.
 
+> Current platform limitation: GitHub branch protection is unavailable for this private repository on its present plan. Until a human approves a plan or visibility change, every contributor must enforce the no-direct-`main` and required-CI rules manually. This limitation does not permit exceptions to the workflow.
+
 ## Task lifecycle
 
 ```text
@@ -48,4 +50,3 @@ Apply `status: review` when the PR is ready. Before merge, fetch `main`, inspect
 Routine merges are allowed only after CI passes, the diff is self-reviewed, current `main` is integrated, and no active PR conflicts. Product scope expansion, licensing risk, paid services, and hard-to-reverse architecture choices require human approval.
 
 After merge, delete the branch, synchronize `main`, and only then claim the next ready issue. Reassess whether the other active branch must sync.
-
