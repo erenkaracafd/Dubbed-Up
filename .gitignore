@@ -1,0 +1,27 @@
+# Godot
+.godot/
+*.translation
+export.cfg
+export_presets.cfg
+
+# .NET
+**/bin/
+**/obj/
+TestResults/
+coverage/
+
+# Editors and operating systems
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# Local runtime data
+local-data/
+recordings/
+*.tmp.wav
+*.tmp.ogg
+

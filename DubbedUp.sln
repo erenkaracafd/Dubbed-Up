@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DubbedUp.Core", "src\DubbedUp.Core\DubbedUp.Core.csproj", "{6B67D612-274A-4AF5-AEED-6574D498CB66}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DubbedUp.Godot", "src\DubbedUp.Godot\DubbedUp.Godot.csproj", "{E3C634BF-94EC-47EA-BC93-B163EE571BC8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DubbedUp.Core.Tests", "tests\DubbedUp.Core.Tests\DubbedUp.Core.Tests.csproj", "{9E4F6E81-BABF-45B6-9AF2-A2A7318847A0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6B67D612-274A-4AF5-AEED-6574D498CB66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B67D612-274A-4AF5-AEED-6574D498CB66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B67D612-274A-4AF5-AEED-6574D498CB66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B67D612-274A-4AF5-AEED-6574D498CB66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3C634BF-94EC-47EA-BC93-B163EE571BC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3C634BF-94EC-47EA-BC93-B163EE571BC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3C634BF-94EC-47EA-BC93-B163EE571BC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3C634BF-94EC-47EA-BC93-B163EE571BC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E4F6E81-BABF-45B6-9AF2-A2A7318847A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E4F6E81-BABF-45B6-9AF2-A2A7318847A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E4F6E81-BABF-45B6-9AF2-A2A7318847A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E4F6E81-BABF-45B6-9AF2-A2A7318847A0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

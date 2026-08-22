@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore tests/DubbedUp.Core.Tests/DubbedUp.Core.Tests.csproj
+      - name: Build Core
+        run: dotnet build src/DubbedUp.Core/DubbedUp.Core.csproj --configuration Release --no-restore
+      - name: Test Core
+        run: dotnet test tests/DubbedUp.Core.Tests/DubbedUp.Core.Tests.csproj --configuration Release --no-restore --collect:"XPlat Code Coverage"
+
+  repository-consistency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate repository invariants
+        shell: pwsh
+        run: ./scripts/verify-repository.ps1
+

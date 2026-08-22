@@ -1,0 +1,48 @@
+name: Implementation task
+description: Claimable implementation work with explicit ownership and overlap boundaries
+title: ""
+labels: ["status: backlog"]
+body:
+  - type: markdown
+    attributes:
+      value: Check active issues and PRs before claiming this work.
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      placeholder: "@unassigned"
+    validations:
+      required: true
+  - type: input
+    id: branch
+    attributes:
+      label: Branch
+      placeholder: issue-12-short-description
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options: [Backlog, Ready, In Progress, Blocked, Review, Done]
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Expected scope and acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Main files/directories likely to change
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and active-work overlap
+    validations:
+      required: true
+
