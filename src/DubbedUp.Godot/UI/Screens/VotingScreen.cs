@@ -29,3 +29,4 @@ public partial class VotingScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.MainMenu);
     }
 }
+

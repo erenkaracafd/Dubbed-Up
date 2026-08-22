@@ -72,3 +72,4 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         EmitSignal(SignalName.ScreenChanged, (int)screen);
     }
 }
+

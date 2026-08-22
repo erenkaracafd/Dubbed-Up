@@ -6,3 +6,4 @@ public interface IScreenNavigator
 
     void NavigateTo(AppScreen screen);
 }
+

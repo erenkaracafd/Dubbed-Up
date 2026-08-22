@@ -29,3 +29,4 @@ public partial class SetupScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.MainMenu);
     }
 }
+

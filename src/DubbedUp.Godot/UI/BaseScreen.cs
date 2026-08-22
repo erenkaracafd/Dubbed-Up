@@ -11,3 +11,4 @@ public abstract partial class BaseScreen : Control
         Navigator = navigator;
     }
 }
+

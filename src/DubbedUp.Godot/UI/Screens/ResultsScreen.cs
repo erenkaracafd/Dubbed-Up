@@ -40,3 +40,4 @@ public partial class ResultsScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.MainMenu);
     }
 }
+

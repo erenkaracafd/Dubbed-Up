@@ -29,3 +29,4 @@ public partial class RecordingScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.MainMenu);
     }
 }
+

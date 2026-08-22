@@ -9,3 +9,4 @@ public enum AppScreen
     Voting,
     Results,
 }
+

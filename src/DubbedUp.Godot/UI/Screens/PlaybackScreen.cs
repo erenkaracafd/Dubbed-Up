@@ -49,3 +49,4 @@ public partial class PlaybackScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.MainMenu);
     }
 }
+
