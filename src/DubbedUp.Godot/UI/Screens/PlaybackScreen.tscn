@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/PlaybackScreen.cs" id="1_playback"]
+[ext_resource type="Script" path="res://VideoPlayback/SynchronizedScenePlayer.cs" id="2_player"]
 
 [node name="PlaybackScreen" type="Control"]
 layout_mode = 3
@@ -21,32 +22,60 @@ grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
-text = "Playback Phase"
+theme_override_font_sizes/font_size = 32
+text = "Synchronized Dub Playback"
+horizontal_alignment = 1
+
+[node name="PlayerViewport" type="PanelContainer" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(640, 360)
+layout_mode = 2
+
+[node name="SynchronizedScenePlayer" type="Control" parent="CenterContainer/VBoxContainer/PlayerViewport"]
+layout_mode = 2
+script = ExtResource("2_player")
+
+[node name="ProgressBar" type="ProgressBar" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(640, 16)
+layout_mode = 2
+value = 0.0
+
+[node name="TimeLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "00:00 / 00:08"
 horizontal_alignment = 1
 
 [node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Playing synchronized dub (Take #1)..."
+theme_override_font_sizes/font_size = 14
+text = "Playing synchronized scene dub..."
 horizontal_alignment = 1
 
-[node name="ReplayButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+[node name="ControlsContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="PlayPauseButton" type="Button" parent="CenterContainer/VBoxContainer/ControlsContainer"]
+custom_minimum_size = Vector2(140, 40)
+layout_mode = 2
+text = "Pause"
+
+[node name="ReplayButton" type="Button" parent="CenterContainer/VBoxContainer/ControlsContainer"]
+custom_minimum_size = Vector2(140, 40)
 layout_mode = 2
 text = "Replay Dub"
 
 [node name="ProceedButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(300, 44)
 layout_mode = 2
 text = "Proceed to Voting"
 
 [node name="MenuButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
 text = "Return to Main Menu"
-
