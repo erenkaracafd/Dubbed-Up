@@ -1,8 +1,6 @@
 # Two-contributor development workflow
 
-GitHub Issues and Pull Requests are the coordination layer. An assigned issue with `status: in-progress` is the work lock.
-
-> Current platform limitation: GitHub branch protection is unavailable for this private repository on its present plan. Until a human approves a plan or visibility change, every contributor must enforce the no-direct-`main` and required-CI rules manually. This limitation does not permit exceptions to the workflow.
+GitHub Issues and Pull Requests are the coordination layer. An assigned issue with `status: in-progress` is the work lock. The protected `main` branch requires a pull request and passing `core` and `repository-consistency` CI checks, including for administrators.
 
 ## Task lifecycle
 
