@@ -45,12 +45,26 @@ public partial class PlaybackScreen : BaseScreen
             _menuButton.Pressed += OnMenuPressed;
         }
 
-        if (_scenePlayer is not null)
+        if (Coordinator is not null)
         {
-            _scenePlayer.PlaybackProgress += OnPlaybackProgress;
-            _scenePlayer.PlaybackFinished += OnPlaybackFinished;
-            _scenePlayer.SetDuration(8.0); // 8 second playback placeholder
-            _scenePlayer.Play();
+            Coordinator.StartPlayback();
+
+            if (_scenePlayer is not null)
+            {
+                _scenePlayer.PlaybackProgress += OnPlaybackProgress;
+                _scenePlayer.PlaybackFinished += OnPlaybackFinished;
+
+                if (Coordinator.CurrentScene is not null)
+                {
+                    _scenePlayer.LoadScene(Coordinator.CurrentScene, null, Coordinator.TakeStore);
+                }
+                else
+                {
+                    _scenePlayer.SetDuration(8.0);
+                }
+
+                _scenePlayer.Play();
+            }
         }
 
         UpdateStatusText("Playing synchronized scene dub...");
@@ -146,12 +160,21 @@ public partial class PlaybackScreen : BaseScreen
     private void OnProceedPressed()
     {
         _scenePlayer?.Stop();
-        Navigator?.NavigateTo(AppScreen.Voting);
+        try
+        {
+            Coordinator?.FinishPlayback();
+            Navigator?.NavigateTo(AppScreen.Voting);
+        }
+        catch (Exception ex)
+        {
+            UpdateStatusText($"Error: {ex.Message}");
+        }
     }
 
     private void OnMenuPressed()
     {
         _scenePlayer?.Stop();
+        Coordinator?.ResetSession();
         Navigator?.NavigateTo(AppScreen.MainMenu);
     }
 }

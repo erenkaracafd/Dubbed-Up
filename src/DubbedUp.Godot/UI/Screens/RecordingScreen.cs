@@ -1,14 +1,9 @@
-using DubbedUp.Core.VoiceTakes;
-using DubbedUp.Godot.Microphone;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
 
 public partial class RecordingScreen : BaseScreen
 {
-    private readonly IVoiceRecorder _recorder = new GodotVoiceRecorder();
-    private readonly VoiceTakeStore _takeStore = new();
-
     private Label? _statusLabel;
     private Label? _slotInfoLabel;
     private Label? _errorLabel;
@@ -18,10 +13,7 @@ public partial class RecordingScreen : BaseScreen
     private Button? _cancelButton;
 
     private int _currentSlotIndex = 0;
-    private readonly string[] _mockSlots = ["guard-line-1", "thief-line-1"];
-    private readonly string[] _mockCharacters = ["Museum Guard", "Sneaky Thief"];
-    private readonly string[] _mockPlayers = ["Player 1", "Player 2"];
-    private readonly string[] _mockPrompts = ["React to the suspicious statue!", "Whisper your escape plan."];
+    private bool _isRecordingLocal = false;
 
     public override void _Ready()
     {
@@ -63,15 +55,27 @@ public partial class RecordingScreen : BaseScreen
             _errorLabel.Visible = false;
         }
 
-        if (!_recorder.IsRecording)
+        if (Coordinator is null || Coordinator.CurrentScene is null || Coordinator.ActiveRound is null)
+        {
+            ShowError("No active round available.");
+            return;
+        }
+
+        var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
+        if (voiceSlots.Count == 0)
+        {
+            ShowError("Scene has no voice slots.");
+            return;
+        }
+
+        var currentSlot = voiceSlots[Math.Clamp(_currentSlotIndex, 0, voiceSlots.Count - 1)];
+
+        if (!_isRecordingLocal)
         {
             try
             {
-                var slotId = _mockSlots[_currentSlotIndex];
-                var charId = _mockCharacters[_currentSlotIndex];
-                var playerId = _mockPlayers[_currentSlotIndex];
-
-                _recorder.StartRecording(slotId, playerId, charId, "round-1");
+                Coordinator.StartRecording(currentSlot.VoiceSlotId);
+                _isRecordingLocal = true;
                 if (_recordButton is not null)
                 {
                     _recordButton.Text = "Stop Recording";
@@ -90,10 +94,10 @@ public partial class RecordingScreen : BaseScreen
         {
             try
             {
-                var take = _recorder.StopRecording();
-                _takeStore.AddTake(take);
+                var take = Coordinator.StopRecording();
+                _isRecordingLocal = false;
 
-                if (_currentSlotIndex < _mockSlots.Length - 1)
+                if (_currentSlotIndex < voiceSlots.Count - 1)
                 {
                     _currentSlotIndex++;
                 }
@@ -102,6 +106,7 @@ public partial class RecordingScreen : BaseScreen
             }
             catch (Exception ex)
             {
+                _isRecordingLocal = false;
                 ShowError($"Failed to save take: {ex.Message}");
             }
         }
@@ -118,20 +123,43 @@ public partial class RecordingScreen : BaseScreen
 
     private void UpdateUiState()
     {
-        var slotId = _mockSlots[_currentSlotIndex];
-        var charName = _mockCharacters[_currentSlotIndex];
-        var playerName = _mockPlayers[_currentSlotIndex];
-        var prompt = _mockPrompts[_currentSlotIndex];
-        var isRecorded = _takeStore.HasTakeForSlot(slotId);
+        if (Coordinator is null || Coordinator.CurrentScene is null || Coordinator.ActiveRound is null)
+        {
+            if (_slotInfoLabel is not null)
+            {
+                _slotInfoLabel.Text = "No active session loaded.";
+            }
+            return;
+        }
+
+        var scene = Coordinator.CurrentScene;
+        var voiceSlots = scene.VoiceSlots;
+        if (voiceSlots.Count == 0)
+        {
+            return;
+        }
+
+        var currentSlot = voiceSlots[Math.Clamp(_currentSlotIndex, 0, voiceSlots.Count - 1)];
+        var charDef = scene.Characters.FirstOrDefault(c => c.CharacterId == currentSlot.CharacterId);
+        var charName = charDef?.DisplayName ?? currentSlot.CharacterId;
+
+        var assignment = Coordinator.ActiveRound.GetVoiceSlotAssignments()
+            .FirstOrDefault(a => a.VoiceSlotId == currentSlot.VoiceSlotId);
+        var player = Coordinator.CurrentSession?.Players.FirstOrDefault(p => p.PlayerId == assignment?.PlayerId);
+        var playerName = player?.DisplayName ?? assignment?.PlayerId ?? "Unassigned";
+
+        var isRecorded = Coordinator.TakeStore.HasTakeForSlot(currentSlot.VoiceSlotId);
 
         if (_slotInfoLabel is not null)
         {
-            _slotInfoLabel.Text = $"Slot {_currentSlotIndex + 1}/{_mockSlots.Length}: {charName} ({playerName})\n\"{prompt}\"";
+            _slotInfoLabel.Text = $"Slot {_currentSlotIndex + 1}/{voiceSlots.Count}: {charName} ({playerName})\n\"{currentSlot.Prompt}\"";
         }
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = isRecorded ? $"Status: Take recorded ({_takeStore.GetLatestTakeForSlot(slotId)?.TakeId})" : "Status: Ready to record";
+            _statusLabel.Text = isRecorded
+                ? $"Status: Take recorded ({Coordinator.TakeStore.GetLatestTakeForSlot(currentSlot.VoiceSlotId)?.TakeId})"
+                : "Status: Ready to record";
         }
 
         if (_recordButton is not null)
@@ -139,13 +167,13 @@ public partial class RecordingScreen : BaseScreen
             _recordButton.Text = isRecorded ? "Record Again" : "Start Recording";
         }
 
-        var allRecorded = _mockSlots.All(slot => _takeStore.HasTakeForSlot(slot));
+        var allRecorded = voiceSlots.All(slot => Coordinator.TakeStore.HasTakeForSlot(slot.VoiceSlotId));
         if (_proceedButton is not null)
         {
             _proceedButton.Disabled = !allRecorded;
             _proceedButton.Text = allRecorded
                 ? "Complete Recording (Proceed to Playback)"
-                : $"Record all slots to proceed ({_takeStore.GetAllTakes().Count}/{_mockSlots.Length})";
+                : $"Record all slots to proceed ({Coordinator.TakeStore.GetAllTakes().Count}/{voiceSlots.Count})";
         }
     }
 
@@ -164,15 +192,25 @@ public partial class RecordingScreen : BaseScreen
 
     private void OnProceedPressed()
     {
-        Navigator?.NavigateTo(AppScreen.Playback);
+        try
+        {
+            Coordinator?.FinishRecording();
+            Navigator?.NavigateTo(AppScreen.Playback);
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Cannot proceed: {ex.Message}");
+        }
     }
 
     private void OnCancelPressed()
     {
-        if (_recorder.IsRecording)
+        if (_isRecordingLocal)
         {
-            _recorder.CancelRecording();
+            Coordinator?.VoiceRecorder.CancelRecording();
+            _isRecordingLocal = false;
         }
+        Coordinator?.ResetSession();
         Navigator?.NavigateTo(AppScreen.MainMenu);
     }
 }

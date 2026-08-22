@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_voting")
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,29 +19,43 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
 layout_mode = 2
-theme_override_constants/separation = 16
+custom_minimum_size = Vector2(800, 0)
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 36
 text = "Voting Phase"
 horizontal_alignment = 1
 
-[node name="DescriptionLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Cast your votes for the best dubs."
+theme_override_font_sizes/font_size = 15
+text = "Vote for the best dub performance!"
 horizontal_alignment = 1
 
-[node name="SubmitButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+[node name="VoterContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Submit Votes (View Results)"
+theme_override_constants/separation = 10
 
-[node name="MenuButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+[node name="ErrorLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="SubmitButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Submit All Votes"
+
+[node name="MenuButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
 text = "Return to Main Menu"
-

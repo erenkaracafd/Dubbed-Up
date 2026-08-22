@@ -21,7 +21,7 @@ grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 14
 
 [node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -31,17 +31,35 @@ horizontal_alignment = 1
 
 [node name="DescriptionLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Setup players, assign character voice slots, and pick a scene."
+theme_override_font_sizes/font_size = 15
+text = "Enter player names for this local match:"
+horizontal_alignment = 1
+
+[node name="Player1Input" type="LineEdit" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(280, 40)
+layout_mode = 2
+placeholder_text = "Player 1 Name"
+text = "Player 1"
+
+[node name="Player2Input" type="LineEdit" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(280, 40)
+layout_mode = 2
+placeholder_text = "Player 2 Name"
+text = "Player 2"
+
+[node name="ErrorLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 
 [node name="StartRoundButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
 text = "Start Round (Recording)"
 
 [node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(280, 40)
 layout_mode = 2
 text = "Back to Main Menu"
-

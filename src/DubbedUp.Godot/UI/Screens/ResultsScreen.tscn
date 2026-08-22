@@ -29,24 +29,43 @@ theme_override_font_sizes/font_size = 36
 text = "Results & Scores"
 horizontal_alignment = 1
 
-[node name="DescriptionLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="WinnerLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Winner announced! Scores aggregated."
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.2, 1.0, 0.4, 1)
+text = "Winner: ..."
+horizontal_alignment = 1
+
+[node name="TallyLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Vote Tallies:"
+horizontal_alignment = 0
+
+[node name="StandingsLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Cumulative Standings:"
+horizontal_alignment = 0
+
+[node name="ErrorLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 
 [node name="NextRoundButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
-text = "Play Another Round"
+text = "Play Next Round"
 
 [node name="ReplayRoundButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
-text = "Replay This Round"
+text = "Replay This Dub"
 
 [node name="MenuButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
 text = "Return to Main Menu"
-

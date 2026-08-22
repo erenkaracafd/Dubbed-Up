@@ -1,5 +1,5 @@
-using Godot;
 using DubbedUp.Godot.UI;
+using Godot;
 
 namespace DubbedUp.Godot.LocalSession;
 
@@ -20,6 +20,8 @@ public partial class LocalNavigationController : Node, IScreenNavigator
 
     private Control? _screenContainer;
     private BaseScreen? _currentScreenInstance;
+
+    public LocalSessionCoordinator Coordinator { get; } = new();
 
     public AppScreen CurrentScreen { get; private set; } = AppScreen.MainMenu;
 
@@ -65,11 +67,10 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         }
 
         _screenContainer.AddChild(screenNode);
-        screenNode.Initialize(this);
+        screenNode.Initialize(this, Coordinator);
         _currentScreenInstance = screenNode;
         CurrentScreen = screen;
 
         EmitSignal(SignalName.ScreenChanged, (int)screen);
     }
 }
-
