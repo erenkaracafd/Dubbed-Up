@@ -1,23 +1,32 @@
 name: Implementation task
-description: Claimable implementation work with explicit ownership and overlap boundaries
+description: Claimable implementation work with explicit ownership, agent identity, and overlap boundaries
 title: ""
 labels: ["status: backlog"]
 body:
   - type: markdown
     attributes:
-      value: Check active issues and PRs before claiming this work.
+      value: Before claiming this work, inspect all relevant active Issues and Pull Requests. An assigned active Issue is a work lock on its declared scope/files.
   - type: input
     id: owner
     attributes:
       label: Owner
+      description: GitHub user responsible for this workstream.
       placeholder: "@unassigned"
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent / tool
+      description: AI coding agent or tool used for this workstream.
+      placeholder: "Codex, Antigravity, manual, etc."
     validations:
       required: true
   - type: input
     id: branch
     attributes:
       label: Branch
-      placeholder: issue-12-short-description
+      placeholder: issue-14-short-description
     validations:
       required: true
   - type: dropdown
@@ -30,19 +39,41 @@ body:
   - type: textarea
     id: scope
     attributes:
-      label: Expected scope and acceptance criteria
+      label: Owned scope and acceptance criteria
+      description: Define exactly what this workstream owns and what outcome makes it complete.
     validations:
       required: true
   - type: textarea
     id: files
     attributes:
-      label: Main files/directories likely to change
+      label: Main files/directories expected to change
+      description: Declare intended files/directories before editing them. Update the Issue before expanding scope.
+    validations:
+      required: true
+  - type: textarea
+    id: avoid
+    attributes:
+      label: Avoid / overlap areas
+      description: List files, modules, contracts, or active workstreams this task must not touch without explicit coordination.
     validations:
       required: true
   - type: textarea
     id: dependencies
     attributes:
-      label: Dependencies and active-work overlap
+      label: Dependencies and shared contracts
+      description: Include blocking Issues and any shared contract another active branch relies on.
     validations:
       required: true
+  - type: markdown
+    attributes:
+      value: |
+        ## Live work log
+        After every meaningful push or coherent implementation checkpoint, append an Issue comment containing:
 
+        ```text
+        Commit/PR: <sha or link>
+        Changed: <files/directories/contracts>
+        Summary: <what changed>
+        Next: <next intended step>
+        Blockers/overlap: <none or exact coordination risk>
+        ```
