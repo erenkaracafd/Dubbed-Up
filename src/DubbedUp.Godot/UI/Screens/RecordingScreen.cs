@@ -133,21 +133,10 @@ public partial class RecordingScreen : BaseScreen
             try
             {
                 var localized = ProjectSettings.LocalizePath(candidatePath);
-                if (ResourceLoader.Exists(localized))
-                {
-                    _videoPlayer.Stream = GD.Load<VideoStream>(localized);
-                }
-                else if (ResourceLoader.Exists(videoAsset.RelativePath))
-                {
-                    _videoPlayer.Stream = GD.Load<VideoStream>(videoAsset.RelativePath);
-                }
-                else
-                {
-                    var theora = new VideoStreamTheora();
-                    theora.File = candidatePath.Replace("\\", "/");
-                    _videoPlayer.Stream = theora;
-                }
-                GD.Print($"[RecordingScreen] Video loaded successfully: '{candidatePath}'");
+                var theora = new VideoStreamTheora();
+                theora.File = !string.IsNullOrEmpty(localized) ? localized : candidatePath.Replace("\\", "/");
+                _videoPlayer.Stream = theora;
+                GD.Print($"[RecordingScreen] Video loaded successfully: '{theora.File}'");
             }
             catch (Exception ex)
             {

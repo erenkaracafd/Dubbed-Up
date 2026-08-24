@@ -16,12 +16,12 @@
       "displayName": "Acey Daddy (Kid)"
     },
     {
-      "characterId": "ishowspeed",
-      "displayName": "IShowSpeed"
-    },
-    {
       "characterId": "teammate",
       "displayName": "Teammate"
+    },
+    {
+      "characterId": "ishowspeed",
+      "displayName": "IShowSpeed"
     }
   ],
   "voiceSlots": [
@@ -45,20 +45,20 @@
     {
       "timelineEntryId": "entry-1",
       "voiceSlotId": "slot-1",
-      "startMilliseconds": 1000,
-      "endMilliseconds": 6500
+      "startMilliseconds": 200,
+      "endMilliseconds": 6400
     },
     {
       "timelineEntryId": "entry-2",
       "voiceSlotId": "slot-2",
-      "startMilliseconds": 7000,
-      "endMilliseconds": 12000
+      "startMilliseconds": 8500,
+      "endMilliseconds": 14500
     },
     {
       "timelineEntryId": "entry-3",
       "voiceSlotId": "slot-3",
-      "startMilliseconds": 13000,
-      "endMilliseconds": 20000
+      "startMilliseconds": 15200,
+      "endMilliseconds": 21000
     }
   ]
 }

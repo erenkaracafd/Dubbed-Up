@@ -108,9 +108,9 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
                     }
 
                     var theora = new VideoStreamTheora();
-                    theora.File = absolutePath.Replace("\\", "/");
+                    theora.File = !string.IsNullOrEmpty(resPath) ? resPath : absolutePath.Replace("\\", "/");
                     _videoPlayer.Stream = theora;
-                    GD.Print($"[VideoPlayer] Loaded via VideoStreamTheora: {absolutePath}");
+                    GD.Print($"[VideoPlayer] Loaded via VideoStreamTheora: {theora.File}");
                     return;
                 }
                 catch (Exception ex)
