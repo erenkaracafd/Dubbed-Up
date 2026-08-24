@@ -37,20 +37,21 @@ text = "Configure playback volume and calibrate your microphone input level."
 horizontal_alignment = 1
 
 [node name="FormContainer" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(460, 0)
+custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="MasterVolLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-text = "Master Playback Volume:"
+theme_override_font_sizes/font_size = 14
+text = "🔊 Master Playback Volume:"
 
 [node name="MasterVolHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="MasterVolumeSlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/MasterVolHBox"]
-custom_minimum_size = Vector2(360, 24)
+custom_minimum_size = Vector2(380, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -62,20 +63,38 @@ custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 text = "100%"
 
+[node name="SpeakerTestButton" type="Button" parent="CenterContainer/VBoxContainer/FormContainer"]
+custom_minimum_size = Vector2(260, 36)
+layout_mode = 2
+text = "🔊 Test Speaker Output (Beep)"
+
+[node name="SeparatorLine1" type="HSeparator" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+
+[node name="MicDeviceLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🎙 Microphone Device:"
+
+[node name="MicDeviceOption" type="OptionButton" parent="CenterContainer/VBoxContainer/FormContainer"]
+custom_minimum_size = Vector2(460, 40)
+layout_mode = 2
+
 [node name="MicGainLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-text = "Microphone Input Gain Multiplier:"
+theme_override_font_sizes/font_size = 14
+text = "🎚 Microphone Input Gain:"
 
 [node name="MicGainHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="MicGainSlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/MicGainHBox"]
-custom_minimum_size = Vector2(360, 24)
+custom_minimum_size = Vector2(380, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 50.0
-max_value = 200.0
+max_value = 300.0
 value = 100.0
 
 [node name="MicGainValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/MicGainHBox"]
@@ -90,7 +109,7 @@ text = "🎙 Test Microphone Level"
 
 [node name="TestMeterBar" type="ProgressBar" parent="CenterContainer/VBoxContainer/FormContainer"]
 visible = false
-custom_minimum_size = Vector2(460, 16)
+custom_minimum_size = Vector2(500, 18)
 layout_mode = 2
 value = 50.0
 show_percentage = false
@@ -109,4 +128,3 @@ text = "💾 Save Settings"
 custom_minimum_size = Vector2(160, 48)
 layout_mode = 2
 text = "Back to Menu"
-

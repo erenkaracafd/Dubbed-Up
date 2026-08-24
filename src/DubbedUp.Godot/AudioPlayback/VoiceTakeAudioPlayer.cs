@@ -4,7 +4,7 @@ namespace DubbedUp.Godot.AudioPlayback;
 
 public sealed class VoiceTakeAudioPlayer
 {
-    private const double DriftThresholdSeconds = 0.05; // 50ms drift tolerance
+    private const double DriftThresholdSeconds = 0.05;
 
     private readonly AudioStreamPlayer _audioPlayer;
 
@@ -28,25 +28,17 @@ public sealed class VoiceTakeAudioPlayer
     }
 
     public string VoiceSlotId { get; }
-
     public string TakeId { get; }
-
     public double StartSeconds { get; }
-
     public double EndSeconds { get; }
-
     public string AudioPath { get; }
-
     public bool IsActive { get; private set; }
 
     public void SyncWithMasterTime(double masterTimeSeconds)
     {
         if (masterTimeSeconds < StartSeconds)
         {
-            if (_audioPlayer.Playing)
-            {
-                _audioPlayer.Stop();
-            }
+            if (_audioPlayer.Playing) _audioPlayer.Stop();
             IsActive = false;
             return;
         }
@@ -65,9 +57,8 @@ public sealed class VoiceTakeAudioPlayer
             }
             else
             {
-                // Check and correct for timeline drift
-                var actualAudioPos = _audioPlayer.GetPlaybackPosition();
-                if (Math.Abs(actualAudioPos - expectedAudioOffset) > DriftThresholdSeconds)
+                var actualPos = _audioPlayer.GetPlaybackPosition();
+                if (Math.Abs(actualPos - expectedAudioOffset) > DriftThresholdSeconds)
                 {
                     _audioPlayer.Seek(expectedAudioOffset);
                 }
@@ -78,10 +69,7 @@ public sealed class VoiceTakeAudioPlayer
 
         if (masterTimeSeconds > EndSeconds)
         {
-            if (_audioPlayer.Playing)
-            {
-                _audioPlayer.Stop();
-            }
+            if (_audioPlayer.Playing) _audioPlayer.Stop();
             IsActive = false;
         }
     }
@@ -130,46 +118,118 @@ public sealed class VoiceTakeAudioPlayer
 
         try
         {
-            var globalPath = ProjectSettings.GlobalizePath(path);
+            // Try to load from disk as raw bytes and parse WAV header properly
             byte[]? bytes = null;
 
             if (global::Godot.FileAccess.FileExists(path))
             {
                 bytes = global::Godot.FileAccess.GetFileAsBytes(path);
             }
-            else if (System.IO.File.Exists(globalPath))
+            else
             {
-                bytes = System.IO.File.ReadAllBytes(globalPath);
-            }
-            else if (ResourceLoader.Exists(path))
-            {
-                var stream = GD.Load<AudioStream>(path);
-                if (stream is not null)
+                var globalPath = ProjectSettings.GlobalizePath(path);
+                if (System.IO.File.Exists(globalPath))
                 {
-                    _audioPlayer.Stream = stream;
-                    return;
+                    bytes = System.IO.File.ReadAllBytes(globalPath);
+                }
+                else if (System.IO.File.Exists(path))
+                {
+                    bytes = System.IO.File.ReadAllBytes(path);
                 }
             }
 
             if (bytes is not null && bytes.Length > 44)
             {
-                // Check if valid WAV header
-                var isWav = bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F';
-                if (isWav)
+                var wav = ParseWavBytes(bytes);
+                if (wav is not null)
                 {
-                    var wav = new AudioStreamWav
-                    {
-                        Data = bytes[44..], // PCM data starts after standard 44-byte header
-                        Format = AudioStreamWav.FormatEnum.Format16Bits,
-                        MixRate = 44100
-                    };
                     _audioPlayer.Stream = wav;
+                    return;
+                }
+            }
+
+            // Fallback: try Godot ResourceLoader (for res:// paths)
+            if (ResourceLoader.Exists(path))
+            {
+                var stream = GD.Load<AudioStream>(path);
+                if (stream is not null)
+                {
+                    _audioPlayer.Stream = stream;
                 }
             }
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[AudioPlayer] Failed to load audio stream from '{path}': {ex.Message}");
+            GD.PrintErr($"[AudioPlayer] Failed to load '{path}': {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Parses a WAV byte array by reading the actual header fields (not fixed offset).
+    /// Handles standard PCM WAV files (fmt chunk first).
+    /// </summary>
+    private static AudioStreamWav? ParseWavBytes(byte[] bytes)
+    {
+        try
+        {
+            // Verify RIFF header
+            if (bytes.Length < 12) return null;
+            var riff = System.Text.Encoding.ASCII.GetString(bytes, 0, 4);
+            var wave = System.Text.Encoding.ASCII.GetString(bytes, 8, 4);
+            if (riff != "RIFF" || wave != "WAVE") return null;
+
+            // Walk chunks
+            int pos = 12;
+            int sampleRate = 44100;
+            short channels = 1;
+            short bitsPerSample = 16;
+            byte[]? pcmData = null;
+
+            while (pos + 8 <= bytes.Length)
+            {
+                var chunkId = System.Text.Encoding.ASCII.GetString(bytes, pos, 4);
+                var chunkSize = BitConverter.ToInt32(bytes, pos + 4);
+                pos += 8;
+
+                if (chunkId == "fmt ")
+                {
+                    // audioFormat (2), numChannels (2), sampleRate (4), byteRate (4), blockAlign (2), bitsPerSample (2)
+                    channels = BitConverter.ToInt16(bytes, pos + 2);
+                    sampleRate = BitConverter.ToInt32(bytes, pos + 4);
+                    bitsPerSample = BitConverter.ToInt16(bytes, pos + 14);
+                }
+                else if (chunkId == "data")
+                {
+                    var dataLen = Math.Min(chunkSize, bytes.Length - pos);
+                    pcmData = new byte[dataLen];
+                    Array.Copy(bytes, pos, pcmData, 0, dataLen);
+                }
+
+                pos += chunkSize;
+                if (chunkSize % 2 != 0) pos++; // WAV chunk alignment padding
+            }
+
+            if (pcmData is null || pcmData.Length == 0) return null;
+
+            var format = bitsPerSample switch
+            {
+                8 => AudioStreamWav.FormatEnum.Format8Bits,
+                16 => AudioStreamWav.FormatEnum.Format16Bits,
+                _ => AudioStreamWav.FormatEnum.Format16Bits,
+            };
+
+            return new AudioStreamWav
+            {
+                Data = pcmData,
+                Format = format,
+                MixRate = sampleRate,
+                Stereo = channels > 1
+            };
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[AudioPlayer] WAV parse failed: {ex.Message}");
+            return null;
         }
     }
 }

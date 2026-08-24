@@ -308,9 +308,38 @@ public partial class RecordingScreen : BaseScreen
             if (_currentSlotIndex < voiceSlots.Count - 1)
             {
                 _currentSlotIndex++;
+                UpdateUiState();
             }
+            else
+            {
+                // Last slot recorded — check if all are done
+                var allDone = Coordinator.ActiveRound?.Phase == DubbedUp.Core.Rounds.RoundPhase.ReadyForPlayback;
+                if (allDone)
+                {
+                    // Show celebration banner briefly then auto-navigate
+                    if (_statusLabel is not null)
+                    {
+                        _statusLabel.Text = "🎉 Tüm replikleri kaydettiniz! Playback'e geçiliyor...";
+                    }
+                    if (_proceedButton is not null)
+                    {
+                        _proceedButton.Text = "🎬 Tüm Replikler Tamam — İzlemeye Geç!";
+                    }
 
-            UpdateUiState();
+                    // Navigate after 2 seconds using a SceneTree timer
+                    GetTree().CreateTimer(2.0).Timeout += () =>
+                    {
+                        if (IsInsideTree())
+                        {
+                            Navigator?.NavigateTo(AppScreen.Playback);
+                        }
+                    };
+                }
+                else
+                {
+                    UpdateUiState();
+                }
+            }
         }
         catch (Exception ex)
         {

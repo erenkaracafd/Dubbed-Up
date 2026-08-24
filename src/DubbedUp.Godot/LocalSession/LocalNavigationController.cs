@@ -38,6 +38,10 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         {
             AddChild(LobbyManager);
         }
+
+        // Initialize microphone service early so it's ready when Recording/Settings screens open
+        Microphone.GodotLiveMicrophoneService.Instance.Initialize(screenContainer);
+
         NavigateTo(AppScreen.MainMenu);
     }
 

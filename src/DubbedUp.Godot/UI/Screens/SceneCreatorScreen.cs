@@ -1,7 +1,9 @@
+using DubbedUp.Core.Ai;
 using DubbedUp.Core.Characters;
 using DubbedUp.Core.ProjectFormat;
 using DubbedUp.Core.Scenes;
 using DubbedUp.Core.Timeline;
+using DubbedUp.Godot.Ai;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -20,6 +22,12 @@ public partial class SceneCreatorScreen : BaseScreen
     private LineEdit? _prompt2Input;
     private SpinBox? _slot2StartSpin;
     private SpinBox? _slot2EndSpin;
+
+    // AI Auto-detect fields
+    private TextEdit? _srtInputText;
+    private Button? _autoExtractButton;
+    private Label? _aiStatusLabel;
+
     private Label? _errorLabel;
     private Button? _saveButton;
     private Button? _cancelButton;
@@ -30,6 +38,10 @@ public partial class SceneCreatorScreen : BaseScreen
         _sceneIdInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/SceneIdInput");
         _videoPathInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/VideoPathInput");
         _durationSpinBox = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/DurationSpinBox");
+
+        _srtInputText = GetNodeOrNull<TextEdit>("ScrollContainer/CenterContainer/VBoxContainer/AiContainer/SrtInputText");
+        _autoExtractButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/AiContainer/AutoExtractButton");
+        _aiStatusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/AiContainer/AiStatusLabel");
 
         _char1NameInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Char1NameInput");
         _char2NameInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Char2NameInput");
@@ -51,6 +63,11 @@ public partial class SceneCreatorScreen : BaseScreen
             _titleInput.TextChanged += OnTitleChanged;
         }
 
+        if (_autoExtractButton is not null)
+        {
+            _autoExtractButton.Pressed += OnAutoExtractPressed;
+        }
+
         if (_saveButton is not null)
         {
             _saveButton.Pressed += OnSavePressed;
@@ -64,10 +81,71 @@ public partial class SceneCreatorScreen : BaseScreen
 
     private void OnTitleChanged(string newTitle)
     {
-        if (_sceneIdInput is not null && string.IsNullOrWhiteSpace(_sceneIdInput.Text))
+        if (_sceneIdInput is not null && (string.IsNullOrWhiteSpace(_sceneIdInput.Text) || _sceneIdInput.Text == "my-custom-scene"))
         {
-            var slug = newTitle.ToLowerInvariant().Replace(' ', '-');
-            _sceneIdInput.PlaceholderText = slug;
+            var slug = newTitle.ToLowerInvariant().Replace(' ', '-').Replace(".", "");
+            _sceneIdInput.Text = slug;
+        }
+    }
+
+    private void OnAutoExtractPressed()
+    {
+        var rawText = _srtInputText?.Text ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(rawText))
+        {
+            if (_aiStatusLabel is not null)
+            {
+                _aiStatusLabel.Text = "⚠️ Lütfen yukarıdaki kutuya bir SRT altyazı veya zaman damgalı metin yapıştırın.";
+            }
+            return;
+        }
+
+        try
+        {
+            var segments = LocalAiSceneExtractor.ParseSrtText(rawText);
+            if (segments.Count == 0)
+            {
+                if (_aiStatusLabel is not null)
+                {
+                    _aiStatusLabel.Text = "⚠️ Metinde geçerli zaman damgası bulunamadı. Örn: 00:00:01,000 --> 00:00:04,500";
+                }
+                return;
+            }
+
+            // Populate detected fields
+            if (segments.Count >= 1)
+            {
+                if (_char1NameInput is not null) _char1NameInput.Text = segments[0].SpeakerDisplayName;
+                if (_prompt1Input is not null) _prompt1Input.Text = segments[0].Prompt;
+                if (_slot1StartSpin is not null) _slot1StartSpin.Value = segments[0].StartMilliseconds / 1000.0;
+                if (_slot1EndSpin is not null) _slot1EndSpin.Value = segments[0].EndMilliseconds / 1000.0;
+            }
+
+            if (segments.Count >= 2)
+            {
+                if (_char2NameInput is not null) _char2NameInput.Text = segments[1].SpeakerDisplayName;
+                if (_prompt2Input is not null) _prompt2Input.Text = segments[1].Prompt;
+                if (_slot2StartSpin is not null) _slot2StartSpin.Value = segments[1].StartMilliseconds / 1000.0;
+                if (_slot2EndSpin is not null) _slot2EndSpin.Value = segments[1].EndMilliseconds / 1000.0;
+            }
+
+            var maxEndSec = segments.Max(s => s.EndMilliseconds) / 1000.0 + 1.0;
+            if (_durationSpinBox is not null)
+            {
+                _durationSpinBox.Value = Math.Max(_durationSpinBox.Value, maxEndSec);
+            }
+
+            if (_aiStatusLabel is not null)
+            {
+                _aiStatusLabel.Text = $"✅ Yerel AI: {segments.Count} replik başarıyla ayrıştırıldı ve alanlara dolduruldu!";
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_aiStatusLabel is not null)
+            {
+                _aiStatusLabel.Text = $"Ayrıştırma hatası: {ex.Message}";
+            }
         }
     }
 
@@ -83,7 +161,7 @@ public partial class SceneCreatorScreen : BaseScreen
             ? title.ToLowerInvariant().Replace(' ', '-').Replace(".", "")
             : _sceneIdInput.Text.Trim().ToLowerInvariant().Replace(' ', '-');
 
-        var videoRelPath = string.IsNullOrWhiteSpace(_videoPathInput?.Text) ? "video.mp4" : _videoPathInput.Text.Trim();
+        var videoRelPath = string.IsNullOrWhiteSpace(_videoPathInput?.Text) ? "media/video.mp4" : _videoPathInput.Text.Trim();
         var durationSec = _durationSpinBox?.Value ?? 10.0;
         var durationMs = (long)(durationSec * 1000.0);
 
@@ -100,55 +178,30 @@ public partial class SceneCreatorScreen : BaseScreen
 
         try
         {
-            var doc = new OfficialSceneDocument
+            var segments = new List<DetectedSpeechSegment>
             {
-                SchemaVersion = ProjectSchema.CurrentVersion,
-                SceneId = sceneId,
-                Title = title,
-                DurationMilliseconds = durationMs,
-                SourceMedia =
-                [
-                    new SourceMediaAsset
-                    {
-                        MediaId = "scene-video",
-                        Role = SourceMediaRole.SceneVideo,
-                        RelativePath = videoRelPath,
-                    }
-                ],
-                Characters =
-                [
-                    new CharacterDefinition { CharacterId = "char-1", DisplayName = char1Name },
-                    new CharacterDefinition { CharacterId = "char-2", DisplayName = char2Name },
-                ],
-                VoiceSlots =
-                [
-                    new VoiceSlotDefinition { VoiceSlotId = "slot-1", CharacterId = "char-1", Prompt = prompt1 },
-                    new VoiceSlotDefinition { VoiceSlotId = "slot-2", CharacterId = "char-2", Prompt = prompt2 },
-                ],
-                Timeline =
-                [
-                    new TimelineEntry { TimelineEntryId = "entry-1", VoiceSlotId = "slot-1", StartMilliseconds = slot1StartMs, EndMilliseconds = slot1EndMs },
-                    new TimelineEntry { TimelineEntryId = "entry-2", VoiceSlotId = "slot-2", StartMilliseconds = slot2StartMs, EndMilliseconds = slot2EndMs },
-                ]
+                new("char-1", char1Name, prompt1, slot1StartMs, slot1EndMs),
+                new("char-2", char2Name, prompt2, slot2StartMs, slot2EndMs)
             };
 
-            // 1. Validate scene
-            ProjectValidator.Validate(doc);
+            var doc = AiSceneBuilder.BuildScene(title, sceneId, durationMs, videoRelPath, segments);
 
-            // 2. Serialize JSON
+            // 1. Serialize JSON
             var json = ProjectJsonSerializer.SerializeScene(doc);
 
-            // 3. Write to user workshop folder
+            // 2. Write to user workshop folder
             var targetFolder = ProjectSettings.GlobalizePath($"user://workshop_scenes/{sceneId}");
-            if (!System.IO.Directory.Exists(targetFolder))
+            var mediaFolder = System.IO.Path.Combine(targetFolder, "media");
+
+            if (!System.IO.Directory.Exists(mediaFolder))
             {
-                System.IO.Directory.CreateDirectory(targetFolder);
+                System.IO.Directory.CreateDirectory(mediaFolder);
             }
 
             var jsonFilePath = System.IO.Path.Combine(targetFolder, "scene.json");
             System.IO.File.WriteAllText(jsonFilePath, json);
 
-            // 4. Return to ScenePicker
+            // 3. Return to ScenePicker
             Navigator?.NavigateTo(AppScreen.ScenePicker);
         }
         catch (Exception ex)
@@ -166,4 +219,3 @@ public partial class SceneCreatorScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.ScenePicker);
     }
 }
-

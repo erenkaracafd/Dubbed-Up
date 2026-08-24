@@ -11,18 +11,16 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
     private readonly List<VoiceTakeAudioPlayer> _takePlayers = [];
     private VideoStreamPlayer? _videoPlayer;
     private double _masterTimeSeconds = 0.0;
-    private double _durationSeconds = 10.0; // default fallback 10s
+    private double _durationSeconds = 10.0;
     private bool _isPlaying = false;
     private bool _hasFinished = false;
+    private string? _sceneFolderPath;
 
     public bool IsPlaying => _isPlaying;
-
     public double CurrentTimeSeconds => _masterTimeSeconds;
-
     public double DurationSeconds => _durationSeconds;
 
     public event Action? PlaybackFinished;
-
     public event Action<double, double>? PlaybackProgress;
 
     public override void _Ready()
@@ -40,31 +38,30 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         }
     }
 
-    public void LoadScene(OfficialSceneDocument scene, DubProjectDocument? project, VoiceTakeStore? takeStore)
+    public void LoadScene(OfficialSceneDocument scene, DubProjectDocument? project, VoiceTakeStore? takeStore, string? sceneFolderPath = null)
     {
         ClearTakePlayers();
 
         _durationSeconds = scene.DurationMilliseconds / 1000.0;
         _masterTimeSeconds = 0.0;
         _hasFinished = false;
+        _sceneFolderPath = sceneFolderPath;
 
-        // Find scene video asset if available
+        // Try to load video
         var videoAsset = scene.SourceMedia.FirstOrDefault(m => m.Role == SourceMediaRole.SceneVideo);
-        if (videoAsset is not null && ResourceLoader.Exists(videoAsset.RelativePath))
+        if (videoAsset is not null)
         {
-            var stream = GD.Load<VideoStream>(videoAsset.RelativePath);
-            if (_videoPlayer is not null)
-            {
-                _videoPlayer.Stream = stream;
-            }
+            TryLoadVideo(videoAsset.RelativePath, sceneFolderPath);
         }
 
-        // Schedule take audio players from timeline entries
+        // Schedule take audio players
         foreach (var entry in scene.Timeline)
         {
             var voiceSlotId = entry.VoiceSlotId;
             var takeId = project?.SelectedTakes?.FirstOrDefault(t => t.VoiceSlotId == voiceSlotId)?.TakeId;
-            var take = takeId is not null ? takeStore?.GetTake(takeId) : takeStore?.GetLatestTakeForSlot(voiceSlotId);
+            var take = takeId is not null
+                ? takeStore?.GetTake(takeId)
+                : takeStore?.GetLatestTakeForSlot(voiceSlotId);
 
             var audioPath = take?.AudioRelativePath ?? string.Empty;
             var startSec = entry.StartMilliseconds / 1000.0;
@@ -73,6 +70,70 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             var player = new VoiceTakeAudioPlayer(voiceSlotId, take?.TakeId ?? "missing", startSec, endSec, audioPath, this);
             _takePlayers.Add(player);
         }
+    }
+
+    private void TryLoadVideo(string relativePath, string? sceneFolderPath)
+    {
+        if (_videoPlayer is null) return;
+
+        // 1. Try res:// path directly
+        if (ResourceLoader.Exists(relativePath))
+        {
+            _videoPlayer.Stream = GD.Load<VideoStream>(relativePath);
+            GD.Print($"[VideoPlayer] Loaded via res://: {relativePath}");
+            return;
+        }
+
+        // 2. Try absolute path from scene folder
+        if (!string.IsNullOrEmpty(sceneFolderPath))
+        {
+            var absolutePath = System.IO.Path.Combine(sceneFolderPath, relativePath);
+            absolutePath = System.IO.Path.GetFullPath(absolutePath);
+
+            if (System.IO.File.Exists(absolutePath))
+            {
+                try
+                {
+                    // Godot 4 supports file:// absolute paths for VideoStreamPlayer in some builds
+                    // Use a GodotFileAccess load approach
+                    var fileUri = absolutePath.Replace("\\", "/");
+
+                    // Try with res:// via ProjectSettings globalize approach
+                    var resPath = ProjectSettings.LocalizePath(absolutePath);
+                    if (!string.IsNullOrEmpty(resPath) && ResourceLoader.Exists(resPath))
+                    {
+                        _videoPlayer.Stream = GD.Load<VideoStream>(resPath);
+                        GD.Print($"[VideoPlayer] Loaded via localized path: {resPath}");
+                        return;
+                    }
+
+                    GD.Print($"[VideoPlayer] Video file found at: {absolutePath}");
+                    GD.Print($"[VideoPlayer] NOTE: Runtime external video loading requires Godot VideoStreamPlayer to support absolute paths.");
+                    // Store path info in metadata for future use
+                    _videoPlayer.SetMeta("external_video_path", absolutePath);
+                }
+                catch (Exception ex)
+                {
+                    GD.PrintErr($"[VideoPlayer] Failed to load external video: {ex.Message}");
+                }
+                return;
+            }
+        }
+
+        // 3. Try GlobalizePath fallback
+        var globalPath = ProjectSettings.GlobalizePath(relativePath);
+        if (!string.IsNullOrEmpty(globalPath) && System.IO.File.Exists(globalPath))
+        {
+            var localized = ProjectSettings.LocalizePath(globalPath);
+            if (!string.IsNullOrEmpty(localized) && ResourceLoader.Exists(localized))
+            {
+                _videoPlayer.Stream = GD.Load<VideoStream>(localized);
+                GD.Print($"[VideoPlayer] Loaded via globalized path: {localized}");
+                return;
+            }
+        }
+
+        GD.Print($"[VideoPlayer] No video stream found for path: '{relativePath}'. Playing audio-only mode.");
     }
 
     public void ScheduleTakes(IEnumerable<(string slotId, string takeId, double startSec, double endSec, string path)> takes)
@@ -175,7 +236,6 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             return;
         }
 
-        // Master clock synchronization
         if (_videoPlayer is not null && _videoPlayer.Stream is not null && _videoPlayer.IsPlaying())
         {
             _masterTimeSeconds = _videoPlayer.GetStreamPosition();
@@ -185,7 +245,6 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             _masterTimeSeconds += delta;
         }
 
-        // Sync all take audio players to avoid drift
         foreach (var player in _takePlayers)
         {
             player.SyncWithMasterTime(_masterTimeSeconds);
@@ -217,4 +276,3 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         _takePlayers.Clear();
     }
 }
-

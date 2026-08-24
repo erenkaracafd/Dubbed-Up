@@ -21,47 +21,59 @@ grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
+theme_override_font_sizes/font_size = 32
 text = "Local Game Setup"
 horizontal_alignment = 1
 
 [node name="SceneTitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 17
 text = "Scene: Museum Mix-up"
 horizontal_alignment = 1
 
-[node name="DescriptionLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="GameModeTitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Enter player names for this match:"
-horizontal_alignment = 1
-
-[node name="Player1Input" type="LineEdit" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(320, 40)
-layout_mode = 2
-placeholder_text = "Player 1 Name"
-text = "Player 1"
-
-[node name="Player2Input" type="LineEdit" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(320, 40)
-layout_mode = 2
-placeholder_text = "Player 2 Name"
-text = "Player 2"
-
-[node name="GameModeLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Select Gameplay Mode:"
+text = "Oyun Modu:"
 
 [node name="GameModeOption" type="OptionButton" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(320, 40)
+custom_minimum_size = Vector2(400, 40)
 layout_mode = 2
+
+[node name="CharacterPreviewLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 0.7, 1)
+theme_override_font_sizes/font_size = 14
+text = "Karakter önizleme..."
+horizontal_alignment = 1
+
+[node name="PlayerNamesTitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Oyuncu adın:"
+
+[node name="Player1Input" type="LineEdit" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(340, 40)
+layout_mode = 2
+placeholder_text = "İsmin nedir?"
+text = "Player 1"
+
+[node name="Player2Label" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "2. Oyuncu adı:"
+
+[node name="Player2Input" type="LineEdit" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(340, 40)
+layout_mode = 2
+placeholder_text = "2. oyuncunun adı"
+text = "Player 2"
 
 [node name="ErrorLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 visible = false
@@ -71,11 +83,11 @@ theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 
 [node name="StartRoundButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(320, 44)
+custom_minimum_size = Vector2(340, 48)
 layout_mode = 2
-text = "Start Recording Phase"
+text = "🎙 Kayda Başla!"
 
 [node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(320, 40)
+custom_minimum_size = Vector2(340, 40)
 layout_mode = 2
-text = "Back to Scene Selection"
+text = "← Sahne Seçimine Dön"

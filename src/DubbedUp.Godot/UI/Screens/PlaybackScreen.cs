@@ -58,7 +58,8 @@ public partial class PlaybackScreen : BaseScreen
 
                 if (Coordinator.CurrentScene is not null)
                 {
-                    _scenePlayer.LoadScene(Coordinator.CurrentScene, null, Coordinator.TakeStore);
+                    var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
+                    _scenePlayer.LoadScene(Coordinator.CurrentScene, null, Coordinator.TakeStore, folderPath);
                 }
                 else
                 {

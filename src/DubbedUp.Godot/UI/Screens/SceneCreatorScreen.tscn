@@ -30,82 +30,115 @@ theme_override_constants/separation = 14
 [node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "✨ In-Game Scene Package Creator"
+text = "✨ Scene Package Creator (Local AI)"
 horizontal_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Turn your own MP4 clips into playable dubbing scenes with custom prompts."
+text = "Kendi MP4 video kliplerinizi veya altyazılarınızı otomatik olarak sahne paketine dönüştürün."
 horizontal_alignment = 1
 
+[node name="AiContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(580, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AiHeaderLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/AiContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 15
+text = "🤖 Yerel AI / Altyazı Otomatik Replik Çıkarıcı:"
+
+[node name="SrtInputText" type="TextEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/AiContainer"]
+custom_minimum_size = Vector2(580, 80)
+layout_mode = 2
+placeholder_text = "Buraya SRT formatında altyazı veya konuşma dökümü yapıştırın (isteğe bağlı)...
+Örnek:
+1
+00:00:01,000 --> 00:00:05,000
+Speed: My mom is kinda homeless!"
+
+[node name="AutoExtractButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/AiContainer"]
+custom_minimum_size = Vector2(280, 36)
+layout_mode = 2
+text = "⚡ Otomatik Zaman & Replikleri Doldur"
+
+[node name="AiStatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/AiContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.4, 1)
+theme_override_font_sizes/font_size = 13
+
+[node name="Separator" type="HSeparator" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+
 [node name="FormContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(560, 0)
+custom_minimum_size = Vector2(580, 0)
 layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="TitleHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-text = "Scene Title:"
+text = "Sahne Başlığı:"
 
 [node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-placeholder_text = "e.g. My Funny Movie Clip"
+placeholder_text = "Örn: Speed Homeless Klip"
 text = "My Custom Scene"
 
 [node name="SceneIdHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-text = "Scene ID (Unique Slug):"
+text = "Sahne ID (Klasör Adı / Slug):"
 
 [node name="SceneIdInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-placeholder_text = "e.g. my-funny-movie-clip"
+placeholder_text = "speed-homeless-klip"
 text = "my-custom-scene"
 
 [node name="VideoHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-text = "Video File Name (placed in scene folder):"
+text = "Video Dosyası Yolu / Adı (media/ klasöründe):"
 
 [node name="VideoPathInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-placeholder_text = "video.mp4"
-text = "video.mp4"
+placeholder_text = "media/video.mp4"
+text = "media/video.mp4"
 
 [node name="DurationHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-text = "Clip Duration (Seconds):"
+text = "Klip Toplam Süresi (Saniye):"
 
 [node name="DurationSpinBox" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
 min_value = 2.0
-max_value = 120.0
+max_value = 180.0
 step = 0.5
 value = 10.0
 
 [node name="CharHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "Characters:"
+text = "Karakterler:"
 
 [node name="Char1NameInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-placeholder_text = "Character 1 Name (e.g. Detective)"
-text = "Detective"
+placeholder_text = "1. Karakter Adı"
+text = "Acey Daddy"
 
 [node name="Char2NameInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-placeholder_text = "Character 2 Name (e.g. Suspect)"
-text = "Suspect"
+placeholder_text = "2. Karakter Adı"
+text = "IShowSpeed"
 
 [node name="Slot1Heading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "Line 1 (Character 1):"
+text = "1. Replik (1. Karakter):"
 
 [node name="Slot1PromptInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-placeholder_text = "Prompt text (e.g. Where were you last night?)"
-text = "Where were you last night?!"
+placeholder_text = "Replik metni / yönlendirme"
+text = "Please Speed I need this, my mom is kinda homeless!"
 
 [node name="Slot1HBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
@@ -113,35 +146,35 @@ theme_override_constants/separation = 10
 
 [node name="StartLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox"]
 layout_mode = 2
-text = "Start (s):"
+text = "Başlangıç (sn):"
 
 [node name="StartSpin" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox"]
 layout_mode = 2
 min_value = 0.0
-max_value = 60.0
+max_value = 120.0
 step = 0.1
 value = 1.0
 
 [node name="EndLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox"]
 layout_mode = 2
-text = "End (s):"
+text = "Bitiş (sn):"
 
 [node name="EndSpin" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox"]
 layout_mode = 2
 min_value = 0.0
-max_value = 60.0
+max_value = 120.0
 step = 0.1
-value = 4.0
+value = 5.0
 
 [node name="Slot2Heading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "Line 2 (Character 2):"
+text = "2. Replik (2. Karakter):"
 
 [node name="Slot2PromptInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
-placeholder_text = "Prompt text (e.g. I was eating pizza!)"
-text = "I was eating pizza, I swear!"
+placeholder_text = "Replik metni / yönlendirme"
+text = "Wait... did you say your mom is KINDA homeless?!"
 
 [node name="Slot2HBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
@@ -149,25 +182,25 @@ theme_override_constants/separation = 10
 
 [node name="StartLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox"]
 layout_mode = 2
-text = "Start (s):"
+text = "Başlangıç (sn):"
 
 [node name="StartSpin" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox"]
 layout_mode = 2
 min_value = 0.0
-max_value = 60.0
+max_value = 120.0
 step = 0.1
-value = 4.5
+value = 5.5
 
 [node name="EndLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox"]
 layout_mode = 2
-text = "End (s):"
+text = "Bitiş (sn):"
 
 [node name="EndSpin" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox"]
 layout_mode = 2
 min_value = 0.0
-max_value = 60.0
+max_value = 120.0
 step = 0.1
-value = 8.5
+value = 10.5
 
 [node name="ErrorLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 visible = false
@@ -184,10 +217,9 @@ theme_override_constants/separation = 16
 [node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox"]
 custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
-text = "💾 Save Scene Package"
+text = "💾 Sahne Paketini Kaydet"
 
 [node name="CancelButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox"]
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
-text = "Cancel"
-
+text = "İptal"
