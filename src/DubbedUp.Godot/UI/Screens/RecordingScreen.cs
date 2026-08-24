@@ -1,6 +1,7 @@
 using DubbedUp.Core.VoiceTakes;
 using DubbedUp.Godot.LocalSession;
 using DubbedUp.Godot.Network;
+using DubbedUp.Godot.UI.Controls;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -9,42 +10,56 @@ public partial class RecordingScreen : BaseScreen
 {
     private Label? _statusLabel;
     private Label? _slotInfoLabel;
+    private Label? _promptSubtitleLabel;
     private Label? _countdownLabel;
+    private Label? _syncScoreLabel;
     private Label? _errorLabel;
-    private VBoxContainer? _recordingProgressHBox;
-    private ProgressBar? _recordingProgressBar;
-    private Label? _recordingTimeLabel;
-    private ProgressBar? _audioMeterBar;
+
+    private VideoStreamPlayer? _videoPlayer;
+    private WaveformVisualizer? _waveformVisualizer;
+
+    private Button? _previewOriginalButton;
     private Button? _recordButton;
     private Button? _previewTakeButton;
     private Button? _reRecordButton;
+    private Button? _nextSlotButton;
     private Button? _proceedButton;
     private Button? _cancelButton;
 
     private NetworkLobbyManager? _lobbyManager;
     private AudioStreamPlayer? _previewPlayer;
+
     private int _currentSlotIndex = 0;
     private bool _isRecordingLocal = false;
     private bool _isCountingDown = false;
+    private bool _isPreviewingOriginal = false;
+
     private double _countdownTimer = 0.0;
     private double _recordingDuration = 0.0;
-    private double _maxSlotDuration = 5.0;
+    private double _slotStartSec = 0.0;
+    private double _slotEndSec = 4.0;
+    private double _maxSlotDuration = 4.0;
+    private string? _currentTakeId;
 
     public override void _Ready()
     {
-        _statusLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/StatusLabel");
-        _slotInfoLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/SlotInfoLabel");
-        _countdownLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/CountdownLabel");
-        _errorLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/ErrorLabel");
-        _recordingProgressHBox = GetNodeOrNull<VBoxContainer>("CenterContainer/VBoxContainer/RecordingProgressHBox");
-        _recordingProgressBar = GetNodeOrNull<ProgressBar>("CenterContainer/VBoxContainer/RecordingProgressHBox/RecordingProgressBar");
-        _recordingTimeLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/RecordingProgressHBox/RecordingTimeLabel");
-        _audioMeterBar = GetNodeOrNull<ProgressBar>("CenterContainer/VBoxContainer/AudioMeterBar");
-        _recordButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/RecordButton");
-        _previewTakeButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/PreviewTakeButton");
-        _reRecordButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ReRecordButton");
-        _proceedButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ProceedButton");
-        _cancelButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/CancelButton");
+        _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
+        _slotInfoLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/SlotInfoLabel");
+        _promptSubtitleLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/PromptSubtitleLabel");
+        _countdownLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/CountdownLabel");
+        _syncScoreLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/SyncScoreLabel");
+        _errorLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/ErrorLabel");
+
+        _videoPlayer = GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoPanel/VideoPlayer");
+        _waveformVisualizer = GetNodeOrNull<WaveformVisualizer>("ScrollContainer/CenterContainer/VBoxContainer/WaveformVisualizer");
+
+        _previewOriginalButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/StudioActions/PreviewOriginalButton");
+        _recordButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/StudioActions/RecordButton");
+        _previewTakeButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/PreviewTakeButton");
+        _reRecordButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/ReRecordButton");
+        _nextSlotButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/NextSlotButton");
+        _proceedButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ProceedButton");
+        _cancelButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/CancelButton");
 
         _previewPlayer = new AudioStreamPlayer();
         AddChild(_previewPlayer);
@@ -58,32 +73,16 @@ public partial class RecordingScreen : BaseScreen
             }
         }
 
-        if (_recordButton is not null)
-        {
-            _recordButton.Pressed += OnRecordButtonPressed;
-        }
-
-        if (_previewTakeButton is not null)
-        {
-            _previewTakeButton.Pressed += OnPreviewTakePressed;
-        }
-
-        if (_reRecordButton is not null)
-        {
-            _reRecordButton.Pressed += OnReRecordButtonPressed;
-        }
-
-        if (_proceedButton is not null)
-        {
-            _proceedButton.Pressed += OnProceedPressed;
-        }
-
-        if (_cancelButton is not null)
-        {
-            _cancelButton.Pressed += OnCancelPressed;
-        }
+        if (_previewOriginalButton is not null) _previewOriginalButton.Pressed += OnPreviewOriginalPressed;
+        if (_recordButton is not null) _recordButton.Pressed += OnRecordButtonPressed;
+        if (_previewTakeButton is not null) _previewTakeButton.Pressed += OnPreviewTakePressed;
+        if (_reRecordButton is not null) _reRecordButton.Pressed += OnReRecordPressed;
+        if (_nextSlotButton is not null) _nextSlotButton.Pressed += OnNextSlotPressed;
+        if (_proceedButton is not null) _proceedButton.Pressed += OnProceedPressed;
+        if (_cancelButton is not null) _cancelButton.Pressed += OnCancelPressed;
 
         Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
+        LoadSceneVideo();
         UpdateUiState();
     }
 
@@ -92,6 +91,37 @@ public partial class RecordingScreen : BaseScreen
         if (_lobbyManager is not null)
         {
             _lobbyManager.AudioTakeReceived -= OnRemoteAudioTakeReceived;
+        }
+    }
+
+    private void LoadSceneVideo()
+    {
+        if (_videoPlayer is null || Coordinator?.CurrentScene is null) return;
+
+        var videoAsset = Coordinator.CurrentScene.SourceMedia.FirstOrDefault(m => m.Role == Core.Scenes.SourceMediaRole.SceneVideo);
+        if (videoAsset is null) return;
+
+        var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
+
+        // 1. Try localized res:// or direct
+        if (ResourceLoader.Exists(videoAsset.RelativePath))
+        {
+            _videoPlayer.Stream = GD.Load<VideoStream>(videoAsset.RelativePath);
+            return;
+        }
+
+        // 2. Try package directory
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            var absolutePath = System.IO.Path.Combine(folderPath, videoAsset.RelativePath);
+            if (System.IO.File.Exists(absolutePath))
+            {
+                var localized = ProjectSettings.LocalizePath(absolutePath);
+                if (!string.IsNullOrEmpty(localized) && ResourceLoader.Exists(localized))
+                {
+                    _videoPlayer.Stream = GD.Load<VideoStream>(localized);
+                }
+            }
         }
     }
 
@@ -104,82 +134,186 @@ public partial class RecordingScreen : BaseScreen
             if (_countdownLabel is not null)
             {
                 var count = (int)Math.Ceiling(_countdownTimer);
-                _countdownLabel.Text = count > 0 ? $"🎙 Starting in: {count}..." : "🔴 RECORD NOW!";
+                _countdownLabel.Text = count > 0 ? $"🎙 Kayıt Başlıyor: {count}..." : "🔴 ŞİMDİ KONUŞ!";
             }
 
             if (_countdownTimer <= 0.0)
             {
                 _isCountingDown = false;
-                if (_countdownLabel is not null)
-                {
-                    _countdownLabel.Visible = false;
-                }
+                if (_countdownLabel is not null) _countdownLabel.Visible = false;
                 StartLiveRecording();
             }
             return;
         }
 
-        // 2. Recording Logic & Auto-Stop
+        // 2. Live Recording & Waveform Draw
         if (_isRecordingLocal)
         {
             _recordingDuration += delta;
 
-            if (_recordingProgressBar is not null)
+            var peak = Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel();
+            _waveformVisualizer?.AddLiveVoiceSample(_recordingDuration, peak);
+
+            // Keep video synchronized
+            if (_videoPlayer is not null && _videoPlayer.Stream is not null && !_videoPlayer.IsPlaying())
             {
-                _recordingProgressBar.Value = Math.Min(_recordingDuration, _maxSlotDuration);
+                _videoPlayer.Play();
+                _videoPlayer.StreamPosition = _slotStartSec + _recordingDuration;
             }
 
-            if (_recordingTimeLabel is not null)
-            {
-                _recordingTimeLabel.Text = $"{_recordingDuration:F1}s / {_maxSlotDuration:F1}s";
-            }
-
-            if (_audioMeterBar is not null)
-            {
-                var level = Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel();
-                _audioMeterBar.Value = Math.Clamp(level, 0.0, 100.0);
-            }
-
-            // Auto-stop when duration reaches max slot time + 0.5s grace
+            // Auto-stop when max slot duration + 0.5s grace is exceeded
             if (_recordingDuration >= _maxSlotDuration + 0.5)
             {
                 StopLiveRecording();
             }
+            return;
         }
+
+        // 3. Previewing Original Clip
+        if (_isPreviewingOriginal && _videoPlayer is not null && _videoPlayer.IsPlaying())
+        {
+            var currentPos = _videoPlayer.GetStreamPosition();
+            var relativePos = currentPos - _slotStartSec;
+            _waveformVisualizer?.SetPlayhead(relativePos, false);
+
+            if (currentPos >= _slotEndSec)
+            {
+                _videoPlayer.Stop();
+                _isPreviewingOriginal = false;
+                _waveformVisualizer?.SetPlayhead(0, false);
+                if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Orijinal Sahneyi Dinle & İzle";
+            }
+        }
+    }
+
+    private void UpdateUiState()
+    {
+        if (Coordinator?.CurrentScene is null || Coordinator.ActiveRound is null)
+        {
+            return;
+        }
+
+        var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
+        if (voiceSlots.Count == 0) return;
+
+        _currentSlotIndex = Math.Clamp(_currentSlotIndex, 0, voiceSlots.Count - 1);
+        var currentSlot = voiceSlots[_currentSlotIndex];
+
+        // Resolve timeline entry & durations
+        var timelineEntry = Coordinator.CurrentScene.Timeline.FirstOrDefault(e => e.VoiceSlotId == currentSlot.VoiceSlotId);
+        if (timelineEntry is not null && timelineEntry.EndMilliseconds > timelineEntry.StartMilliseconds)
+        {
+            _slotStartSec = timelineEntry.StartMilliseconds / 1000.0;
+            _slotEndSec = timelineEntry.EndMilliseconds / 1000.0;
+            _maxSlotDuration = _slotEndSec - _slotStartSec;
+        }
+        else
+        {
+            _slotStartSec = 0.0;
+            _slotEndSec = 4.0;
+            _maxSlotDuration = 4.0;
+        }
+
+        var charDef = Coordinator.CurrentScene.Characters.FirstOrDefault(c => c.CharacterId == currentSlot.CharacterId);
+        var charName = charDef?.DisplayName ?? currentSlot.CharacterId;
+
+        var assignment = Coordinator.ActiveRound.GetVoiceSlotAssignments().FirstOrDefault(a => a.VoiceSlotId == currentSlot.VoiceSlotId);
+        var playerName = Coordinator.CurrentSession?.Players.FirstOrDefault(p => p.PlayerId == assignment?.PlayerId)?.DisplayName ?? "Player";
+
+        if (_slotInfoLabel is not null)
+        {
+            _slotInfoLabel.Text = $"Replik {_currentSlotIndex + 1} / {voiceSlots.Count}  |  Karakter: 🎭 {charName}  ({playerName})  |  Süre: {_maxSlotDuration:F1}s";
+        }
+
+        if (_promptSubtitleLabel is not null)
+        {
+            _promptSubtitleLabel.Text = $"💬 \"{currentSlot.Prompt}\"";
+        }
+
+        // Reset Waveform visualizer for current slot duration
+        _waveformVisualizer?.Reset(_maxSlotDuration);
+
+        var isRecorded = Coordinator.TakeStore.HasTakeForSlot(currentSlot.VoiceSlotId);
+        var latestTake = Coordinator.TakeStore.GetLatestTakeForSlot(currentSlot.VoiceSlotId);
+        _currentTakeId = latestTake?.TakeId;
+
+        // Button visibility
+        if (_previewOriginalButton is not null) _previewOriginalButton.Visible = true;
+        if (_recordButton is not null)
+        {
+            _recordButton.Text = isRecorded ? "🎙️ Yeniden Kaydet (Üstüne Yaz)" : "🎙️ Kayda Başla (3-2-1)";
+        }
+        if (_previewTakeButton is not null) _previewTakeButton.Visible = isRecorded;
+        if (_reRecordButton is not null) _reRecordButton.Visible = isRecorded;
+        if (_nextSlotButton is not null)
+        {
+            _nextSlotButton.Visible = isRecorded && _currentSlotIndex < voiceSlots.Count - 1;
+        }
+
+        var allDone = voiceSlots.All(s => Coordinator.TakeStore.HasTakeForSlot(s.VoiceSlotId));
+        if (_proceedButton is not null)
+        {
+            _proceedButton.Visible = allDone;
+            _proceedButton.Text = "🎬 Tüm Replikler Tamam — Playback'i İzle!";
+        }
+
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = isRecorded
+                ? $"✅ Replik kaydedildi! Kendi kaydını dinleyebilir veya sonraki repliğe geçebilirsin."
+                : "Hazır. 'Orijinal Sahneyi Dinle' ile klibi dinleyebilir veya 'Kayda Başla'ya basabilirsin.";
+        }
+    }
+
+    private void OnPreviewOriginalPressed()
+    {
+        if (_videoPlayer is null || _videoPlayer.Stream is null)
+        {
+            if (_statusLabel is not null) _statusLabel.Text = "ℹ️ Bu sahne için video akışı bulunamadı.";
+            return;
+        }
+
+        if (_isPreviewingOriginal)
+        {
+            _videoPlayer.Stop();
+            _isPreviewingOriginal = false;
+            if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Orijinal Sahneyi Dinle & İzle";
+            return;
+        }
+
+        _isPreviewingOriginal = true;
+        _videoPlayer.Play();
+        _videoPlayer.StreamPosition = _slotStartSec;
+
+        if (_previewOriginalButton is not null) _previewOriginalButton.Text = "⏹ Oynatmayı Durdur";
+        if (_statusLabel is not null) _statusLabel.Text = "🎧 Orijinal sahne klibi oynatılıyor...";
     }
 
     private void OnRecordButtonPressed()
     {
-        if (_errorLabel is not null)
-        {
-            _errorLabel.Visible = false;
-        }
-
         if (_isCountingDown)
         {
             _isCountingDown = false;
             if (_countdownLabel is not null) _countdownLabel.Visible = false;
-            if (_recordButton is not null) _recordButton.Text = "🎙 Start Recording";
+            if (_recordButton is not null) _recordButton.Text = "🎙️ Kayda Başla (3-2-1)";
             return;
         }
 
         if (!_isRecordingLocal)
         {
+            // Stop preview if running
+            if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
+            _isPreviewingOriginal = false;
+
             _isCountingDown = true;
-            _countdownTimer = 2.0; // 2-second countdown
+            _countdownTimer = 2.0; // 2 seconds countdown
             if (_countdownLabel is not null)
             {
-                _countdownLabel.Text = "🎙 Ready... 2";
+                _countdownLabel.Text = "🎙 Hazır ol... 2";
                 _countdownLabel.Visible = true;
             }
-            if (_recordButton is not null)
-            {
-                _recordButton.Text = "Cancel Countdown";
-            }
-            if (_statusLabel is not null)
-            {
-                _statusLabel.Text = "Get ready to speak...";
-            }
+            if (_recordButton is not null) _recordButton.Text = "İptal Et";
+            if (_statusLabel is not null) _statusLabel.Text = "Geri sayım başladı... Karakterin dudak hareketine odaklan!";
         }
         else
         {
@@ -189,30 +323,10 @@ public partial class RecordingScreen : BaseScreen
 
     private void StartLiveRecording()
     {
-        if (Coordinator is null || Coordinator.CurrentScene is null || Coordinator.ActiveRound is null)
-        {
-            ShowError("No active round available.");
-            return;
-        }
+        if (Coordinator?.CurrentScene is null) return;
 
         var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
-        if (voiceSlots.Count == 0)
-        {
-            ShowError("Scene has no voice slots.");
-            return;
-        }
-
-        var currentSlot = voiceSlots[Math.Clamp(_currentSlotIndex, 0, voiceSlots.Count - 1)];
-
-        var timelineEntry = Coordinator.CurrentScene.Timeline.FirstOrDefault(e => e.VoiceSlotId == currentSlot.VoiceSlotId);
-        if (timelineEntry is not null && timelineEntry.EndMilliseconds > timelineEntry.StartMilliseconds)
-        {
-            _maxSlotDuration = (timelineEntry.EndMilliseconds - timelineEntry.StartMilliseconds) / 1000.0;
-        }
-        else
-        {
-            _maxSlotDuration = 4.0;
-        }
+        var currentSlot = voiceSlots[_currentSlotIndex];
 
         try
         {
@@ -220,76 +334,55 @@ public partial class RecordingScreen : BaseScreen
             _isRecordingLocal = true;
             _recordingDuration = 0.0;
 
-            if (_recordingProgressBar is not null)
+            _waveformVisualizer?.Reset(_maxSlotDuration);
+            _waveformVisualizer?.SetPlayhead(0.0, true);
+
+            // Start video playback from slot start
+            if (_videoPlayer is not null && _videoPlayer.Stream is not null)
             {
-                _recordingProgressBar.MaxValue = _maxSlotDuration;
-                _recordingProgressBar.Value = 0.0;
+                _videoPlayer.Play();
+                _videoPlayer.StreamPosition = _slotStartSec;
             }
 
-            if (_recordingProgressHBox is not null)
-            {
-                _recordingProgressHBox.Visible = true;
-            }
-
-            if (_audioMeterBar is not null)
-            {
-                _audioMeterBar.Visible = true;
-            }
-
-            if (_previewTakeButton is not null)
-            {
-                _previewTakeButton.Visible = false;
-            }
-
-            if (_recordButton is not null)
-            {
-                _recordButton.Text = "⏹ Done Speaking (Stop)";
-            }
-
-            if (_statusLabel is not null)
-            {
-                _statusLabel.Text = "🔴 Status: Recording live microphone audio...";
-            }
+            if (_recordButton is not null) _recordButton.Text = "⏹ Kaydı Bitir (Tamam)";
+            if (_statusLabel is not null) _statusLabel.Text = "🔴 CANLI KAYIT ALINIYOR — Konuşun!";
         }
         catch (Exception ex)
         {
-            ShowError($"Recording failed: {ex.Message}");
+            ShowError($"Kayıt başlatılamadı: {ex.Message}");
         }
     }
 
     private void StopLiveRecording()
     {
-        if (!_isRecordingLocal || Coordinator is null || Coordinator.CurrentScene is null)
-        {
-            return;
-        }
+        if (!_isRecordingLocal || Coordinator is null || Coordinator.CurrentScene is null) return;
 
         try
         {
             var take = Coordinator.StopRecording();
             _isRecordingLocal = false;
+            _currentTakeId = take.TakeId;
 
-            if (_audioMeterBar is not null)
+            // Stop video
+            if (_videoPlayer is not null && _videoPlayer.IsPlaying())
             {
-                _audioMeterBar.Visible = false;
+                _videoPlayer.Stop();
             }
 
-            if (_recordingProgressHBox is not null)
+            // Calculate sync score
+            var matchPercent = _waveformVisualizer?.CalculateSyncMatchPercentage() ?? 90.0f;
+            if (_syncScoreLabel is not null)
             {
-                _recordingProgressHBox.Visible = false;
+                _syncScoreLabel.Text = $"⭐ Zamanlama & Ritim Uyumu: %{matchPercent:F0}";
+                _syncScoreLabel.Visible = true;
             }
 
-            if (_previewTakeButton is not null)
-            {
-                _previewTakeButton.Visible = true;
-            }
-
+            // Broadcast take if in lobby
             if (_lobbyManager is not null && _lobbyManager.IsConnectedToLobby && !string.IsNullOrEmpty(take.AudioRelativePath))
             {
                 try
                 {
-                    var globalPath = ProjectSettings.GlobalizePath(take.AudioRelativePath);
-                    if (global::Godot.FileAccess.FileExists(take.AudioRelativePath) || System.IO.File.Exists(globalPath))
+                    if (global::Godot.FileAccess.FileExists(take.AudioRelativePath))
                     {
                         var bytes = global::Godot.FileAccess.GetFileAsBytes(take.AudioRelativePath);
                         if (bytes is not null && bytes.Length > 0)
@@ -304,80 +397,36 @@ public partial class RecordingScreen : BaseScreen
                 }
             }
 
-            var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
-            if (_currentSlotIndex < voiceSlots.Count - 1)
-            {
-                _currentSlotIndex++;
-                UpdateUiState();
-            }
-            else
-            {
-                // Last slot recorded — check if all are done
-                var allDone = Coordinator.ActiveRound?.Phase == DubbedUp.Core.Rounds.RoundPhase.ReadyForPlayback;
-                if (allDone)
-                {
-                    // Show celebration banner briefly then auto-navigate
-                    if (_statusLabel is not null)
-                    {
-                        _statusLabel.Text = "🎉 Tüm replikleri kaydettiniz! Playback'e geçiliyor...";
-                    }
-                    if (_proceedButton is not null)
-                    {
-                        _proceedButton.Text = "🎬 Tüm Replikler Tamam — İzlemeye Geç!";
-                    }
-
-                    // Navigate after 2 seconds using a SceneTree timer
-                    GetTree().CreateTimer(2.0).Timeout += () =>
-                    {
-                        if (IsInsideTree())
-                        {
-                            Navigator?.NavigateTo(AppScreen.Playback);
-                        }
-                    };
-                }
-                else
-                {
-                    UpdateUiState();
-                }
-            }
+            UpdateUiState();
         }
         catch (Exception ex)
         {
             _isRecordingLocal = false;
-            ShowError($"Failed to save take: {ex.Message}");
+            ShowError($"Kayıt durdurulamadı: {ex.Message}");
         }
     }
 
     private void OnPreviewTakePressed()
     {
-        if (Coordinator?.CurrentScene is null || _previewPlayer is null)
-        {
-            return;
-        }
+        if (_currentTakeId is null || _previewPlayer is null || Coordinator is null) return;
 
-        var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
-        var prevSlotIdx = Math.Clamp(_currentSlotIndex > 0 ? _currentSlotIndex - 1 : _currentSlotIndex, 0, voiceSlots.Count - 1);
-        var slot = voiceSlots[prevSlotIdx];
-
-        var take = Coordinator.TakeStore.GetLatestTakeForSlot(slot.VoiceSlotId);
-        if (take is null || string.IsNullOrWhiteSpace(take.AudioRelativePath))
-        {
-            ShowError("No take recorded yet for preview.");
-            return;
-        }
+        var take = Coordinator.TakeStore.GetTake(_currentTakeId);
+        if (take is null || string.IsNullOrEmpty(take.AudioRelativePath)) return;
 
         try
         {
-            var globalPath = ProjectSettings.GlobalizePath(take.AudioRelativePath);
             byte[]? bytes = null;
-
             if (global::Godot.FileAccess.FileExists(take.AudioRelativePath))
             {
                 bytes = global::Godot.FileAccess.GetFileAsBytes(take.AudioRelativePath);
             }
-            else if (System.IO.File.Exists(globalPath))
+            else
             {
-                bytes = System.IO.File.ReadAllBytes(globalPath);
+                var globalPath = ProjectSettings.GlobalizePath(take.AudioRelativePath);
+                if (System.IO.File.Exists(globalPath))
+                {
+                    bytes = System.IO.File.ReadAllBytes(globalPath);
+                }
             }
 
             if (bytes is not null && bytes.Length > 44)
@@ -386,187 +435,100 @@ public partial class RecordingScreen : BaseScreen
                 {
                     Data = bytes[44..],
                     Format = AudioStreamWav.FormatEnum.Format16Bits,
-                    MixRate = 44100
+                    MixRate = 44100,
+                    Stereo = false
                 };
                 _previewPlayer.Stream = wav;
                 _previewPlayer.Play();
 
-                if (_statusLabel is not null)
-                {
-                    _statusLabel.Text = "🔊 Playing back your recorded take...";
-                }
+                if (_statusLabel is not null) _statusLabel.Text = "▶ Kendi kaydın dinletiliyor...";
             }
         }
         catch (Exception ex)
         {
-            ShowError($"Preview failed: {ex.Message}");
+            ShowError($"Dinleme hatası: {ex.Message}");
         }
     }
 
-    private void OnRemoteAudioTakeReceived(string voiceSlotId, string senderName, byte[] audioData)
+    private void OnReRecordPressed()
     {
-        if (Coordinator is null || Coordinator.ActiveRound is null || audioData.Length == 0)
+        if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
+        if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
+
+        _waveformVisualizer?.Reset(_maxSlotDuration);
+        if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
+
+        OnRecordButtonPressed();
+    }
+
+    private void OnNextSlotPressed()
+    {
+        if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
+        if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
+
+        if (Coordinator?.CurrentScene is not null && _currentSlotIndex < Coordinator.CurrentScene.VoiceSlots.Count - 1)
         {
-            return;
+            _currentSlotIndex++;
+            if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
+            UpdateUiState();
         }
+    }
+
+    private void OnRemoteAudioTakeReceived(string slotId, string senderPlayerId, byte[] audioBytes)
+    {
+        if (Coordinator is null) return;
 
         try
         {
-            var fileName = $"user://takes/remote_{voiceSlotId}_{Guid.NewGuid():N}.wav";
-            using (var file = global::Godot.FileAccess.Open(fileName, global::Godot.FileAccess.ModeFlags.Write))
+            var takeId = $"take-remote-{slotId}-{senderPlayerId}";
+            var userDir = ProjectSettings.GlobalizePath("user://recordings");
+            if (!System.IO.Directory.Exists(userDir))
             {
-                file?.StoreBuffer(audioData);
+                System.IO.Directory.CreateDirectory(userDir);
             }
 
-            var takeId = $"take-net-{voiceSlotId}-{Guid.NewGuid():N}";
-            var assignment = Coordinator.ActiveRound.GetVoiceSlotAssignments()
-                .FirstOrDefault(a => a.VoiceSlotId == voiceSlotId);
+            var filePath = System.IO.Path.Combine(userDir, $"{takeId}.wav");
+            System.IO.File.WriteAllBytes(filePath, audioBytes);
 
-            var playerId = assignment?.PlayerId ?? senderName;
-            var characterId = assignment?.CharacterId ?? "unknown";
-
-            var remoteTake = new VoiceTake(
-                takeId,
-                voiceSlotId,
-                playerId,
-                characterId,
-                Coordinator.ActiveRound.RoundId,
-                fileName,
-                durationMilliseconds: 3000,
-                DateTimeOffset.UtcNow);
+            var relativePath = $"user://recordings/{takeId}.wav";
+            var roundId = Coordinator.ActiveRound?.RoundId ?? "round-1";
+            var characterId = Coordinator.CurrentScene?.VoiceSlots.FirstOrDefault(s => s.VoiceSlotId == slotId)?.CharacterId ?? "char-1";
+            var remoteTake = new VoiceTake(takeId, slotId, senderPlayerId, characterId, roundId, relativePath, 3000, DateTimeOffset.UtcNow);
 
             Coordinator.TakeStore.AddTake(remoteTake);
+            Coordinator.ActiveRound?.MarkVoiceSlotRecorded(slotId);
 
-            if (!Coordinator.ActiveRound.RecordedVoiceSlotIds.Contains(voiceSlotId))
-            {
-                Coordinator.ActiveRound.MarkVoiceSlotRecorded(voiceSlotId);
-            }
-
-            UpdateUiState();
+            CallDeferred(nameof(UpdateUiState));
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"Failed to process incoming audio take: {ex.Message}");
-        }
-    }
-
-    private void OnReRecordButtonPressed()
-    {
-        if (_currentSlotIndex > 0)
-        {
-            _currentSlotIndex--;
-            UpdateUiState();
+            GD.PrintErr($"Failed to process remote take: {ex.Message}");
         }
     }
 
     private void OnProceedPressed()
     {
-        if (Coordinator?.ActiveRound is null)
+        try
         {
-            ShowError("No active round.");
-            return;
-        }
+            if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
+            if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
 
-        if (Coordinator.ActiveRound.Phase != DubbedUp.Core.Rounds.RoundPhase.ReadyForPlayback &&
-            Coordinator.ActiveRound.Phase != DubbedUp.Core.Rounds.RoundPhase.Playing)
+            Coordinator?.FinishRecording();
+            Navigator?.NavigateTo(AppScreen.Playback);
+        }
+        catch (Exception ex)
         {
-            var scene = Coordinator.CurrentScene;
-            if (scene is not null)
-            {
-                foreach (var slot in scene.VoiceSlots)
-                {
-                    if (!Coordinator.ActiveRound.RecordedVoiceSlotIds.Contains(slot.VoiceSlotId))
-                    {
-                        var dummyTake = new VoiceTake(
-                            $"take-skip-{slot.VoiceSlotId}-{Guid.NewGuid():N}",
-                            slot.VoiceSlotId,
-                            "player-1",
-                            slot.CharacterId,
-                            Coordinator.ActiveRound.RoundId,
-                            "user://recordings/silence.wav",
-                            1000,
-                            DateTimeOffset.UtcNow);
-                        Coordinator.TakeStore.AddTake(dummyTake);
-                        Coordinator.ActiveRound.MarkVoiceSlotRecorded(slot.VoiceSlotId);
-                    }
-                }
-            }
+            ShowError(ex.Message);
         }
-
-        Navigator?.NavigateTo(AppScreen.Playback);
     }
 
     private void OnCancelPressed()
     {
-        if (_isRecordingLocal)
-        {
-            try { Coordinator?.VoiceRecorder.CancelRecording(); } catch { }
-            _isRecordingLocal = false;
-        }
+        if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
+        if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
+
         Coordinator?.ResetSession();
         Navigator?.NavigateTo(AppScreen.MainMenu);
-    }
-
-    private void UpdateUiState()
-    {
-        if (Coordinator?.CurrentScene is null || Coordinator.ActiveRound is null)
-        {
-            return;
-        }
-
-        var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
-        var assignments = Coordinator.ActiveRound.GetVoiceSlotAssignments();
-
-        if (_currentSlotIndex >= voiceSlots.Count)
-        {
-            _currentSlotIndex = voiceSlots.Count - 1;
-        }
-
-        var currentSlot = voiceSlots[_currentSlotIndex];
-        var assignment = assignments.FirstOrDefault(a => a.VoiceSlotId == currentSlot.VoiceSlotId);
-
-        var playerObj = Coordinator.CurrentSession?.Players.FirstOrDefault(p => p.PlayerId == assignment?.PlayerId);
-        var playerName = playerObj?.DisplayName ?? assignment?.PlayerId ?? "Player";
-
-        var charDef = Coordinator.CurrentScene.Characters.FirstOrDefault(c => c.CharacterId == currentSlot.CharacterId);
-        var charName = charDef?.DisplayName ?? currentSlot.CharacterId;
-
-        var isRecorded = Coordinator.ActiveRound.RecordedVoiceSlotIds.Contains(currentSlot.VoiceSlotId);
-
-        if (_slotInfoLabel is not null)
-        {
-            _slotInfoLabel.Text = $"Slot {_currentSlotIndex + 1} of {voiceSlots.Count}:\n🎭 Character: {charName}  (🎙 {playerName})\n💬 Prompt: \"{currentSlot.Prompt}\"";
-        }
-
-        if (_statusLabel is not null)
-        {
-            _statusLabel.Text = isRecorded
-                ? $"✅ Replik kaydedildi! (Dilersen dinleyebilir, tekrar kaydedebilir veya sonraki repliğe geçebilirsin)"
-                : $"Hazır! Kaydı başlatmak için butona bas.";
-        }
-
-        if (_recordButton is not null)
-        {
-            _recordButton.Text = isRecorded ? "🔄 Re-record This Slot" : "🎙 Start Recording";
-        }
-
-        if (_previewTakeButton is not null)
-        {
-            _previewTakeButton.Visible = isRecorded;
-        }
-
-        if (_reRecordButton is not null)
-        {
-            _reRecordButton.Disabled = _currentSlotIndex == 0;
-        }
-
-        if (_proceedButton is not null)
-        {
-            var allRecorded = Coordinator.ActiveRound.Phase == DubbedUp.Core.Rounds.RoundPhase.ReadyForPlayback;
-            _proceedButton.Text = allRecorded
-                ? "🎬 Complete Recording (Watch Dubbed Video!)"
-                : "Skip & Proceed to Playback";
-        }
     }
 
     private void ShowError(string message)
