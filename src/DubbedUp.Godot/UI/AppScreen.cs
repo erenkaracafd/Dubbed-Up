@@ -11,4 +11,5 @@ public enum AppScreen
     Playback,
     Voting,
     Results,
+    Settings,
 }

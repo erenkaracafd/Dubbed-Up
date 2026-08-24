@@ -18,6 +18,12 @@ public partial class MainMenuScreen : BaseScreen
             onlineButton.Pressed += OnOnlinePlayPressed;
         }
 
+        var settingsButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/SettingsButton");
+        if (settingsButton is not null)
+        {
+            settingsButton.Pressed += OnSettingsPressed;
+        }
+
         var quitButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/QuitButton");
         if (quitButton is not null)
         {
@@ -33,6 +39,11 @@ public partial class MainMenuScreen : BaseScreen
     private void OnOnlinePlayPressed()
     {
         Navigator?.NavigateTo(AppScreen.Lobby);
+    }
+
+    private void OnSettingsPressed()
+    {
+        Navigator?.NavigateTo(AppScreen.Settings);
     }
 
     private void OnQuitButtonPressed()
