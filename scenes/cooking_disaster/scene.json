@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "cooking-disaster",
+  "title": "Kitchen Night-Mayhem",
+  "durationMilliseconds": 14000,
+  "sourceMedia": [
+    {
+      "mediaId": "video-cooking",
+      "role": "sceneVideo",
+      "relativePath": "media/cooking_disaster.mp4"
+    }
+  ],
+  "characters": [
+    {
+      "characterId": "head-chef",
+      "displayName": "Chef Gordon Grump"
+    },
+    {
+      "characterId": "rookie-cook",
+      "displayName": "Barnaby the Rookie"
+    }
+  ],
+  "voiceSlots": [
+    {
+      "voiceSlotId": "slot-1",
+      "characterId": "head-chef",
+      "prompt": "Barnaby! Why is the soup foaming purple and playing jazz music?!"
+    },
+    {
+      "voiceSlotId": "slot-2",
+      "characterId": "rookie-cook",
+      "prompt": "I thought the recipe said two tablespoons of radioactive glitter, Chef!"
+    },
+    {
+      "voiceSlotId": "slot-3",
+      "characterId": "head-chef",
+      "prompt": "It said OREGANO, you absolute donut! Shut down the stove before it gains consciousness!"
+    }
+  ],
+  "timeline": [
+    {
+      "timelineEntryId": "entry-1",
+      "voiceSlotId": "slot-1",
+      "startMilliseconds": 1000,
+      "endMilliseconds": 5000
+    },
+    {
+      "timelineEntryId": "entry-2",
+      "voiceSlotId": "slot-2",
+      "startMilliseconds": 5500,
+      "endMilliseconds": 9500
+    },
+    {
+      "timelineEntryId": "entry-3",
+      "voiceSlotId": "slot-3",
+      "startMilliseconds": 10000,
+      "endMilliseconds": 13500
+    }
+  ]
+}

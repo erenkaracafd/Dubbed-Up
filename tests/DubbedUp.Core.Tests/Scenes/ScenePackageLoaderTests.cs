@@ -117,4 +117,29 @@ public sealed class ScenePackageLoaderTests
         Assert.Equal(0, (int)GameMode.CoopDubbing);
         Assert.Equal(1, (int)GameMode.CompetitiveVoting);
     }
+
+    [Fact]
+    public void ShippedDefaultScenes_AreValidAndLoadable()
+    {
+        var scenesDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "scenes");
+        if (!Directory.Exists(scenesDir))
+        {
+            // Alternative location resolution
+            scenesDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..", "scenes"));
+        }
+
+        if (Directory.Exists(scenesDir))
+        {
+            var packages = ScenePackageLoader.DiscoverPackages(scenesDir);
+            Assert.True(packages.Count >= 3, $"Expected at least 3 shipped scenes, found {packages.Count}");
+            foreach (var package in packages)
+            {
+                Assert.NotNull(package.Document);
+                Assert.False(string.IsNullOrWhiteSpace(package.Title));
+                Assert.True(package.Document.Characters.Count >= 2);
+                Assert.True(package.Document.VoiceSlots.Count >= 2);
+                Assert.True(package.Document.Timeline.Count >= 2);
+            }
+        }
+    }
 }
