@@ -12,6 +12,12 @@ public partial class MainMenuScreen : BaseScreen
             playButton.Pressed += OnPlayButtonPressed;
         }
 
+        var onlineButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/OnlinePlayButton");
+        if (onlineButton is not null)
+        {
+            onlineButton.Pressed += OnOnlinePlayPressed;
+        }
+
         var quitButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/QuitButton");
         if (quitButton is not null)
         {
@@ -24,9 +30,13 @@ public partial class MainMenuScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.ScenePicker);
     }
 
+    private void OnOnlinePlayPressed()
+    {
+        Navigator?.NavigateTo(AppScreen.Lobby);
+    }
+
     private void OnQuitButtonPressed()
     {
         GetTree().Quit();
     }
 }
-

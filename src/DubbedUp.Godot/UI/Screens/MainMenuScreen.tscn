@@ -21,7 +21,7 @@ grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 
 [node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -36,12 +36,16 @@ text = "Desktop Comedy Party Game"
 horizontal_alignment = 1
 
 [node name="PlayButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 48)
+custom_minimum_size = Vector2(280, 48)
 layout_mode = 2
-text = "Play Local"
+text = "🎮 Play Local Game"
+
+[node name="OnlinePlayButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(280, 48)
+layout_mode = 2
+text = "🌐 Online Multiplayer Lobby"
 
 [node name="QuitButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 48)
+custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
-text = "Quit"
-
+text = "Quit Game"

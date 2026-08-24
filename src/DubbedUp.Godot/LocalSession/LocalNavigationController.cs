@@ -10,6 +10,7 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         { AppScreen.MainMenu, "res://UI/Screens/MainMenuScreen.tscn" },
         { AppScreen.ScenePicker, "res://UI/Screens/ScenePickerScreen.tscn" },
         { AppScreen.Setup, "res://UI/Screens/SetupScreen.tscn" },
+        { AppScreen.Lobby, "res://UI/Screens/LobbyScreen.tscn" },
         { AppScreen.Recording, "res://UI/Screens/RecordingScreen.tscn" },
         { AppScreen.Playback, "res://UI/Screens/PlaybackScreen.tscn" },
         { AppScreen.Voting, "res://UI/Screens/VotingScreen.tscn" },
@@ -24,11 +25,17 @@ public partial class LocalNavigationController : Node, IScreenNavigator
 
     public LocalSessionCoordinator Coordinator { get; } = new();
 
+    public Network.NetworkLobbyManager LobbyManager { get; } = new();
+
     public AppScreen CurrentScreen { get; private set; } = AppScreen.MainMenu;
 
     public void Initialize(Control screenContainer)
     {
         _screenContainer = screenContainer;
+        if (LobbyManager.GetParent() is null)
+        {
+            AddChild(LobbyManager);
+        }
         NavigateTo(AppScreen.MainMenu);
     }
 

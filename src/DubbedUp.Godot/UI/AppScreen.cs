@@ -5,6 +5,7 @@ public enum AppScreen
     MainMenu,
     ScenePicker,
     Setup,
+    Lobby,
     Recording,
     Playback,
     Voting,
