@@ -99,9 +99,9 @@ public sealed class LocalSessionCoordinator
     {
         ArgumentNullException.ThrowIfNull(playerNames);
         var names = playerNames.Where(name => !string.IsNullOrWhiteSpace(name)).ToArray();
-        if (names.Length < 2)
+        if (names.Length < 1)
         {
-            throw new GameRuleException("A local session requires at least two players.");
+            throw new GameRuleException("A local session requires at least one player.");
         }
 
         var players = names

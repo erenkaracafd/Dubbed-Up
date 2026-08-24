@@ -61,6 +61,7 @@ public partial class RecordingScreen : BaseScreen
             _cancelButton.Pressed += OnCancelPressed;
         }
 
+        DubbedUp.Godot.Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
         UpdateUiState();
     }
 
@@ -76,10 +77,8 @@ public partial class RecordingScreen : BaseScreen
     {
         if (_isRecordingLocal && _audioMeterBar is not null)
         {
-            _meterAnimationTime += delta * 6.0;
-            // Simulated dynamic VU meter activity
-            var level = 45.0 + Math.Sin(_meterAnimationTime) * 35.0 + Math.Cos(_meterAnimationTime * 1.7) * 15.0;
-            _audioMeterBar.Value = Math.Clamp(level, 10.0, 95.0);
+            var level = DubbedUp.Godot.Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel();
+            _audioMeterBar.Value = Math.Clamp(level, 0.0, 100.0);
         }
     }
 

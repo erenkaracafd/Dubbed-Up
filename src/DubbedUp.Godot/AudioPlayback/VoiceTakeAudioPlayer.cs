@@ -128,14 +128,48 @@ public sealed class VoiceTakeAudioPlayer
             return;
         }
 
-        if (ResourceLoader.Exists(path))
+        try
         {
-            var stream = GD.Load<AudioStream>(path);
-            if (stream is not null)
+            var globalPath = ProjectSettings.GlobalizePath(path);
+            byte[]? bytes = null;
+
+            if (global::Godot.FileAccess.FileExists(path))
             {
-                _audioPlayer.Stream = stream;
+                bytes = global::Godot.FileAccess.GetFileAsBytes(path);
             }
+            else if (System.IO.File.Exists(globalPath))
+            {
+                bytes = System.IO.File.ReadAllBytes(globalPath);
+            }
+            else if (ResourceLoader.Exists(path))
+            {
+                var stream = GD.Load<AudioStream>(path);
+                if (stream is not null)
+                {
+                    _audioPlayer.Stream = stream;
+                    return;
+                }
+            }
+
+            if (bytes is not null && bytes.Length > 44)
+            {
+                // Check if valid WAV header
+                var isWav = bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F';
+                if (isWav)
+                {
+                    var wav = new AudioStreamWav
+                    {
+                        Data = bytes[44..], // PCM data starts after standard 44-byte header
+                        Format = AudioStreamWav.FormatEnum.Format16Bits,
+                        MixRate = 44100
+                    };
+                    _audioPlayer.Stream = wav;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[AudioPlayer] Failed to load audio stream from '{path}': {ex.Message}");
         }
     }
 }
-

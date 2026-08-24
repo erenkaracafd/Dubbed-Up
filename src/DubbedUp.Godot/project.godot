@@ -14,6 +14,10 @@ config/name="Dubbed Up"
 run/main_scene="res://Scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "C#")
 
+[audio]
+
+driver/enable_input=true
+
 [display]
 
 window/size/viewport_width=1280

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "speed-mama-homeless",
+  "title": "Speed: My Mom is Kinda Homeless",
+  "durationMilliseconds": 16000,
+  "sourceMedia": [
+    {
+      "mediaId": "video-speed",
+      "role": "sceneVideo",
+      "relativePath": "media/speed_homeless.mp4"
+    }
+  ],
+  "characters": [
+    {
+      "characterId": "acey-daddy",
+      "displayName": "Acey Daddy (Kid)"
+    },
+    {
+      "characterId": "ishowspeed",
+      "displayName": "IShowSpeed"
+    },
+    {
+      "characterId": "teammate",
+      "displayName": "Teammate"
+    }
+  ],
+  "voiceSlots": [
+    {
+      "voiceSlotId": "slot-1",
+      "characterId": "acey-daddy",
+      "prompt": "Please Speed, I need this win! My mom is kinda homeless, I live with my dad..."
+    },
+    {
+      "voiceSlotId": "slot-2",
+      "characterId": "teammate",
+      "prompt": "Yo Speed, why are you smiling like that bro?! That is mad disrespectful!"
+    },
+    {
+      "voiceSlotId": "slot-3",
+      "characterId": "ishowspeed",
+      "prompt": "I'm not smiling bro! Wait... did you just say your mom is KINDA homeless?!"
+    }
+  ],
+  "timeline": [
+    {
+      "timelineEntryId": "entry-1",
+      "voiceSlotId": "slot-1",
+      "startMilliseconds": 1000,
+      "endMilliseconds": 6000
+    },
+    {
+      "timelineEntryId": "entry-2",
+      "voiceSlotId": "slot-2",
+      "startMilliseconds": 6500,
+      "endMilliseconds": 10500
+    },
+    {
+      "timelineEntryId": "entry-3",
+      "voiceSlotId": "slot-3",
+      "startMilliseconds": 11000,
+      "endMilliseconds": 15500
+    }
+  ]
+}

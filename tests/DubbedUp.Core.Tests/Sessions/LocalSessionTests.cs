@@ -9,12 +9,15 @@ namespace DubbedUp.Core.Tests.Sessions;
 public sealed class LocalSessionTests
 {
     [Fact]
-    public void Session_requires_two_unique_players()
+    public void Session_requires_at_least_one_unique_player()
     {
-        Assert.Throws<GameRuleException>(() => LocalSession.Create("session-1", [Player("p1")]));
+        Assert.Throws<GameRuleException>(() => LocalSession.Create("session-1", []));
         Assert.Throws<GameRuleException>(() => LocalSession.Create(
             "session-1",
             [Player("p1"), Player("p1")]));
+        
+        var soloSession = LocalSession.Create("session-solo", [Player("solo")]);
+        Assert.Single(soloSession.Players);
     }
 
     [Fact]

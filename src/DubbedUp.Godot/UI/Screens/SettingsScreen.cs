@@ -58,6 +58,7 @@ public partial class SettingsScreen : BaseScreen
             _backButton.Pressed += OnBackPressed;
         }
 
+        Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
         LoadSettings();
     }
 
@@ -65,9 +66,8 @@ public partial class SettingsScreen : BaseScreen
     {
         if (_isTestingMic && _testMeterBar is not null)
         {
-            _meterTime += delta * 7.0;
-            var simulatedLevel = (50.0 + Math.Sin(_meterTime) * 30.0 + Math.Cos(_meterTime * 2.3) * 15.0) * _micGainMultiplier;
-            _testMeterBar.Value = Math.Clamp(simulatedLevel, 5.0, 100.0);
+            var level = Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel(_micGainMultiplier);
+            _testMeterBar.Value = Math.Clamp(level, 0.0, 100.0);
         }
     }
 

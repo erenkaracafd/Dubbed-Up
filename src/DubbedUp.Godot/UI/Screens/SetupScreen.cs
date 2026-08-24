@@ -25,7 +25,7 @@ public partial class SetupScreen : BaseScreen
             if (selectedScene is not null)
             {
                 var charNames = string.Join(", ", selectedScene.Document.Characters.Select(c => c.DisplayName));
-                _sceneTitleLabel.Text = $"Scene: {selectedScene.Title} ({charNames})";
+                _sceneTitleLabel.Text = $"Scene: {selectedScene.Title}\nCharacters: {charNames}";
             }
             else
             {
@@ -36,9 +36,12 @@ public partial class SetupScreen : BaseScreen
         if (_gameModeOption is not null)
         {
             _gameModeOption.Clear();
-            _gameModeOption.AddItem("Co-op Dubbing (Direct Cinema Playback)", (int)GameMode.CoopDubbing);
-            _gameModeOption.AddItem("Competitive Voting (Party Scoring)", (int)GameMode.CompetitiveVoting);
+            _gameModeOption.AddItem("👤 Solo Dubbing (1 Player - Voice All Characters)", 0);
+            _gameModeOption.AddItem("👥 Co-op Dubbing (2 Players - Team Playback)", 1);
+            _gameModeOption.AddItem("🏆 Competitive Voting (2 Players - Party Scoring)", 2);
+            _gameModeOption.ItemSelected += OnGameModeSelected;
             _gameModeOption.Select(0);
+            OnGameModeSelected(0);
         }
 
         var startButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/StartRoundButton");
@@ -54,6 +57,14 @@ public partial class SetupScreen : BaseScreen
         }
     }
 
+    private void OnGameModeSelected(long index)
+    {
+        if (_player2Input is not null)
+        {
+            _player2Input.Visible = index != 0;
+        }
+    }
+
     private void OnStartRoundPressed()
     {
         if (_errorLabel is not null)
@@ -61,18 +72,23 @@ public partial class SetupScreen : BaseScreen
             _errorLabel.Visible = false;
         }
 
-        var p1 = string.IsNullOrWhiteSpace(_player1Input?.Text) ? "Player 1" : _player1Input.Text.Trim();
-        var p2 = string.IsNullOrWhiteSpace(_player2Input?.Text) ? "Player 2" : _player2Input.Text.Trim();
+        var p1 = string.IsNullOrWhiteSpace(_player1Input?.Text) ? "Player" : _player1Input.Text.Trim();
+        var isSolo = _gameModeOption?.Selected == 0;
+        var isVoting = _gameModeOption?.Selected == 2;
 
-        var selectedMode = _gameModeOption is not null && _gameModeOption.Selected == 1
-            ? GameMode.CompetitiveVoting
-            : GameMode.CoopDubbing;
+        var playerList = new List<string> { p1 };
+        if (!isSolo)
+        {
+            var p2 = string.IsNullOrWhiteSpace(_player2Input?.Text) ? "Player 2" : _player2Input.Text.Trim();
+            playerList.Add(p2);
+        }
 
+        var selectedMode = isVoting ? GameMode.CompetitiveVoting : GameMode.CoopDubbing;
         var sceneDoc = Coordinator?.SelectedScenePackage?.Document;
 
         try
         {
-            Coordinator?.StartSession([p1, p2], sceneDoc, selectedMode);
+            Coordinator?.StartSession(playerList, sceneDoc, selectedMode);
             Navigator?.NavigateTo(AppScreen.Recording);
         }
         catch (Exception ex)

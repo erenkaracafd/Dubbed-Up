@@ -32,9 +32,9 @@ public sealed class LocalSession
 
         ArgumentNullException.ThrowIfNull(players);
         var playerList = players.ToArray();
-        if (playerList.Length < 2)
+        if (playerList.Length < 1)
         {
-            throw new GameRuleException("A local session requires at least two players.");
+            throw new GameRuleException("A local session requires at least one player.");
         }
 
         var duplicatePlayerId = playerList
