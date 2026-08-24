@@ -1,3 +1,6 @@
+using DubbedUp.Core.VoiceTakes;
+using DubbedUp.Godot.LocalSession;
+using DubbedUp.Godot.Network;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -12,6 +15,7 @@ public partial class RecordingScreen : BaseScreen
     private Button? _proceedButton;
     private Button? _cancelButton;
 
+    private NetworkLobbyManager? _lobbyManager;
     private int _currentSlotIndex = 0;
     private bool _isRecordingLocal = false;
 
@@ -24,6 +28,15 @@ public partial class RecordingScreen : BaseScreen
         _reRecordButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ReRecordButton");
         _proceedButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ProceedButton");
         _cancelButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/CancelButton");
+
+        if (Navigator is LocalNavigationController navCtrl)
+        {
+            _lobbyManager = navCtrl.LobbyManager;
+            if (_lobbyManager.IsConnectedToLobby)
+            {
+                _lobbyManager.AudioTakeReceived += OnRemoteAudioTakeReceived;
+            }
+        }
 
         if (_recordButton is not null)
         {
@@ -46,6 +59,14 @@ public partial class RecordingScreen : BaseScreen
         }
 
         UpdateUiState();
+    }
+
+    public override void _ExitTree()
+    {
+        if (_lobbyManager is not null)
+        {
+            _lobbyManager.AudioTakeReceived -= OnRemoteAudioTakeReceived;
+        }
     }
 
     private void OnRecordButtonPressed()
@@ -78,11 +99,11 @@ public partial class RecordingScreen : BaseScreen
                 _isRecordingLocal = true;
                 if (_recordButton is not null)
                 {
-                    _recordButton.Text = "Stop Recording";
+                    _recordButton.Text = "⏹ Stop Recording";
                 }
                 if (_statusLabel is not null)
                 {
-                    _statusLabel.Text = "Status: Recording in progress...";
+                    _statusLabel.Text = "🔴 Status: Recording live audio...";
                 }
             }
             catch (Exception ex)
@@ -97,6 +118,27 @@ public partial class RecordingScreen : BaseScreen
                 var take = Coordinator.StopRecording();
                 _isRecordingLocal = false;
 
+                // If in multiplayer, broadcast the recorded audio file to peers
+                if (_lobbyManager is not null && _lobbyManager.IsConnectedToLobby && !string.IsNullOrEmpty(take.AudioRelativePath))
+                {
+                    try
+                    {
+                        var globalPath = ProjectSettings.GlobalizePath(take.AudioRelativePath);
+                        if (global::Godot.FileAccess.FileExists(take.AudioRelativePath) || System.IO.File.Exists(globalPath))
+                        {
+                            var bytes = global::Godot.FileAccess.GetFileAsBytes(take.AudioRelativePath);
+                            if (bytes is not null && bytes.Length > 0)
+                            {
+                                _lobbyManager.BroadcastAudioTake(take.VoiceSlotId, bytes);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        GD.PrintErr($"Failed to broadcast audio take over network: {ex.Message}");
+                    }
+                }
+
                 if (_currentSlotIndex < voiceSlots.Count - 1)
                 {
                     _currentSlotIndex++;
@@ -109,6 +151,53 @@ public partial class RecordingScreen : BaseScreen
                 _isRecordingLocal = false;
                 ShowError($"Failed to save take: {ex.Message}");
             }
+        }
+    }
+
+    private void OnRemoteAudioTakeReceived(string voiceSlotId, string senderName, byte[] audioData)
+    {
+        if (Coordinator is null || Coordinator.ActiveRound is null || audioData.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var fileName = $"user://takes/remote_{voiceSlotId}_{Guid.NewGuid():N}.wav";
+            using (var file = global::Godot.FileAccess.Open(fileName, global::Godot.FileAccess.ModeFlags.Write))
+            {
+                file?.StoreBuffer(audioData);
+            }
+
+            var takeId = $"take-net-{voiceSlotId}-{Guid.NewGuid():N}";
+            var assignment = Coordinator.ActiveRound.GetVoiceSlotAssignments()
+                .FirstOrDefault(a => a.VoiceSlotId == voiceSlotId);
+
+            var playerId = assignment?.PlayerId ?? senderName;
+            var characterId = assignment?.CharacterId ?? "unknown";
+
+            var remoteTake = new VoiceTake(
+                takeId,
+                voiceSlotId,
+                playerId,
+                characterId,
+                Coordinator.ActiveRound.RoundId,
+                fileName,
+                durationMilliseconds: 3000,
+                DateTimeOffset.UtcNow);
+
+            Coordinator.TakeStore.AddTake(remoteTake);
+
+            if (!Coordinator.ActiveRound.RecordedVoiceSlotIds.Contains(voiceSlotId))
+            {
+                Coordinator.ActiveRound.MarkVoiceSlotRecorded(voiceSlotId);
+            }
+
+            UpdateUiState();
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"Failed to process incoming remote audio take: {ex.Message}");
         }
     }
 
@@ -164,7 +253,7 @@ public partial class RecordingScreen : BaseScreen
 
         if (_recordButton is not null)
         {
-            _recordButton.Text = isRecorded ? "Record Again" : "Start Recording";
+            _recordButton.Text = isRecorded ? "🎙 Record Again" : "🎙 Start Recording";
         }
 
         var allRecorded = voiceSlots.All(slot => Coordinator.TakeStore.HasTakeForSlot(slot.VoiceSlotId));
