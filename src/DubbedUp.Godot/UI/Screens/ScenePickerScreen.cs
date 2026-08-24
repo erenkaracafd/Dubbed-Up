@@ -11,6 +11,7 @@ public partial class ScenePickerScreen : BaseScreen
     private Button? _openFolderButton;
     private Button? _refreshButton;
     private Button? _workshopButton;
+    private Button? _createSceneButton;
     private Button? _backButton;
 
     private readonly SteamWorkshopService _workshopService = new();
@@ -23,6 +24,7 @@ public partial class ScenePickerScreen : BaseScreen
         _openFolderButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/OpenFolderButton");
         _refreshButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/RefreshButton");
         _workshopButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/WorkshopButton");
+        _createSceneButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/CreateSceneButton");
         _backButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/BackButton");
 
         if (_openFolderButton is not null)
@@ -38,6 +40,11 @@ public partial class ScenePickerScreen : BaseScreen
         if (_workshopButton is not null)
         {
             _workshopButton.Pressed += OnWorkshopPressed;
+        }
+
+        if (_createSceneButton is not null)
+        {
+            _createSceneButton.Pressed += OnCreateScenePressed;
         }
 
         if (_backButton is not null)
@@ -156,6 +163,11 @@ public partial class ScenePickerScreen : BaseScreen
     private void OnWorkshopPressed()
     {
         _workshopService.OpenWorkshopInBrowser();
+    }
+
+    private void OnCreateScenePressed()
+    {
+        Navigator?.NavigateTo(AppScreen.SceneCreator);
     }
 
     private void OnBackPressed()

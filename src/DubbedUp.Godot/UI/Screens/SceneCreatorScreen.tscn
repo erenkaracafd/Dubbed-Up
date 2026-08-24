@@ -1,0 +1,192 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/Screens/SceneCreatorScreen.cs" id="1_creator"]
+
+[node name="SceneCreatorScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_creator")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(850, 0)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "✨ In-Game Scene Package Creator"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Turn your own MP4 clips into playable dubbing scenes with custom prompts."
+horizontal_alignment = 1
+
+[node name="FormContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+text = "Scene Title:"
+
+[node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+placeholder_text = "e.g. My Funny Movie Clip"
+text = "My Custom Scene"
+
+[node name="SceneIdHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+text = "Scene ID (Unique Slug):"
+
+[node name="SceneIdInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+placeholder_text = "e.g. my-funny-movie-clip"
+text = "my-custom-scene"
+
+[node name="VideoHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+text = "Video File Name (placed in scene folder):"
+
+[node name="VideoPathInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+placeholder_text = "video.mp4"
+text = "video.mp4"
+
+[node name="DurationHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+text = "Clip Duration (Seconds):"
+
+[node name="DurationSpinBox" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+min_value = 2.0
+max_value = 120.0
+step = 0.5
+value = 10.0
+
+[node name="CharHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Characters:"
+
+[node name="Char1NameInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+placeholder_text = "Character 1 Name (e.g. Detective)"
+text = "Detective"
+
+[node name="Char2NameInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+placeholder_text = "Character 2 Name (e.g. Suspect)"
+text = "Suspect"
+
+[node name="Slot1Heading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Line 1 (Character 1):"
+
+[node name="Slot1PromptInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+placeholder_text = "Prompt text (e.g. Where were you last night?)"
+text = "Where were you last night?!"
+
+[node name="Slot1HBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StartLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox"]
+layout_mode = 2
+text = "Start (s):"
+
+[node name="StartSpin" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox"]
+layout_mode = 2
+min_value = 0.0
+max_value = 60.0
+step = 0.1
+value = 1.0
+
+[node name="EndLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox"]
+layout_mode = 2
+text = "End (s):"
+
+[node name="EndSpin" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox"]
+layout_mode = 2
+min_value = 0.0
+max_value = 60.0
+step = 0.1
+value = 4.0
+
+[node name="Slot2Heading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Line 2 (Character 2):"
+
+[node name="Slot2PromptInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+placeholder_text = "Prompt text (e.g. I was eating pizza!)"
+text = "I was eating pizza, I swear!"
+
+[node name="Slot2HBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StartLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox"]
+layout_mode = 2
+text = "Start (s):"
+
+[node name="StartSpin" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox"]
+layout_mode = 2
+min_value = 0.0
+max_value = 60.0
+step = 0.1
+value = 4.5
+
+[node name="EndLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox"]
+layout_mode = 2
+text = "End (s):"
+
+[node name="EndSpin" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox"]
+layout_mode = 2
+min_value = 0.0
+max_value = 60.0
+step = 0.1
+value = 8.5
+
+[node name="ErrorLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="ButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+text = "💾 Save Scene Package"
+
+[node name="CancelButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(180, 48)
+layout_mode = 2
+text = "Cancel"

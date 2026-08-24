@@ -9,6 +9,7 @@ public partial class LocalNavigationController : Node, IScreenNavigator
     {
         { AppScreen.MainMenu, "res://UI/Screens/MainMenuScreen.tscn" },
         { AppScreen.ScenePicker, "res://UI/Screens/ScenePickerScreen.tscn" },
+        { AppScreen.SceneCreator, "res://UI/Screens/SceneCreatorScreen.tscn" },
         { AppScreen.Setup, "res://UI/Screens/SetupScreen.tscn" },
         { AppScreen.Lobby, "res://UI/Screens/LobbyScreen.tscn" },
         { AppScreen.Recording, "res://UI/Screens/RecordingScreen.tscn" },

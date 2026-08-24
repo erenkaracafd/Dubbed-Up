@@ -4,6 +4,7 @@ public enum AppScreen
 {
     MainMenu,
     ScenePicker,
+    SceneCreator,
     Setup,
     Lobby,
     Recording,
