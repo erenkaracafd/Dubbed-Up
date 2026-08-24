@@ -10,6 +10,7 @@ public partial class RecordingScreen : BaseScreen
     private Label? _statusLabel;
     private Label? _slotInfoLabel;
     private Label? _errorLabel;
+    private ProgressBar? _audioMeterBar;
     private Button? _recordButton;
     private Button? _reRecordButton;
     private Button? _proceedButton;
@@ -18,12 +19,14 @@ public partial class RecordingScreen : BaseScreen
     private NetworkLobbyManager? _lobbyManager;
     private int _currentSlotIndex = 0;
     private bool _isRecordingLocal = false;
+    private double _meterAnimationTime = 0.0;
 
     public override void _Ready()
     {
         _statusLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/StatusLabel");
         _slotInfoLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/SlotInfoLabel");
         _errorLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/ErrorLabel");
+        _audioMeterBar = GetNodeOrNull<ProgressBar>("CenterContainer/VBoxContainer/AudioMeterBar");
         _recordButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/RecordButton");
         _reRecordButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ReRecordButton");
         _proceedButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ProceedButton");
@@ -69,6 +72,17 @@ public partial class RecordingScreen : BaseScreen
         }
     }
 
+    public override void _Process(double delta)
+    {
+        if (_isRecordingLocal && _audioMeterBar is not null)
+        {
+            _meterAnimationTime += delta * 6.0;
+            // Simulated dynamic VU meter activity
+            var level = 45.0 + Math.Sin(_meterAnimationTime) * 35.0 + Math.Cos(_meterAnimationTime * 1.7) * 15.0;
+            _audioMeterBar.Value = Math.Clamp(level, 10.0, 95.0);
+        }
+    }
+
     private void OnRecordButtonPressed()
     {
         if (_errorLabel is not null)
@@ -97,6 +111,11 @@ public partial class RecordingScreen : BaseScreen
             {
                 Coordinator.StartRecording(currentSlot.VoiceSlotId);
                 _isRecordingLocal = true;
+                _meterAnimationTime = 0.0;
+                if (_audioMeterBar is not null)
+                {
+                    _audioMeterBar.Visible = true;
+                }
                 if (_recordButton is not null)
                 {
                     _recordButton.Text = "⏹ Stop Recording";
@@ -117,6 +136,10 @@ public partial class RecordingScreen : BaseScreen
             {
                 var take = Coordinator.StopRecording();
                 _isRecordingLocal = false;
+                if (_audioMeterBar is not null)
+                {
+                    _audioMeterBar.Visible = false;
+                }
 
                 // If in multiplayer, broadcast the recorded audio file to peers
                 if (_lobbyManager is not null && _lobbyManager.IsConnectedToLobby && !string.IsNullOrEmpty(take.AudioRelativePath))

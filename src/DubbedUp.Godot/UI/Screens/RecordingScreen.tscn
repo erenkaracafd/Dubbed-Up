@@ -21,7 +21,7 @@ grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 14
 
 [node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -34,6 +34,13 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Slot 1/2: Character (Player)\n\"Prompt text\""
 horizontal_alignment = 1
+
+[node name="AudioMeterBar" type="ProgressBar" parent="CenterContainer/VBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(320, 12)
+layout_mode = 2
+value = 50.0
+show_percentage = false
 
 [node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -50,21 +57,21 @@ text = "Error message placeholder"
 horizontal_alignment = 1
 
 [node name="RecordButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 44)
+custom_minimum_size = Vector2(320, 48)
 layout_mode = 2
-text = "Start Recording"
+text = "🎙 Start Recording"
 
 [node name="ReRecordButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 44)
+custom_minimum_size = Vector2(320, 40)
 layout_mode = 2
-text = "Previous Slot / Re-record"
+text = "⏮ Previous Slot / Re-record"
 
 [node name="ProceedButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 44)
+custom_minimum_size = Vector2(320, 44)
 layout_mode = 2
 text = "Complete Recording (Proceed to Playback)"
 
 [node name="CancelButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 44)
+custom_minimum_size = Vector2(320, 40)
 layout_mode = 2
 text = "Cancel to Main Menu"
