@@ -17,3 +17,4 @@ public enum GameMode
     /// </summary>
     CompetitiveVoting = 1,
 }
+

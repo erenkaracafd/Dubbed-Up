@@ -46,3 +46,4 @@ if ($outputDir -and (-not (Test-Path $outputDir))) {
 }
 
 Write-Host "Ready to multiplex audio and video into $OutputVideo" -ForegroundColor Green
+

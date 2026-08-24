@@ -152,3 +152,4 @@ public partial class SettingsScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.MainMenu);
     }
 }
+

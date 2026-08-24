@@ -87,3 +87,4 @@ Bu doküman, projede eşzamanlı veya bağımsız çalışan **geliştiriciler v
 1. **Dal (Branch) İsimlendirmesi:** `feat/<is-paketi>-<aciklama>` (Örn: `feat/scene-packages`, `feat/coop-flow`, `feat/workshop-loader`).
 2. **Hotspot Kuralları:** `DubbedUp.sln`, `project.godot` veya paylaşılan temel interfacelerde değişiklik yapılacaksa diğer geliştiriciye önceden haber verilmelidir.
 3. **Core Bağımsızlığı:** `DubbedUp.Core` içerisinde kesinlikle Godot veya Steamworks kütüphanesi kullanılmaz.
+

@@ -166,3 +166,4 @@ public partial class SceneCreatorScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.ScenePicker);
     }
 }
+

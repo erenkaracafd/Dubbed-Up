@@ -149,3 +149,4 @@ public sealed class PlaytestHardeningTests
         Assert.Equal(0, standings2[2].Points);
     }
 }
+

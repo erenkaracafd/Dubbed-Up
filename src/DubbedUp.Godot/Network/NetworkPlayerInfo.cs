@@ -15,3 +15,4 @@ public sealed record NetworkPlayerInfo
 
     public bool IsReady { get; init; }
 }
+

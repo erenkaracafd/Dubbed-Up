@@ -66,3 +66,4 @@ This checklist guides developers and QA testers during local and online playtest
 2. **Prompts:** Were the prompt texts funny and helpful for improvisation?
 3. **Synchronization:** Did the voices line up with character mouth movements and actions?
 4. **Replayability:** Did players want to immediately replay the scene or try a new one?
+

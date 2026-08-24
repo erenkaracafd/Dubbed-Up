@@ -240,3 +240,4 @@ public partial class NetworkLobbyManager : Node
         EmitSignal(SignalName.ConnectionStateChanged, false, "Host closed the lobby.");
     }
 }
+
