@@ -265,8 +265,27 @@ public partial class RecordingScreen : BaseScreen
             _promptSubtitleLabel.Text = $"💬 \"{currentSlot.Prompt}\"";
         }
 
-        // Reset Waveform visualizer for current slot duration
-        _waveformVisualizer?.Reset(_maxSlotDuration);
+        // Reset Waveform visualizer with REAL audio waveform extracted from video audio
+        float[]? realWaveform = null;
+        var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            var wavPath = System.IO.Path.Combine(folderPath, "media", "audio.wav");
+            if (System.IO.File.Exists(wavPath))
+            {
+                realWaveform = AudioPlayback.AudioWaveformLoader.ExtractWaveformSegment(wavPath, _slotStartSec, _slotEndSec);
+            }
+        }
+        else
+        {
+            var resWav = ProjectSettings.GlobalizePath("res://Content/OfficialScenes/speed_mama_homeless/media/audio.wav");
+            if (System.IO.File.Exists(resWav))
+            {
+                realWaveform = AudioPlayback.AudioWaveformLoader.ExtractWaveformSegment(resWav, _slotStartSec, _slotEndSec);
+            }
+        }
+
+        _waveformVisualizer?.Reset(_maxSlotDuration, realWaveform);
 
         var isRecorded = Coordinator.TakeStore.HasTakeForSlot(currentSlot.VoiceSlotId);
         var latestTake = Coordinator.TakeStore.GetLatestTakeForSlot(currentSlot.VoiceSlotId);

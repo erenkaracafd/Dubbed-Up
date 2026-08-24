@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "sceneId": "speed-mama-homeless",
   "title": "Speed: My Mom is Kinda Homeless",
-  "durationMilliseconds": 16000,
+  "durationMilliseconds": 22000,
   "sourceMedia": [
     {
       "mediaId": "video-speed",
       "role": "sceneVideo",
-      "relativePath": "media/speed_homeless.mp4"
+      "relativePath": "media/speed_homeless.ogv"
     }
   ],
   "characters": [
@@ -46,20 +46,19 @@
       "timelineEntryId": "entry-1",
       "voiceSlotId": "slot-1",
       "startMilliseconds": 1000,
-      "endMilliseconds": 6000
+      "endMilliseconds": 6500
     },
     {
       "timelineEntryId": "entry-2",
       "voiceSlotId": "slot-2",
-      "startMilliseconds": 6500,
-      "endMilliseconds": 10500
+      "startMilliseconds": 7000,
+      "endMilliseconds": 12000
     },
     {
       "timelineEntryId": "entry-3",
       "voiceSlotId": "slot-3",
-      "startMilliseconds": 11000,
-      "endMilliseconds": 15500
+      "startMilliseconds": 13000,
+      "endMilliseconds": 20000
     }
   ]
 }
-
