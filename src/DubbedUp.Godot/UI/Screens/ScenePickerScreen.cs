@@ -27,30 +27,11 @@ public partial class ScenePickerScreen : BaseScreen
         _createSceneButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/CreateSceneButton");
         _backButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/BackButton");
 
-        if (_openFolderButton is not null)
-        {
-            _openFolderButton.Pressed += OnOpenFolderPressed;
-        }
-
-        if (_refreshButton is not null)
-        {
-            _refreshButton.Pressed += OnRefreshPressed;
-        }
-
-        if (_workshopButton is not null)
-        {
-            _workshopButton.Pressed += OnWorkshopPressed;
-        }
-
-        if (_createSceneButton is not null)
-        {
-            _createSceneButton.Pressed += OnCreateScenePressed;
-        }
-
-        if (_backButton is not null)
-        {
-            _backButton.Pressed += OnBackPressed;
-        }
+        if (_openFolderButton is not null) _openFolderButton.Pressed += OnOpenFolderPressed;
+        if (_refreshButton is not null) _refreshButton.Pressed += OnRefreshPressed;
+        if (_workshopButton is not null) _workshopButton.Pressed += OnWorkshopPressed;
+        if (_createSceneButton is not null) _createSceneButton.Pressed += OnCreateScenePressed;
+        if (_backButton is not null) _backButton.Pressed += OnBackPressed;
 
         LoadAvailableScenes();
         PopulateSceneList();
@@ -75,10 +56,7 @@ public partial class ScenePickerScreen : BaseScreen
 
     private void PopulateSceneList()
     {
-        if (_scenesListContainer is null)
-        {
-            return;
-        }
+        if (_scenesListContainer is null) return;
 
         // Clear existing children
         foreach (var child in _scenesListContainer.GetChildren())
@@ -88,7 +66,7 @@ public partial class ScenePickerScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"Found {_availableScenes.Count} playable scene(s). Pick one to begin:";
+            _statusLabel.Text = $"🎬 {_availableScenes.Count} oynanabilir sahne bulundu. Seslendirmek için bir sahne seçin:";
         }
 
         foreach (var package in _availableScenes)
@@ -101,14 +79,25 @@ public partial class ScenePickerScreen : BaseScreen
     private Control CreateSceneCard(ScenePackage package)
     {
         var panel = new PanelContainer();
-        panel.CustomMinimumSize = new Vector2(560, 75);
+        panel.CustomMinimumSize = new Vector2(620, 85);
 
         var hbox = new HBoxContainer();
         hbox.AddThemeConstantOverride("separation", 16);
         panel.AddChild(hbox);
 
+        var iconLabel = new Label
+        {
+            Text = package.VideoFilePath is not null || package.Document.SourceMedia.Any(m => m.Role == SourceMediaRole.SceneVideo) ? "🎬" : "🎭",
+            CustomMinimumSize = new Vector2(50, 0),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        iconLabel.AddThemeFontSizeOverride("font_size", 32);
+        hbox.AddChild(iconLabel);
+
         var infoVbox = new VBoxContainer();
         infoVbox.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        infoVbox.Alignment = BoxContainer.AlignmentMode.Center;
         hbox.AddChild(infoVbox);
 
         var titleLabel = new Label
@@ -116,22 +105,23 @@ public partial class ScenePickerScreen : BaseScreen
             Text = package.Title,
         };
         titleLabel.AddThemeFontSizeOverride("font_size", 18);
+        titleLabel.AddThemeColorOverride("font_color", new Color(0.95f, 0.95f, 1.0f));
         infoVbox.AddChild(titleLabel);
 
         var charNames = string.Join(", ", package.Document.Characters.Select(c => c.DisplayName));
         var durationSec = package.DurationMilliseconds / 1000.0;
         var detailsLabel = new Label
         {
-            Text = $"{durationSec:F1}s | Characters: {charNames} ({package.Document.VoiceSlots.Count} lines)",
+            Text = $"⏱ {durationSec:F1}s  |  👥 Karakterler: {charNames} ({package.Document.VoiceSlots.Count} Replik)",
         };
         detailsLabel.AddThemeFontSizeOverride("font_size", 13);
-        detailsLabel.AddThemeColorOverride("font_color", new Color(0.8f, 0.8f, 0.8f));
+        detailsLabel.AddThemeColorOverride("font_color", new Color(0.6f, 0.85f, 1.0f));
         infoVbox.AddChild(detailsLabel);
 
         var selectBtn = new Button
         {
-            Text = "Select Scene",
-            CustomMinimumSize = new Vector2(130, 44),
+            Text = "🎮 Bu Sahneyi Seç",
+            CustomMinimumSize = new Vector2(160, 48),
         };
         selectBtn.Pressed += () => OnSceneSelected(package);
         hbox.AddChild(selectBtn);
