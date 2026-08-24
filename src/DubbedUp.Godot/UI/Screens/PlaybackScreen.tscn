@@ -38,6 +38,17 @@ layout_mode = 2
 layout_mode = 2
 script = ExtResource("2_player")
 
+[node name="SubtitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.2, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 18
+text = "💬 Character: \"Prompt subtitle\""
+horizontal_alignment = 1
+
 [node name="ProgressBar" type="ProgressBar" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(640, 16)
 layout_mode = 2

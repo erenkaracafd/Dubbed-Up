@@ -9,6 +9,7 @@ public partial class PlaybackScreen : BaseScreen
     private ProgressBar? _progressBar;
     private Label? _timeLabel;
     private Label? _statusLabel;
+    private Label? _subtitleLabel;
     private Button? _playPauseButton;
     private Button? _replayButton;
     private Button? _proceedButton;
@@ -20,6 +21,7 @@ public partial class PlaybackScreen : BaseScreen
         _progressBar = GetNodeOrNull<ProgressBar>("CenterContainer/VBoxContainer/ProgressBar");
         _timeLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/TimeLabel");
         _statusLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/StatusLabel");
+        _subtitleLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/SubtitleLabel");
         _playPauseButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ControlsContainer/PlayPauseButton");
         _replayButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ControlsContainer/ReplayButton");
         _proceedButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ProceedButton");
@@ -124,6 +126,29 @@ public partial class PlaybackScreen : BaseScreen
         if (_timeLabel is not null)
         {
             _timeLabel.Text = $"{FormatTime(current)} / {FormatTime(total)}";
+        }
+
+        // Check active timeline slot for karaoke/dialogue subtitle display
+        if (_subtitleLabel is not null && Coordinator?.CurrentScene is not null)
+        {
+            var currentMs = (long)(current * 1000.0);
+            var activeEntry = Coordinator.CurrentScene.Timeline
+                .FirstOrDefault(e => currentMs >= e.StartMilliseconds && currentMs <= e.EndMilliseconds);
+
+            if (activeEntry is not null)
+            {
+                var slot = Coordinator.CurrentScene.VoiceSlots.FirstOrDefault(s => s.VoiceSlotId == activeEntry.VoiceSlotId);
+                var charDef = Coordinator.CurrentScene.Characters.FirstOrDefault(c => c.CharacterId == slot?.CharacterId);
+                var charName = charDef?.DisplayName ?? slot?.CharacterId ?? "Character";
+                var prompt = slot?.Prompt ?? "...";
+
+                _subtitleLabel.Text = $"💬 {charName}: \"{prompt}\"";
+                _subtitleLabel.Visible = true;
+            }
+            else
+            {
+                _subtitleLabel.Visible = false;
+            }
         }
     }
 

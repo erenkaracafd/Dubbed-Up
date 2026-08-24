@@ -14,6 +14,7 @@ public partial class ResultsScreen : BaseScreen
     private Label? _tallyLabel;
     private Label? _standingsLabel;
     private Label? _errorLabel;
+    private Button? _exportButton;
     private Button? _nextRoundButton;
     private Button? _replayButton;
     private Button? _menuButton;
@@ -24,9 +25,15 @@ public partial class ResultsScreen : BaseScreen
         _tallyLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/TallyLabel");
         _standingsLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/StandingsLabel");
         _errorLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/ErrorLabel");
+        _exportButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ExportButton");
         _nextRoundButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/NextRoundButton");
         _replayButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ReplayRoundButton");
         _menuButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/MenuButton");
+
+        if (_exportButton is not null)
+        {
+            _exportButton.Pressed += OnExportPressed;
+        }
 
         if (_nextRoundButton is not null)
         {
@@ -129,6 +136,52 @@ public partial class ResultsScreen : BaseScreen
     {
         // Navigate back to Playback to re-watch the dub; no state change needed
         Navigator?.NavigateTo(AppScreen.Playback);
+    }
+
+    private void OnExportPressed()
+    {
+        if (Coordinator is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var exportFolder = ProjectSettings.GlobalizePath($"user://exports/dub_{DateTime.Now:yyyyMMdd_HHmmss}");
+            if (!System.IO.Directory.Exists(exportFolder))
+            {
+                System.IO.Directory.CreateDirectory(exportFolder);
+            }
+
+            var summaryLines = new List<string>
+            {
+                $"Dubbed Up Session Export",
+                $"Date: {DateTime.Now}",
+                $"Scene: {Coordinator.CurrentScene?.Title ?? "Unknown"}",
+                $"Players: {string.Join(", ", Coordinator.CurrentSession?.Players.Select(p => p.DisplayName) ?? [])}",
+                $"----------------------------------------",
+            };
+
+            foreach (var take in Coordinator.TakeStore.GetAllTakes())
+            {
+                summaryLines.Add($"Take: {take.TakeId} | Slot: {take.VoiceSlotId} | Player: {take.PlayerId} | Duration: {take.DurationMilliseconds}ms");
+                var sourcePath = ProjectSettings.GlobalizePath(take.AudioRelativePath);
+                if (System.IO.File.Exists(sourcePath))
+                {
+                    var destPath = System.IO.Path.Combine(exportFolder, $"{take.VoiceSlotId}_{take.PlayerId}.wav");
+                    System.IO.File.Copy(sourcePath, destPath, overwrite: true);
+                }
+            }
+
+            System.IO.File.WriteAllLines(System.IO.Path.Combine(exportFolder, "summary.txt"), summaryLines);
+            OS.ShellOpen(exportFolder);
+
+            SetStandings($"✅ Exported to: {exportFolder}");
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Export failed: {ex.Message}");
+        }
     }
 
     private void OnMenuPressed()
