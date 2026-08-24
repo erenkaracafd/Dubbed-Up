@@ -29,23 +29,39 @@ theme_override_font_sizes/font_size = 36
 text = "Local Game Setup"
 horizontal_alignment = 1
 
+[node name="SceneTitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Scene: Museum Mix-up"
+horizontal_alignment = 1
+
 [node name="DescriptionLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Enter player names for this local match:"
+theme_override_font_sizes/font_size = 14
+text = "Enter player names for this match:"
 horizontal_alignment = 1
 
 [node name="Player1Input" type="LineEdit" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 40)
+custom_minimum_size = Vector2(320, 40)
 layout_mode = 2
 placeholder_text = "Player 1 Name"
 text = "Player 1"
 
 [node name="Player2Input" type="LineEdit" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 40)
+custom_minimum_size = Vector2(320, 40)
 layout_mode = 2
 placeholder_text = "Player 2 Name"
 text = "Player 2"
+
+[node name="GameModeLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Select Gameplay Mode:"
+
+[node name="GameModeOption" type="OptionButton" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(320, 40)
+layout_mode = 2
 
 [node name="ErrorLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 visible = false
@@ -55,11 +71,11 @@ theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 
 [node name="StartRoundButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 44)
+custom_minimum_size = Vector2(320, 44)
 layout_mode = 2
-text = "Start Round (Recording)"
+text = "Start Recording Phase"
 
 [node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 40)
+custom_minimum_size = Vector2(320, 40)
 layout_mode = 2
-text = "Back to Main Menu"
+text = "Back to Scene Selection"

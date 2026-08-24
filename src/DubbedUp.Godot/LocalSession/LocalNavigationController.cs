@@ -8,6 +8,7 @@ public partial class LocalNavigationController : Node, IScreenNavigator
     private static readonly Dictionary<AppScreen, string> ScreenScenePaths = new()
     {
         { AppScreen.MainMenu, "res://UI/Screens/MainMenuScreen.tscn" },
+        { AppScreen.ScenePicker, "res://UI/Screens/ScenePickerScreen.tscn" },
         { AppScreen.Setup, "res://UI/Screens/SetupScreen.tscn" },
         { AppScreen.Recording, "res://UI/Screens/RecordingScreen.tscn" },
         { AppScreen.Playback, "res://UI/Screens/PlaybackScreen.tscn" },

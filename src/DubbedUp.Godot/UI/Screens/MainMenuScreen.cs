@@ -21,7 +21,7 @@ public partial class MainMenuScreen : BaseScreen
 
     private void OnPlayButtonPressed()
     {
-        Navigator?.NavigateTo(AppScreen.Setup);
+        Navigator?.NavigateTo(AppScreen.ScenePicker);
     }
 
     private void OnQuitButtonPressed()

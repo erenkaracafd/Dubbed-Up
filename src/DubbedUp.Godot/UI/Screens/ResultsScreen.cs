@@ -48,9 +48,25 @@ public partial class ResultsScreen : BaseScreen
 
     private void PopulateResults()
     {
+        var session = Coordinator?.CurrentSession;
+        var mode = Coordinator?.Mode ?? DubbedUp.Core.Game.GameMode.CoopDubbing;
+
+        if (mode == DubbedUp.Core.Game.GameMode.CoopDubbing)
+        {
+            SetWinner("🎬 Scene Dubbed Successfully!");
+            var playerNames = session?.Players.Select(p => p.DisplayName) ?? [];
+            var charNames = Coordinator?.CurrentScene?.Characters.Select(c => c.DisplayName) ?? [];
+            SetTally($"Players: {string.Join(" & ", playerNames)}\nCharacters: {string.Join(" & ", charNames)}");
+            SetStandings("Mode: Co-op Dubbing (Teamwork Win!)");
+            if (_nextRoundButton is not null)
+            {
+                _nextRoundButton.Text = "Pick Another Scene";
+            }
+            return;
+        }
+
         var result = Coordinator?.LatestVotingResult;
         var scoreBoard = Coordinator?.ScoreBoard;
-        var session = Coordinator?.CurrentSession;
 
         if (result is null)
         {
@@ -91,6 +107,12 @@ public partial class ResultsScreen : BaseScreen
 
     private void OnNextRoundPressed()
     {
+        if (Coordinator?.Mode == DubbedUp.Core.Game.GameMode.CoopDubbing)
+        {
+            Navigator?.NavigateTo(AppScreen.ScenePicker);
+            return;
+        }
+
         // Start a new round from Setup — Coordinator retains the session/scoreboard
         try
         {

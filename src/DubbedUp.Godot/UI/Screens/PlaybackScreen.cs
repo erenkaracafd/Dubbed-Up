@@ -137,10 +137,14 @@ public partial class PlaybackScreen : BaseScreen
         if (_proceedButton is not null)
         {
             _proceedButton.Disabled = false;
-            _proceedButton.Text = "Proceed to Voting";
+            _proceedButton.Text = Coordinator?.Mode == DubbedUp.Core.Game.GameMode.CoopDubbing
+                ? "Dub Complete (View Celebration)"
+                : "Proceed to Voting";
         }
 
-        UpdateStatusText("Playback complete! Ready to vote.");
+        UpdateStatusText(Coordinator?.Mode == DubbedUp.Core.Game.GameMode.CoopDubbing
+            ? "Playback complete! Dubbing success!"
+            : "Playback complete! Ready to vote.");
     }
 
     private void UpdateStatusText(string text)
@@ -163,7 +167,14 @@ public partial class PlaybackScreen : BaseScreen
         try
         {
             Coordinator?.FinishPlayback();
-            Navigator?.NavigateTo(AppScreen.Voting);
+            if (Coordinator?.Mode == DubbedUp.Core.Game.GameMode.CoopDubbing)
+            {
+                Navigator?.NavigateTo(AppScreen.Results);
+            }
+            else
+            {
+                Navigator?.NavigateTo(AppScreen.Voting);
+            }
         }
         catch (Exception ex)
         {

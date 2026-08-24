@@ -35,6 +35,8 @@ public sealed class LocalSessionCoordinator
 
     public GameMode Mode { get; private set; } = GameMode.CoopDubbing;
 
+    public ScenePackage? SelectedScenePackage { get; set; }
+
     public OfficialSceneDocument? CurrentScene { get; private set; }
 
     public IVoiceRecorder VoiceRecorder => _voiceRecorder;
