@@ -110,7 +110,7 @@ public sealed class LocalSessionCoordinator
 
         Mode = mode;
         CurrentSession = DubbedUp.Core.Sessions.LocalSession.Create($"session-{Guid.NewGuid():N}", players);
-        ScoreBoard = ScoreBoard.Create(players.Select(p => p.PlayerId));
+        ScoreBoard = players.Length >= 2 ? ScoreBoard.Create(players.Select(p => p.PlayerId)) : null;
         CurrentScene = scene ?? CreateDefaultScene();
 
         StartRoundInternal(CurrentScene);
@@ -142,11 +142,16 @@ public sealed class LocalSessionCoordinator
         var roundId = $"round-{CurrentSession.Rounds.Count + 1}";
         ActiveRound = CurrentSession.StartRound(roundId, scene);
 
-        // Assign characters to players round-robin
+        // Assign all characters that have voice slots round-robin to available players
         var players = CurrentSession.Players;
-        for (var i = 0; i < scene.Characters.Count; i++)
+        var requiredCharacterIds = scene.VoiceSlots
+            .Select(slot => slot.CharacterId)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        for (var i = 0; i < requiredCharacterIds.Count; i++)
         {
-            var charId = scene.Characters[i].CharacterId;
+            var charId = requiredCharacterIds[i];
             var player = players[i % players.Count];
             ActiveRound.AssignCharacter(charId, player.PlayerId);
         }

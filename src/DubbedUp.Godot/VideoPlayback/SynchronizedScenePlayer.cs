@@ -107,10 +107,11 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
                         return;
                     }
 
-                    GD.Print($"[VideoPlayer] Video file found at: {absolutePath}");
-                    GD.Print($"[VideoPlayer] NOTE: Runtime external video loading requires Godot VideoStreamPlayer to support absolute paths.");
-                    // Store path info in metadata for future use
-                    _videoPlayer.SetMeta("external_video_path", absolutePath);
+                    var theora = new VideoStreamTheora();
+                    theora.File = absolutePath.Replace("\\", "/");
+                    _videoPlayer.Stream = theora;
+                    GD.Print($"[VideoPlayer] Loaded via VideoStreamTheora: {absolutePath}");
+                    return;
                 }
                 catch (Exception ex)
                 {
@@ -131,6 +132,12 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
                 GD.Print($"[VideoPlayer] Loaded via globalized path: {localized}");
                 return;
             }
+
+            var theora = new VideoStreamTheora();
+            theora.File = globalPath.Replace("\\", "/");
+            _videoPlayer.Stream = theora;
+            GD.Print($"[VideoPlayer] Loaded via globalized VideoStreamTheora: {globalPath}");
+            return;
         }
 
         GD.Print($"[VideoPlayer] No video stream found for path: '{relativePath}'. Playing audio-only mode.");

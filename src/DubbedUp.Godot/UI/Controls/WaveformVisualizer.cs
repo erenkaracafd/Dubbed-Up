@@ -188,3 +188,4 @@ public partial class WaveformVisualizer : Control
         }
     }
 }
+

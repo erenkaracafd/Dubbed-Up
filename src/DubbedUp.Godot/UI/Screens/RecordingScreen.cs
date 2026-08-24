@@ -102,26 +102,61 @@ public partial class RecordingScreen : BaseScreen
         if (videoAsset is null) return;
 
         var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
+        string? candidatePath = null;
 
-        // 1. Try localized res:// or direct
-        if (ResourceLoader.Exists(videoAsset.RelativePath))
-        {
-            _videoPlayer.Stream = GD.Load<VideoStream>(videoAsset.RelativePath);
-            return;
-        }
-
-        // 2. Try package directory
+        // 1. Direct package folder check
         if (!string.IsNullOrEmpty(folderPath))
         {
-            var absolutePath = System.IO.Path.Combine(folderPath, videoAsset.RelativePath);
-            if (System.IO.File.Exists(absolutePath))
+            var abs = System.IO.Path.Combine(folderPath, videoAsset.RelativePath);
+            if (System.IO.File.Exists(abs))
             {
-                var localized = ProjectSettings.LocalizePath(absolutePath);
-                if (!string.IsNullOrEmpty(localized) && ResourceLoader.Exists(localized))
+                candidatePath = abs;
+            }
+        }
+
+        // 2. Globalized res:// check
+        if (candidatePath is null)
+        {
+            var global = ProjectSettings.GlobalizePath(videoAsset.RelativePath);
+            if (System.IO.File.Exists(global))
+            {
+                candidatePath = global;
+            }
+            else if (System.IO.File.Exists(videoAsset.RelativePath))
+            {
+                candidatePath = videoAsset.RelativePath;
+            }
+        }
+
+        if (candidatePath is not null)
+        {
+            try
+            {
+                var localized = ProjectSettings.LocalizePath(candidatePath);
+                if (ResourceLoader.Exists(localized))
                 {
                     _videoPlayer.Stream = GD.Load<VideoStream>(localized);
                 }
+                else if (ResourceLoader.Exists(videoAsset.RelativePath))
+                {
+                    _videoPlayer.Stream = GD.Load<VideoStream>(videoAsset.RelativePath);
+                }
+                else
+                {
+                    var theora = new VideoStreamTheora();
+                    theora.File = candidatePath.Replace("\\", "/");
+                    _videoPlayer.Stream = theora;
+                }
+                GD.Print($"[RecordingScreen] Video loaded successfully: '{candidatePath}'");
             }
+            catch (Exception ex)
+            {
+                GD.PrintErr($"[RecordingScreen] Failed to load video: {ex.Message}");
+            }
+        }
+        else
+        {
+            GD.Print($"[RecordingScreen] No video file found for '{videoAsset.RelativePath}'.");
         }
     }
 
