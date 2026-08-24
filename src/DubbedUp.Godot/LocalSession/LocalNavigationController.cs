@@ -81,6 +81,25 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         _currentScreenInstance = screenNode;
         CurrentScreen = screen;
 
+        // Update Steam Rich Presence status
+        var sceneTitle = Coordinator.CurrentScene?.Title;
+        Steam.SteamRichPresenceService.Instance.SetStatus(
+            screen switch
+            {
+                AppScreen.MainMenu => "In Main Menu",
+                AppScreen.ScenePicker => "Selecting a Scene",
+                AppScreen.SceneCreator => "Creating a Scene",
+                AppScreen.Setup => "Setting up Session",
+                AppScreen.Lobby => "In Multiplayer Lobby",
+                AppScreen.Recording => "Recording Dialogue",
+                AppScreen.Playback => "Watching Synchronized Dub",
+                AppScreen.Voting => "Voting for Best Dub",
+                AppScreen.Results => "Viewing Round Results",
+                AppScreen.Settings => "Configuring Audio Settings",
+                _ => "Playing Dubbed Up"
+            },
+            sceneTitle);
+
         EmitSignal(SignalName.ScreenChanged, (int)screen);
     }
 }
