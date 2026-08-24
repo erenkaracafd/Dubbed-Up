@@ -99,44 +99,43 @@ public partial class RecordingScreen : BaseScreen
         if (_videoPlayer is null || Coordinator?.CurrentScene is null) return;
 
         var videoAsset = Coordinator.CurrentScene.SourceMedia.FirstOrDefault(m => m.Role == Core.Scenes.SourceMediaRole.SceneVideo);
-        if (videoAsset is null) return;
+        var relPath = videoAsset?.RelativePath ?? "media/speed_homeless.ogv";
 
         var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
-        string? candidatePath = null;
+        string? resolvedFilePath = null;
 
         // 1. Direct package folder check
         if (!string.IsNullOrEmpty(folderPath))
         {
-            var abs = System.IO.Path.Combine(folderPath, videoAsset.RelativePath);
-            if (System.IO.File.Exists(abs))
-            {
-                candidatePath = abs;
-            }
+            var candidate = System.IO.Path.Combine(folderPath, relPath);
+            if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
         }
 
-        // 2. Globalized res:// check
-        if (candidatePath is null)
+        // 2. Official scenes folder check
+        if (resolvedFilePath is null)
         {
-            var global = ProjectSettings.GlobalizePath(videoAsset.RelativePath);
-            if (System.IO.File.Exists(global))
-            {
-                candidatePath = global;
-            }
-            else if (System.IO.File.Exists(videoAsset.RelativePath))
-            {
-                candidatePath = videoAsset.RelativePath;
-            }
+            var sceneId = Coordinator.CurrentScene.SceneId;
+            var candidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/{relPath}");
+            if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
         }
 
-        if (candidatePath is not null)
+        // 3. Fallback to direct res:// path
+        if (resolvedFilePath is null)
+        {
+            var glob = ProjectSettings.GlobalizePath(relPath);
+            if (System.IO.File.Exists(glob)) resolvedFilePath = glob;
+            else if (System.IO.File.Exists(relPath)) resolvedFilePath = relPath;
+        }
+
+        if (resolvedFilePath is not null)
         {
             try
             {
-                var localized = ProjectSettings.LocalizePath(candidatePath);
-                var theora = new VideoStreamTheora();
-                theora.File = !string.IsNullOrEmpty(localized) ? localized : candidatePath.Replace("\\", "/");
-                _videoPlayer.Stream = theora;
-                GD.Print($"[RecordingScreen] Video loaded successfully: '{theora.File}'");
+                var localized = ProjectSettings.LocalizePath(resolvedFilePath);
+                var stream = new VideoStreamTheora();
+                stream.File = !string.IsNullOrEmpty(localized) ? localized : resolvedFilePath.Replace("\\", "/");
+                _videoPlayer.Stream = stream;
+                GD.Print($"[RecordingScreen] Video loaded successfully: '{stream.File}'");
             }
             catch (Exception ex)
             {
@@ -145,7 +144,7 @@ public partial class RecordingScreen : BaseScreen
         }
         else
         {
-            GD.Print($"[RecordingScreen] No video file found for '{videoAsset.RelativePath}'.");
+            GD.Print($"[RecordingScreen] No video file found for '{relPath}'.");
         }
     }
 
@@ -255,26 +254,7 @@ public partial class RecordingScreen : BaseScreen
         }
 
         // Reset Waveform visualizer with REAL audio waveform extracted from video audio
-        float[]? realWaveform = null;
-        var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
-        if (!string.IsNullOrEmpty(folderPath))
-        {
-            var wavPath = System.IO.Path.Combine(folderPath, "media", "audio.wav");
-            if (System.IO.File.Exists(wavPath))
-            {
-                realWaveform = AudioPlayback.AudioWaveformLoader.ExtractWaveformSegment(wavPath, _slotStartSec, _slotEndSec);
-            }
-        }
-        else
-        {
-            var resWav = ProjectSettings.GlobalizePath("res://Content/OfficialScenes/speed_mama_homeless/media/audio.wav");
-            if (System.IO.File.Exists(resWav))
-            {
-                realWaveform = AudioPlayback.AudioWaveformLoader.ExtractWaveformSegment(resWav, _slotStartSec, _slotEndSec);
-            }
-        }
-
-        _waveformVisualizer?.Reset(_maxSlotDuration, realWaveform);
+        LoadWaveformForCurrentSlot();
 
         var isRecorded = Coordinator.TakeStore.HasTakeForSlot(currentSlot.VoiceSlotId);
         var latestTake = Coordinator.TakeStore.GetLatestTakeForSlot(currentSlot.VoiceSlotId);
@@ -308,8 +288,40 @@ public partial class RecordingScreen : BaseScreen
         }
     }
 
+    private void LoadWaveformForCurrentSlot()
+    {
+        float[]? realWaveform = null;
+        var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
+        string? wavPath = null;
+
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            var candidate = System.IO.Path.Combine(folderPath, "media", "audio.wav");
+            if (System.IO.File.Exists(candidate)) wavPath = candidate;
+        }
+
+        if (wavPath is null && Coordinator?.CurrentScene is not null)
+        {
+            var sceneId = Coordinator.CurrentScene.SceneId;
+            var candidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/audio.wav");
+            if (System.IO.File.Exists(candidate)) wavPath = candidate;
+        }
+
+        if (wavPath is not null)
+        {
+            realWaveform = AudioPlayback.AudioWaveformLoader.ExtractWaveformSegment(wavPath, _slotStartSec, _slotEndSec);
+        }
+
+        _waveformVisualizer?.Reset(_maxSlotDuration, realWaveform);
+    }
+
     private void OnPreviewOriginalPressed()
     {
+        if (_videoPlayer is null || _videoPlayer.Stream is null)
+        {
+            LoadSceneVideo();
+        }
+
         if (_videoPlayer is null || _videoPlayer.Stream is null)
         {
             if (_statusLabel is not null) _statusLabel.Text = "ℹ️ Bu sahne için video akışı bulunamadı.";
@@ -377,10 +389,15 @@ public partial class RecordingScreen : BaseScreen
             _isRecordingLocal = true;
             _recordingDuration = 0.0;
 
-            _waveformVisualizer?.Reset(_maxSlotDuration);
+            LoadWaveformForCurrentSlot();
             _waveformVisualizer?.SetPlayhead(0.0, true);
 
             // Start video playback from slot start
+            if (_videoPlayer is null || _videoPlayer.Stream is null)
+            {
+                LoadSceneVideo();
+            }
+
             if (_videoPlayer is not null && _videoPlayer.Stream is not null)
             {
                 _videoPlayer.Play();
@@ -498,7 +515,7 @@ public partial class RecordingScreen : BaseScreen
         if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
 
-        _waveformVisualizer?.Reset(_maxSlotDuration);
+        LoadWaveformForCurrentSlot();
         if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
 
         OnRecordButtonPressed();

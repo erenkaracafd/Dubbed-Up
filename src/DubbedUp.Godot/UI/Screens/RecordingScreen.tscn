@@ -39,6 +39,7 @@ custom_minimum_size = Vector2(560, 260)
 layout_mode = 2
 
 [node name="VideoPlayer" type="VideoStreamPlayer" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoPanel"]
+custom_minimum_size = Vector2(560, 260)
 layout_mode = 2
 expand = true
 
