@@ -1,4 +1,5 @@
 using DubbedUp.Core.Scenes;
+using DubbedUp.Godot.Workshop;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -7,14 +8,37 @@ public partial class ScenePickerScreen : BaseScreen
 {
     private VBoxContainer? _scenesListContainer;
     private Label? _statusLabel;
+    private Button? _openFolderButton;
+    private Button? _refreshButton;
+    private Button? _workshopButton;
     private Button? _backButton;
+
+    private readonly SteamWorkshopService _workshopService = new();
     private readonly List<ScenePackage> _availableScenes = [];
 
     public override void _Ready()
     {
         _scenesListContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/ScenesListContainer");
         _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
+        _openFolderButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/OpenFolderButton");
+        _refreshButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/RefreshButton");
+        _workshopButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/WorkshopButton");
         _backButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/BackButton");
+
+        if (_openFolderButton is not null)
+        {
+            _openFolderButton.Pressed += OnOpenFolderPressed;
+        }
+
+        if (_refreshButton is not null)
+        {
+            _refreshButton.Pressed += OnRefreshPressed;
+        }
+
+        if (_workshopButton is not null)
+        {
+            _workshopButton.Pressed += OnWorkshopPressed;
+        }
 
         if (_backButton is not null)
         {
@@ -28,22 +52,12 @@ public partial class ScenePickerScreen : BaseScreen
     private void LoadAvailableScenes()
     {
         _availableScenes.Clear();
+        _workshopService.Refresh();
 
-        // 1. Scan local scenes folder
-        var localScenes = ScenePackageLoader.DiscoverPackages("scenes");
-        _availableScenes.AddRange(localScenes);
+        var scenes = _workshopService.GetAvailableScenes();
+        _availableScenes.AddRange(scenes);
 
-        // 2. Scan official content folder
-        var officialScenes = ScenePackageLoader.DiscoverPackages("Content/OfficialScenes");
-        foreach (var scene in officialScenes)
-        {
-            if (_availableScenes.All(s => s.SceneId != scene.SceneId))
-            {
-                _availableScenes.Add(scene);
-            }
-        }
-
-        // 3. Fallback built-in scene if no folder scenes found
+        // Fallback built-in scene if no folder scenes found
         if (_availableScenes.Count == 0)
         {
             var defaultDoc = LocalSession.LocalSessionCoordinator.CreateDefaultScene();
@@ -80,7 +94,7 @@ public partial class ScenePickerScreen : BaseScreen
     private Control CreateSceneCard(ScenePackage package)
     {
         var panel = new PanelContainer();
-        panel.CustomMinimumSize = new Vector2(500, 75);
+        panel.CustomMinimumSize = new Vector2(560, 75);
 
         var hbox = new HBoxContainer();
         hbox.AddThemeConstantOverride("separation", 16);
@@ -126,6 +140,22 @@ public partial class ScenePickerScreen : BaseScreen
         }
 
         Navigator?.NavigateTo(AppScreen.Setup);
+    }
+
+    private void OnOpenFolderPressed()
+    {
+        _workshopService.OpenLocalScenesFolder();
+    }
+
+    private void OnRefreshPressed()
+    {
+        LoadAvailableScenes();
+        PopulateSceneList();
+    }
+
+    private void OnWorkshopPressed()
+    {
+        _workshopService.OpenWorkshopInBrowser();
     }
 
     private void OnBackPressed()
