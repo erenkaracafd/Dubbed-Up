@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "museum-mixup",
+  "title": "Museum Mix-up",
+  "durationMilliseconds": 8000,
+  "sourceMedia": [
+    {
+      "mediaId": "scene-video",
+      "role": "sceneVideo",
+      "relativePath": "media/scene.ogv"
+    }
+  ],
+  "characters": [
+    {
+      "characterId": "guard",
+      "displayName": "Museum Guard"
+    },
+    {
+      "characterId": "thief",
+      "displayName": "Sneaky Thief"
+    }
+  ],
+  "voiceSlots": [
+    {
+      "voiceSlotId": "guard-line-1",
+      "characterId": "guard",
+      "prompt": "React with shock as the ancient statue suddenly moves!"
+    },
+    {
+      "voiceSlotId": "thief-line-1",
+      "characterId": "thief",
+      "prompt": "Whisper a clever excuse for being inside the display case."
+    }
+  ],
+  "timeline": [
+    {
+      "timelineEntryId": "entry-1",
+      "voiceSlotId": "guard-line-1",
+      "startMilliseconds": 1000,
+      "endMilliseconds": 4000
+    },
+    {
+      "timelineEntryId": "entry-2",
+      "voiceSlotId": "thief-line-1",
+      "startMilliseconds": 4500,
+      "endMilliseconds": 7500
+    }
+  ]
+}
+

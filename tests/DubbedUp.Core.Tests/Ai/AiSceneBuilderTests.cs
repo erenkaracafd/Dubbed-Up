@@ -42,3 +42,4 @@ public sealed class AiSceneBuilderTests
             new DetectedSpeechSegment("spk", "Speaker", "Prompt text", 5000, 2000));
     }
 }
+

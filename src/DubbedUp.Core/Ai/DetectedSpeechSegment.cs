@@ -40,3 +40,4 @@ public sealed record DetectedSpeechSegment
 
     public long DurationMilliseconds => EndMilliseconds - StartMilliseconds;
 }
+

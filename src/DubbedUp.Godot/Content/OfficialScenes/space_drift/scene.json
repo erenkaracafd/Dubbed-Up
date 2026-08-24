@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "space-drift",
+  "title": "Space Drift Encounter",
+  "durationMilliseconds": 18000,
+  "sourceMedia": [
+    {
+      "mediaId": "video-space",
+      "role": "sceneVideo",
+      "relativePath": "media/space_drift.mp4"
+    }
+  ],
+  "characters": [
+    {
+      "characterId": "commander",
+      "displayName": "Commander Nova"
+    },
+    {
+      "characterId": "ship-ai",
+      "displayName": "S.A.R.A. (Ship AI)"
+    },
+    {
+      "characterId": "alien",
+      "displayName": "Zorg the Alien"
+    }
+  ],
+  "voiceSlots": [
+    {
+      "voiceSlotId": "slot-1",
+      "characterId": "commander",
+      "prompt": "S.A.R.A., what is that giant green tentacle outside the cockpit?!"
+    },
+    {
+      "voiceSlotId": "slot-2",
+      "characterId": "ship-ai",
+      "prompt": "Analyzing... It appears to be an extraterrestrial diplomat asking for snacks."
+    },
+    {
+      "voiceSlotId": "slot-3",
+      "characterId": "alien",
+      "prompt": "GREETINGS HUMANS! DO YOU HAVE CRUNCHY POTATO CHIPS?"
+    },
+    {
+      "voiceSlotId": "slot-4",
+      "characterId": "commander",
+      "prompt": "Quick, beam the sour cream and onion bag into the airlock!"
+    }
+  ],
+  "timeline": [
+    {
+      "timelineEntryId": "entry-1",
+      "voiceSlotId": "slot-1",
+      "startMilliseconds": 1000,
+      "endMilliseconds": 5000
+    },
+    {
+      "timelineEntryId": "entry-2",
+      "voiceSlotId": "slot-2",
+      "startMilliseconds": 5500,
+      "endMilliseconds": 9500
+    },
+    {
+      "timelineEntryId": "entry-3",
+      "voiceSlotId": "slot-3",
+      "startMilliseconds": 10000,
+      "endMilliseconds": 14000
+    },
+    {
+      "timelineEntryId": "entry-4",
+      "voiceSlotId": "slot-4",
+      "startMilliseconds": 14500,
+      "endMilliseconds": 17500
+    }
+  ]
+}
+

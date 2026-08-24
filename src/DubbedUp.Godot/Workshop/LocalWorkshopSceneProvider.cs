@@ -13,12 +13,20 @@ public sealed class LocalWorkshopSceneProvider : IWorkshopSceneProvider
 
     public LocalWorkshopSceneProvider(IEnumerable<string>? additionalDirectories = null)
     {
-        // 1. Standard project scenes folder
-        _searchDirectories.Add(ProjectSettings.GlobalizePath("res://scenes"));
-        _searchDirectories.Add("scenes");
+        var resPath = ProjectSettings.GlobalizePath("res://");
 
-        // 2. Official scenes folder
+        // 1. Official scenes inside Godot project
         _searchDirectories.Add(ProjectSettings.GlobalizePath("res://Content/OfficialScenes"));
+        _searchDirectories.Add(System.IO.Path.Combine(resPath, "Content", "OfficialScenes"));
+        _searchDirectories.Add(ProjectSettings.GlobalizePath("res://scenes"));
+        _searchDirectories.Add(System.IO.Path.Combine(resPath, "scenes"));
+
+        // 2. Repository root scenes folder (when running in dev mode from repo root or build folder)
+        _searchDirectories.Add(System.IO.Path.GetFullPath(System.IO.Path.Combine(resPath, "..", "..", "scenes")));
+        _searchDirectories.Add(System.IO.Path.GetFullPath(System.IO.Path.Combine(resPath, "..", "scenes")));
+        _searchDirectories.Add(System.IO.Path.GetFullPath(System.IO.Path.Combine(System.Environment.CurrentDirectory, "scenes")));
+        _searchDirectories.Add(System.IO.Path.GetFullPath(System.IO.Path.Combine(System.Environment.CurrentDirectory, "..", "scenes")));
+        _searchDirectories.Add("scenes");
         _searchDirectories.Add("Content/OfficialScenes");
 
         // 3. User data workshop folder (user://workshop_scenes)
@@ -60,6 +68,11 @@ public sealed class LocalWorkshopSceneProvider : IWorkshopSceneProvider
 
         foreach (var dir in _searchDirectories)
         {
+            if (string.IsNullOrWhiteSpace(dir) || !System.IO.Directory.Exists(dir))
+            {
+                continue;
+            }
+
             try
             {
                 var discovered = ScenePackageLoader.DiscoverPackages(dir);
@@ -68,14 +81,16 @@ public sealed class LocalWorkshopSceneProvider : IWorkshopSceneProvider
                     if (seenSceneIds.Add(package.SceneId))
                     {
                         _cachedScenes.Add(package);
+                        GD.Print($"[SceneProvider] Discovered scene: '{package.Title}' ({package.SceneId}) from '{package.PackageDirectory}'");
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Continue scanning other directories if one fails
+                GD.PrintErr($"[SceneProvider] Failed scanning '{dir}': {ex.Message}");
             }
         }
+
+        GD.Print($"[SceneProvider] Total available scenes: {_cachedScenes.Count}");
     }
 }
-
