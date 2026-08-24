@@ -33,6 +33,8 @@ public sealed class LocalSessionCoordinator
 
     public VotingResult? LatestVotingResult { get; private set; }
 
+    public GameMode Mode { get; private set; } = GameMode.CoopDubbing;
+
     public OfficialSceneDocument? CurrentScene { get; private set; }
 
     public IVoiceRecorder VoiceRecorder => _voiceRecorder;
@@ -91,7 +93,7 @@ public sealed class LocalSessionCoordinator
         ],
     };
 
-    public void StartSession(IEnumerable<string> playerNames, OfficialSceneDocument? scene = null)
+    public void StartSession(IEnumerable<string> playerNames, OfficialSceneDocument? scene = null, GameMode mode = GameMode.CoopDubbing)
     {
         ArgumentNullException.ThrowIfNull(playerNames);
         var names = playerNames.Where(name => !string.IsNullOrWhiteSpace(name)).ToArray();
@@ -104,6 +106,7 @@ public sealed class LocalSessionCoordinator
             .Select((name, i) => new Player($"player-{i + 1}", name.Trim()))
             .ToArray();
 
+        Mode = mode;
         CurrentSession = DubbedUp.Core.Sessions.LocalSession.Create($"session-{Guid.NewGuid():N}", players);
         ScoreBoard = ScoreBoard.Create(players.Select(p => p.PlayerId));
         CurrentScene = scene ?? CreateDefaultScene();
@@ -230,14 +233,17 @@ public sealed class LocalSessionCoordinator
             ActiveRound.FinishPlayback();
         }
 
-        // Prepare voting round
-        var eligiblePlayerIds = CurrentSession.Players.Select(p => p.PlayerId).ToArray();
-        var candidates = ActiveRound.CharacterAssignments
-            .Select(assignment =>
-                new PerformanceCandidate($"perf-{assignment.CharacterId}", assignment.PlayerId))
-            .ToArray();
+        if (Mode == GameMode.CompetitiveVoting)
+        {
+            // Prepare voting round
+            var eligiblePlayerIds = CurrentSession.Players.Select(p => p.PlayerId).ToArray();
+            var candidates = ActiveRound.CharacterAssignments
+                .Select(assignment =>
+                    new PerformanceCandidate($"perf-{assignment.CharacterId}", assignment.PlayerId))
+                .ToArray();
 
-        CurrentVotingRound = VotingRound.Create($"voting-{ActiveRound.RoundId}", eligiblePlayerIds, candidates);
+            CurrentVotingRound = VotingRound.Create($"voting-{ActiveRound.RoundId}", eligiblePlayerIds, candidates);
+        }
     }
 
     public void CastVote(string voterPlayerId, string performanceId)
