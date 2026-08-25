@@ -1,3 +1,4 @@
+using DubbedUp.Godot.LocalSession;
 using DubbedUp.Godot.VideoPlayback;
 using Godot;
 
@@ -14,6 +15,12 @@ public partial class PlaybackScreen : BaseScreen
     private Button? _replayButton;
     private Button? _proceedButton;
     private Button? _menuButton;
+
+    public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
+    {
+        base.Initialize(navigator, coordinator);
+        StartPlaybackSession();
+    }
 
     public override void _Ready()
     {
@@ -49,25 +56,34 @@ public partial class PlaybackScreen : BaseScreen
 
         if (Coordinator is not null)
         {
-            Coordinator.StartPlayback();
+            StartPlaybackSession();
+        }
+    }
 
-            if (_scenePlayer is not null)
+    private void StartPlaybackSession()
+    {
+        if (Coordinator is null) return;
+
+        Coordinator.StartPlayback();
+
+        if (_scenePlayer is not null)
+        {
+            _scenePlayer.PlaybackProgress -= OnPlaybackProgress;
+            _scenePlayer.PlaybackFinished -= OnPlaybackFinished;
+            _scenePlayer.PlaybackProgress += OnPlaybackProgress;
+            _scenePlayer.PlaybackFinished += OnPlaybackFinished;
+
+            if (Coordinator.CurrentScene is not null)
             {
-                _scenePlayer.PlaybackProgress += OnPlaybackProgress;
-                _scenePlayer.PlaybackFinished += OnPlaybackFinished;
-
-                if (Coordinator.CurrentScene is not null)
-                {
-                    var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
-                    _scenePlayer.LoadScene(Coordinator.CurrentScene, null, Coordinator.TakeStore, folderPath);
-                }
-                else
-                {
-                    _scenePlayer.SetDuration(8.0);
-                }
-
-                _scenePlayer.Play();
+                var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
+                _scenePlayer.LoadScene(Coordinator.CurrentScene, null, Coordinator.TakeStore, folderPath);
             }
+            else
+            {
+                _scenePlayer.SetDuration(8.0);
+            }
+
+            _scenePlayer.Play();
         }
 
         UpdateStatusText("Playing synchronized scene dub...");

@@ -507,17 +507,13 @@ public partial class RecordingScreen : BaseScreen
 
             if (bytes is not null && bytes.Length > 44)
             {
-                var wav = new AudioStreamWav
+                var wav = AudioPlayback.VoiceTakeAudioPlayer.ParseWavBytes(bytes);
+                if (wav is not null)
                 {
-                    Data = bytes[44..],
-                    Format = AudioStreamWav.FormatEnum.Format16Bits,
-                    MixRate = 44100,
-                    Stereo = false
-                };
-                _previewPlayer.Stream = wav;
-                _previewPlayer.Play();
-
-                if (_statusLabel is not null) _statusLabel.Text = "▶ Kendi kaydın dinletiliyor...";
+                    _previewPlayer.Stream = wav;
+                    _previewPlayer.Play();
+                    if (_statusLabel is not null) _statusLabel.Text = "▶ Kendi kaydın dinletiliyor...";
+                }
             }
         }
         catch (Exception ex)

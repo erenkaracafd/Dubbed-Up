@@ -168,7 +168,7 @@ public sealed class VoiceTakeAudioPlayer
     /// Parses a WAV byte array by reading the actual header fields (not fixed offset).
     /// Handles standard PCM WAV files (fmt chunk first).
     /// </summary>
-    private static AudioStreamWav? ParseWavBytes(byte[] bytes)
+    public static AudioStreamWav? ParseWavBytes(byte[] bytes)
     {
         try
         {

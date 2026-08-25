@@ -1,4 +1,3 @@
-using System.Text.Json;
 using DubbedUp.Core.Characters;
 using DubbedUp.Core.Scenes;
 using DubbedUp.Core.Timeline;
@@ -106,7 +105,7 @@ public partial class SceneEditorScreen : BaseScreen
     {
         if (_videoPlayer is null || Coordinator?.CurrentScene is null) return;
 
-        var videoAsset = Coordinator.CurrentScene.SourceMedia.FirstOrDefault(m => m.Role == Core.Scenes.SourceMediaRole.SceneVideo);
+        var videoAsset = Coordinator.CurrentScene.SourceMedia.FirstOrDefault(m => m.Role == SourceMediaRole.SceneVideo);
         var relPath = videoAsset?.RelativePath ?? "media/speed_homeless.ogv";
         var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
 

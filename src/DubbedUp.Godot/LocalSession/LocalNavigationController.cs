@@ -17,6 +17,7 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         { AppScreen.Voting, "res://UI/Screens/VotingScreen.tscn" },
         { AppScreen.Results, "res://UI/Screens/ResultsScreen.tscn" },
         { AppScreen.Settings, "res://UI/Screens/SettingsScreen.tscn" },
+        { AppScreen.SceneEditor, "res://UI/Screens/SceneEditorScreen.tscn" },
     };
 
     [Signal]
