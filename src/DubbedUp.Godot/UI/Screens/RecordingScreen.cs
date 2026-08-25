@@ -33,9 +33,11 @@ public partial class RecordingScreen : BaseScreen
     private bool _isRecordingLocal = false;
     private bool _isCountingDown = false;
     private bool _isPreviewingOriginal = false;
+    private bool _isPreviewingTake = false;
 
     private double _countdownTimer = 0.0;
     private double _recordingDuration = 0.0;
+    private double _previewTakeDuration = 0.0;
     private double _slotStartSec = 0.0;
     private double _slotEndSec = 4.0;
     private double _maxSlotDuration = 4.0;
@@ -143,6 +145,8 @@ public partial class RecordingScreen : BaseScreen
                 stream.File = !string.IsNullOrEmpty(localized) ? localized : resolvedFilePath.Replace("\\", "/");
                 _videoPlayer.Stream = stream;
                 _videoPlayer.Expand = true;
+                _videoPlayer.Bus = "RecordSink"; // Default muted so no unprompted audio leaks
+                _videoPlayer.VolumeDb = -80.0f;
                 GD.Print($"[RecordingScreen] Video loaded successfully: '{stream.File}'");
             }
             catch (Exception ex)
@@ -185,12 +189,13 @@ public partial class RecordingScreen : BaseScreen
             var peak = Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel();
             _waveformVisualizer?.AddLiveVoiceSample(_recordingDuration, peak);
 
-            // Keep video playing in sync with recording
+            // Keep video playing in sync with recording (STRICTLY MUTED)
             if (_videoPlayer is not null && _videoPlayer.Stream is not null)
             {
                 if (!_videoPlayer.IsPlaying())
                 {
-                    _videoPlayer.VolumeDb = -80.0f; // Ensure MUTED during recording!
+                    _videoPlayer.Bus = "RecordSink";
+                    _videoPlayer.VolumeDb = -80.0f;
                     _videoPlayer.Play();
                     _videoPlayer.StreamPosition = _slotStartSec + _recordingDuration;
                 }
@@ -204,7 +209,7 @@ public partial class RecordingScreen : BaseScreen
             return;
         }
 
-        // 3. Previewing Original Clip (WITH sound so user can hear the original line)
+        // 3. Previewing Original Clip (WITH original sound)
         if (_isPreviewingOriginal && _videoPlayer is not null && _videoPlayer.IsPlaying())
         {
             var currentPos = _videoPlayer.GetStreamPosition();
@@ -218,7 +223,33 @@ public partial class RecordingScreen : BaseScreen
                 _waveformVisualizer?.SetPlayhead(0, false);
                 if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Orijinal Sahneyi Dinle & İzle";
             }
+            return;
         }
+
+        // 4. Previewing User Recorded Take (Synchronized Video + Timeline Playhead + User Voice)
+        if (_isPreviewingTake)
+        {
+            _previewTakeDuration += delta;
+            _waveformVisualizer?.SetPlayhead(_previewTakeDuration, false);
+
+            if (_previewTakeDuration >= _maxSlotDuration || (_previewPlayer is not null && !_previewPlayer.Playing && _previewTakeDuration > 0.3))
+            {
+                StopTakePreview();
+            }
+        }
+    }
+
+    private void StopTakePreview()
+    {
+        _isPreviewingTake = false;
+        _previewTakeDuration = 0.0;
+
+        if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
+        if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
+
+        _waveformVisualizer?.SetPlayhead(0.0, false);
+        if (_previewTakeButton is not null) _previewTakeButton.Text = "▶ Kendi Kaydımı Dinle";
+        if (_statusLabel is not null) _statusLabel.Text = "Önizleme tamamlandı.";
     }
 
     private void UpdateUiState()
@@ -329,6 +360,8 @@ public partial class RecordingScreen : BaseScreen
 
     private void OnPreviewOriginalPressed()
     {
+        if (_isPreviewingTake) StopTakePreview();
+
         if (_videoPlayer is null || _videoPlayer.Stream is null)
         {
             LoadSceneVideo();
@@ -348,7 +381,8 @@ public partial class RecordingScreen : BaseScreen
             return;
         }
 
-        // Preview original: UNMUTE video so original voice is audible
+        // Preview original: UNMUTE video and send to Master bus so original voice is audible
+        _videoPlayer.Bus = "Master";
         _videoPlayer.VolumeDb = 0.0f;
         _isPreviewingOriginal = true;
         _videoPlayer.Play();
@@ -360,6 +394,9 @@ public partial class RecordingScreen : BaseScreen
 
     private void OnRecordButtonPressed()
     {
+        if (_isPreviewingTake) StopTakePreview();
+        if (_isPreviewingOriginal && _videoPlayer is not null) { _videoPlayer.Stop(); _isPreviewingOriginal = false; }
+
         if (_isCountingDown)
         {
             _isCountingDown = false;
@@ -370,10 +407,6 @@ public partial class RecordingScreen : BaseScreen
 
         if (!_isRecordingLocal)
         {
-            // Stop preview if running
-            if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
-            _isPreviewingOriginal = false;
-
             _isCountingDown = true;
             _countdownTimer = 2.0; // 2 seconds countdown
             if (_countdownLabel is not null)
@@ -406,7 +439,7 @@ public partial class RecordingScreen : BaseScreen
             LoadWaveformForCurrentSlot();
             _waveformVisualizer?.SetPlayhead(0.0, true);
 
-            // Start video playback from slot start MUTED so original voice does not bleed into user's recording
+            // Start video playback from slot start STRICTLY MUTED to RecordSink so original voice NEVER plays
             if (_videoPlayer is null || _videoPlayer.Stream is null)
             {
                 LoadSceneVideo();
@@ -414,13 +447,14 @@ public partial class RecordingScreen : BaseScreen
 
             if (_videoPlayer is not null && _videoPlayer.Stream is not null)
             {
-                _videoPlayer.VolumeDb = -80.0f; // MUTE original video audio during dub recording!
+                _videoPlayer.Bus = "RecordSink"; // Route to muted sink
+                _videoPlayer.VolumeDb = -80.0f; // MUTE original video audio completely
                 _videoPlayer.Play();
                 _videoPlayer.StreamPosition = _slotStartSec;
             }
 
             if (_recordButton is not null) _recordButton.Text = "⏹ Kaydı Bitir (Tamam)";
-            if (_statusLabel is not null) _statusLabel.Text = "🔴 CANLI KAYIT ALINIYOR — Konuşun! (Video oynuyor, ses sessize alındı)";
+            if (_statusLabel is not null) _statusLabel.Text = "🔴 CANLI KAYIT ALINIYOR — Konuşun! (Video oynuyor, ses tamamen sessizde)";
         }
         catch (Exception ex)
         {
@@ -438,11 +472,10 @@ public partial class RecordingScreen : BaseScreen
             _isRecordingLocal = false;
             _currentTakeId = take.TakeId;
 
-            // Stop video and restore normal volume
-            if (_videoPlayer is not null)
+            // Stop video
+            if (_videoPlayer is not null && _videoPlayer.IsPlaying())
             {
-                if (_videoPlayer.IsPlaying()) _videoPlayer.Stop();
-                _videoPlayer.VolumeDb = 0.0f;
+                _videoPlayer.Stop();
             }
 
             // Calculate sync score
@@ -484,6 +517,18 @@ public partial class RecordingScreen : BaseScreen
 
     private void OnPreviewTakePressed()
     {
+        if (_isPreviewingTake)
+        {
+            StopTakePreview();
+            return;
+        }
+
+        if (_isPreviewingOriginal && _videoPlayer is not null)
+        {
+            _videoPlayer.Stop();
+            _isPreviewingOriginal = false;
+        }
+
         if (_currentTakeId is null || _previewPlayer is null || Coordinator is null) return;
 
         var take = Coordinator.TakeStore.GetTake(_currentTakeId);
@@ -512,7 +557,23 @@ public partial class RecordingScreen : BaseScreen
                 {
                     _previewPlayer.Stream = wav;
                     _previewPlayer.Play();
-                    if (_statusLabel is not null) _statusLabel.Text = "▶ Kendi kaydın dinletiliyor...";
+
+                    // Start synchronized MUTED video playback
+                    if (_videoPlayer is null || _videoPlayer.Stream is null) LoadSceneVideo();
+                    if (_videoPlayer is not null && _videoPlayer.Stream is not null)
+                    {
+                        _videoPlayer.Bus = "RecordSink";
+                        _videoPlayer.VolumeDb = -80.0f;
+                        _videoPlayer.Play();
+                        _videoPlayer.StreamPosition = _slotStartSec;
+                    }
+
+                    _isPreviewingTake = true;
+                    _previewTakeDuration = 0.0;
+                    _waveformVisualizer?.SetPlayhead(0.0, false);
+
+                    if (_previewTakeButton is not null) _previewTakeButton.Text = "⏹ Dinlemeyi Durdur";
+                    if (_statusLabel is not null) _statusLabel.Text = "▶ Kendi kaydın ve video eşzamanlı oynatılıyor...";
                 }
             }
         }
@@ -524,6 +585,7 @@ public partial class RecordingScreen : BaseScreen
 
     private void OnReRecordPressed()
     {
+        if (_isPreviewingTake) StopTakePreview();
         if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
 
@@ -535,6 +597,7 @@ public partial class RecordingScreen : BaseScreen
 
     private void OnNextSlotPressed()
     {
+        if (_isPreviewingTake) StopTakePreview();
         if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
 
@@ -582,6 +645,7 @@ public partial class RecordingScreen : BaseScreen
     {
         try
         {
+            if (_isPreviewingTake) StopTakePreview();
             if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
             if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
 
@@ -596,6 +660,7 @@ public partial class RecordingScreen : BaseScreen
 
     private void OnCancelPressed()
     {
+        if (_isPreviewingTake) StopTakePreview();
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
         if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
 
