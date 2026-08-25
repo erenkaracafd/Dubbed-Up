@@ -41,6 +41,13 @@ public partial class RecordingScreen : BaseScreen
     private double _maxSlotDuration = 4.0;
     private string? _currentTakeId;
 
+    public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
+    {
+        base.Initialize(navigator, coordinator);
+        LoadSceneVideo();
+        UpdateUiState();
+    }
+
     public override void _Ready()
     {
         _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");

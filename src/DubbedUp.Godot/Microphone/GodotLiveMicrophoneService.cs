@@ -33,8 +33,17 @@ public sealed class GodotLiveMicrophoneService
     {
         try
         {
-            _selectedInputDevice = deviceName;
-            AudioServer.InputDevice = deviceName;
+            // Empty string or null means default audio device in Godot WASAPI
+            if (string.IsNullOrWhiteSpace(deviceName) || deviceName == "Default" || deviceName == "Default Microphone")
+            {
+                _selectedInputDevice = null;
+                AudioServer.InputDevice = "";
+            }
+            else
+            {
+                _selectedInputDevice = deviceName;
+                AudioServer.InputDevice = deviceName;
+            }
 
             if (_microphonePlayer is not null && GodotObject.IsInstanceValid(_microphonePlayer))
             {
@@ -42,7 +51,7 @@ public sealed class GodotLiveMicrophoneService
                 _microphonePlayer.Play();
             }
 
-            GD.Print($"[Microphone] Switched input device to: '{deviceName}'");
+            GD.Print($"[Microphone] Switched input device to: '{AudioServer.InputDevice}'");
         }
         catch (Exception ex)
         {
@@ -66,17 +75,19 @@ public sealed class GodotLiveMicrophoneService
 
     private void SetupRecordBus()
     {
-        // 1. Silent Sink Bus (muted output to prevent speaker echo)
+        // 1. Silent Sink Bus: Volume -80dB, UNMUTED so audio graph keeps pulling samples
         var sinkBusIndex = AudioServer.GetBusIndex(SinkBusName);
         if (sinkBusIndex == -1)
         {
             AudioServer.AddBus();
             sinkBusIndex = AudioServer.BusCount - 1;
             AudioServer.SetBusName(sinkBusIndex, SinkBusName);
-            AudioServer.SetBusMute(sinkBusIndex, true);
         }
 
-        // 2. Record Bus (UNMUTED so AudioEffectRecord and BusPeak meters process active audio)
+        AudioServer.SetBusMute(sinkBusIndex, false);
+        AudioServer.SetBusVolumeDb(sinkBusIndex, -80.0f);
+
+        // 2. Record Bus: Volume 0dB, sends to RecordSink, UNMUTED
         _recordBusIndex = AudioServer.GetBusIndex(RecordBusName);
         if (_recordBusIndex == -1)
         {
@@ -86,6 +97,7 @@ public sealed class GodotLiveMicrophoneService
         }
 
         AudioServer.SetBusMute(_recordBusIndex, false);
+        AudioServer.SetBusVolumeDb(_recordBusIndex, 0.0f);
         AudioServer.SetBusSend(_recordBusIndex, SinkBusName);
 
         // 3. AudioEffectRecord Effect
@@ -149,7 +161,7 @@ public sealed class GodotLiveMicrophoneService
         }
     }
 
-    public float GetLivePeakLevel(float gainMultiplier = 2.5f)
+    public float GetLivePeakLevel(float gainMultiplier = 3.0f)
     {
         if (_recordBusIndex == -1)
         {

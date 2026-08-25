@@ -1,4 +1,5 @@
 using DubbedUp.Core.Game;
+using DubbedUp.Godot.LocalSession;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -13,6 +14,12 @@ public partial class SetupScreen : BaseScreen
     private OptionButton? _gameModeOption;
     private Label? _errorLabel;
 
+    public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
+    {
+        base.Initialize(navigator, coordinator);
+        UpdateSetupInfo();
+    }
+
     public override void _Ready()
     {
         _sceneTitleLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/SceneTitleLabel");
@@ -23,13 +30,7 @@ public partial class SetupScreen : BaseScreen
         _gameModeOption = GetNodeOrNull<OptionButton>("CenterContainer/VBoxContainer/GameModeOption");
         _errorLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/ErrorLabel");
 
-        var selectedScene = Coordinator?.SelectedScenePackage;
-        if (_sceneTitleLabel is not null)
-        {
-            _sceneTitleLabel.Text = selectedScene is not null
-                ? $"🎬 {selectedScene.Title}  ({selectedScene.DurationMilliseconds / 1000.0:F0}s)"
-                : "🎬 Scene: Default (Museum Mix-up)";
-        }
+        UpdateSetupInfo();
 
         if (_gameModeOption is not null)
         {
@@ -53,6 +54,20 @@ public partial class SetupScreen : BaseScreen
         {
             backButton.Pressed += OnBackPressed;
         }
+    }
+
+    private void UpdateSetupInfo()
+    {
+        var selectedScene = Coordinator?.SelectedScenePackage;
+        if (_sceneTitleLabel is not null)
+        {
+            _sceneTitleLabel.Text = selectedScene is not null
+                ? $"🎬 {selectedScene.Title}  ({selectedScene.DurationMilliseconds / 1000.0:F0}s)"
+                : "🎬 Scene: Default (Museum Mix-up)";
+        }
+
+        var isSolo = _gameModeOption?.Selected == 0;
+        UpdateCharacterPreview(isSolo);
     }
 
     private void OnGameModeSelected(long index)

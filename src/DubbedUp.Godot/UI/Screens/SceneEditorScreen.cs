@@ -2,6 +2,7 @@ using System.Text.Json;
 using DubbedUp.Core.Characters;
 using DubbedUp.Core.Scenes;
 using DubbedUp.Core.Timeline;
+using DubbedUp.Godot.LocalSession;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -33,6 +34,12 @@ public partial class SceneEditorScreen : BaseScreen
         public double EndSeconds { get; set; } = 4.0;
     }
 
+    public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
+    {
+        base.Initialize(navigator, coordinator);
+        LoadSceneData();
+    }
+
     public override void _Ready()
     {
         _titleInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid/TitleInput");
@@ -51,7 +58,10 @@ public partial class SceneEditorScreen : BaseScreen
         if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
         if (_backButton is not null) _backButton.Pressed += OnBackPressed;
 
-        LoadSceneData();
+        if (Coordinator is not null)
+        {
+            LoadSceneData();
+        }
     }
 
     private void LoadSceneData()
@@ -85,6 +95,11 @@ public partial class SceneEditorScreen : BaseScreen
 
         LoadVideo();
         RebuildSlotsUi();
+
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = $"🎬 '{doc.Title}' yüklendi ({_editableSlots.Count} replik). Değişiklik yapıp 'Değişiklikleri Kaydet'e basabilirsiniz.";
+        }
     }
 
     private void LoadVideo()
@@ -445,4 +460,3 @@ public partial class SceneEditorScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.ScenePicker);
     }
 }
-
