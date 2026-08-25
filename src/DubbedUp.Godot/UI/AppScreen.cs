@@ -12,4 +12,5 @@ public enum AppScreen
     Voting,
     Results,
     Settings,
+    SceneEditor,
 }

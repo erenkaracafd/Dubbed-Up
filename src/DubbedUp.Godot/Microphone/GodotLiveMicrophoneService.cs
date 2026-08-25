@@ -11,7 +11,6 @@ public sealed class GodotLiveMicrophoneService
     private int _recordBusIndex = -1;
     private AudioEffectRecord? _recordEffect;
     private AudioStreamPlayer? _microphonePlayer;
-    private bool _isInitialized = false;
     private string? _selectedInputDevice;
 
     public IReadOnlyList<string> GetAvailableInputDevices()
@@ -35,7 +34,6 @@ public sealed class GodotLiveMicrophoneService
             _selectedInputDevice = deviceName;
             AudioServer.InputDevice = deviceName;
 
-            // Restart the microphone player to pick up the new device
             if (_microphonePlayer is not null && GodotObject.IsInstanceValid(_microphonePlayer))
             {
                 _microphonePlayer.Stop();
@@ -52,53 +50,10 @@ public sealed class GodotLiveMicrophoneService
 
     public void Initialize(Node? contextNode = null)
     {
-        if (_isInitialized)
-        {
-            // Re-attach the microphone player to a new context node if needed
-            if (contextNode is not null && _microphonePlayer is null)
-            {
-                AttachMicrophonePlayer(contextNode);
-            }
-            return;
-        }
-
         try
         {
-            _recordBusIndex = AudioServer.GetBusIndex(RecordBusName);
-            if (_recordBusIndex == -1)
-            {
-                AudioServer.AddBus();
-                _recordBusIndex = AudioServer.BusCount - 1;
-                AudioServer.SetBusName(_recordBusIndex, RecordBusName);
-                AudioServer.SetBusMute(_recordBusIndex, true); // Mute to prevent feedback loops
-
-                _recordEffect = new AudioEffectRecord();
-                AudioServer.AddBusEffect(_recordBusIndex, _recordEffect);
-            }
-            else
-            {
-                for (int i = 0; i < AudioServer.GetBusEffectCount(_recordBusIndex); i++)
-                {
-                    if (AudioServer.GetBusEffect(_recordBusIndex, i) is AudioEffectRecord effect)
-                    {
-                        _recordEffect = effect;
-                        break;
-                    }
-                }
-
-                if (_recordEffect is null)
-                {
-                    _recordEffect = new AudioEffectRecord();
-                    AudioServer.AddBusEffect(_recordBusIndex, _recordEffect);
-                }
-            }
-
-            if (contextNode is not null)
-            {
-                AttachMicrophonePlayer(contextNode);
-            }
-
-            _isInitialized = true;
+            SetupRecordBus();
+            EnsureMicrophonePlayer(contextNode);
             GD.Print($"[Microphone] Initialized on bus '{RecordBusName}'. Device: '{AudioServer.InputDevice}'");
         }
         catch (Exception ex)
@@ -107,19 +62,74 @@ public sealed class GodotLiveMicrophoneService
         }
     }
 
-    private void AttachMicrophonePlayer(Node contextNode)
+    private void SetupRecordBus()
     {
+        _recordBusIndex = AudioServer.GetBusIndex(RecordBusName);
+        if (_recordBusIndex == -1)
+        {
+            AudioServer.AddBus();
+            _recordBusIndex = AudioServer.BusCount - 1;
+            AudioServer.SetBusName(_recordBusIndex, RecordBusName);
+            AudioServer.SetBusMute(_recordBusIndex, true); // Mute to master output to prevent echo feedback
+
+            _recordEffect = new AudioEffectRecord();
+            AudioServer.AddBusEffect(_recordBusIndex, _recordEffect);
+        }
+        else
+        {
+            for (int i = 0; i < AudioServer.GetBusEffectCount(_recordBusIndex); i++)
+            {
+                if (AudioServer.GetBusEffect(_recordBusIndex, i) is AudioEffectRecord effect)
+                {
+                    _recordEffect = effect;
+                    break;
+                }
+            }
+
+            if (_recordEffect is null)
+            {
+                _recordEffect = new AudioEffectRecord();
+                AudioServer.AddBusEffect(_recordBusIndex, _recordEffect);
+            }
+        }
+    }
+
+    public void EnsureMicrophonePlayer(Node? fallbackNode = null)
+    {
+        if (_microphonePlayer is not null && GodotObject.IsInstanceValid(_microphonePlayer) && _microphonePlayer.IsInsideTree())
+        {
+            if (!_microphonePlayer.Playing)
+            {
+                _microphonePlayer.Play();
+            }
+            return;
+        }
+
         try
         {
+            Node? parent = null;
+            if (Engine.GetMainLoop() is SceneTree tree && tree.Root is not null)
+            {
+                parent = tree.Root;
+            }
+            else if (fallbackNode is not null && fallbackNode.IsInsideTree())
+            {
+                parent = fallbackNode;
+            }
+
+            if (parent is null) return;
+
             _microphonePlayer = new AudioStreamPlayer
             {
-                Name = "MicrophoneCapturePlayer",
+                Name = "PersistentMicrophoneCapturePlayer",
                 Bus = RecordBusName,
                 Stream = new AudioStreamMicrophone(),
                 Autoplay = true
             };
-            contextNode.AddChild(_microphonePlayer);
+
+            parent.AddChild(_microphonePlayer);
             _microphonePlayer.Play();
+            GD.Print($"[Microphone] Attached persistent microphone player to node: '{parent.Name}'");
         }
         catch (Exception ex)
         {
@@ -127,15 +137,18 @@ public sealed class GodotLiveMicrophoneService
         }
     }
 
-    public float GetLivePeakLevel(float gainMultiplier = 1.0f)
+    public float GetLivePeakLevel(float gainMultiplier = 2.0f)
     {
         if (_recordBusIndex == -1)
         {
-            return 0.0f;
+            _recordBusIndex = AudioServer.GetBusIndex(RecordBusName);
+            if (_recordBusIndex == -1) return 0.0f;
         }
 
         try
         {
+            EnsureMicrophonePlayer();
+
             var peakLeft = AudioServer.GetBusPeakVolumeLeftDb(_recordBusIndex, 0);
             var peakRight = AudioServer.GetBusPeakVolumeRightDb(_recordBusIndex, 0);
             var maxDb = Math.Max(peakLeft, peakRight);
@@ -156,11 +169,14 @@ public sealed class GodotLiveMicrophoneService
 
     public void StartRecording()
     {
-        if (_recordEffect is null)
+        SetupRecordBus();
+        EnsureMicrophonePlayer();
+
+        if (_recordEffect is not null)
         {
-            return;
+            _recordEffect.SetRecordingActive(true);
+            GD.Print("[Microphone] AudioEffectRecord activated.");
         }
-        _recordEffect.SetRecordingActive(true);
     }
 
     public AudioStreamWav? StopRecording()
@@ -171,6 +187,8 @@ public sealed class GodotLiveMicrophoneService
         }
 
         _recordEffect.SetRecordingActive(false);
-        return _recordEffect.GetRecording();
+        var recording = _recordEffect.GetRecording();
+        GD.Print($"[Microphone] AudioEffectRecord stopped. Captured sample: {recording != null}");
+        return recording;
     }
 }

@@ -135,6 +135,7 @@ public partial class RecordingScreen : BaseScreen
                 var stream = new VideoStreamTheora();
                 stream.File = !string.IsNullOrEmpty(localized) ? localized : resolvedFilePath.Replace("\\", "/");
                 _videoPlayer.Stream = stream;
+                _videoPlayer.Expand = true;
                 GD.Print($"[RecordingScreen] Video loaded successfully: '{stream.File}'");
             }
             catch (Exception ex)
@@ -177,11 +178,15 @@ public partial class RecordingScreen : BaseScreen
             var peak = Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel();
             _waveformVisualizer?.AddLiveVoiceSample(_recordingDuration, peak);
 
-            // Keep video synchronized
-            if (_videoPlayer is not null && _videoPlayer.Stream is not null && !_videoPlayer.IsPlaying())
+            // Keep video playing in sync with recording
+            if (_videoPlayer is not null && _videoPlayer.Stream is not null)
             {
-                _videoPlayer.Play();
-                _videoPlayer.StreamPosition = _slotStartSec + _recordingDuration;
+                if (!_videoPlayer.IsPlaying())
+                {
+                    _videoPlayer.VolumeDb = -80.0f; // Ensure MUTED during recording!
+                    _videoPlayer.Play();
+                    _videoPlayer.StreamPosition = _slotStartSec + _recordingDuration;
+                }
             }
 
             // Auto-stop when max slot duration + 0.5s grace is exceeded
@@ -192,7 +197,7 @@ public partial class RecordingScreen : BaseScreen
             return;
         }
 
-        // 3. Previewing Original Clip
+        // 3. Previewing Original Clip (WITH sound so user can hear the original line)
         if (_isPreviewingOriginal && _videoPlayer is not null && _videoPlayer.IsPlaying())
         {
             var currentPos = _videoPlayer.GetStreamPosition();
@@ -336,6 +341,8 @@ public partial class RecordingScreen : BaseScreen
             return;
         }
 
+        // Preview original: UNMUTE video so original voice is audible
+        _videoPlayer.VolumeDb = 0.0f;
         _isPreviewingOriginal = true;
         _videoPlayer.Play();
         _videoPlayer.StreamPosition = _slotStartSec;
@@ -392,7 +399,7 @@ public partial class RecordingScreen : BaseScreen
             LoadWaveformForCurrentSlot();
             _waveformVisualizer?.SetPlayhead(0.0, true);
 
-            // Start video playback from slot start
+            // Start video playback from slot start MUTED so original voice does not bleed into user's recording
             if (_videoPlayer is null || _videoPlayer.Stream is null)
             {
                 LoadSceneVideo();
@@ -400,12 +407,13 @@ public partial class RecordingScreen : BaseScreen
 
             if (_videoPlayer is not null && _videoPlayer.Stream is not null)
             {
+                _videoPlayer.VolumeDb = -80.0f; // MUTE original video audio during dub recording!
                 _videoPlayer.Play();
                 _videoPlayer.StreamPosition = _slotStartSec;
             }
 
             if (_recordButton is not null) _recordButton.Text = "⏹ Kaydı Bitir (Tamam)";
-            if (_statusLabel is not null) _statusLabel.Text = "🔴 CANLI KAYIT ALINIYOR — Konuşun!";
+            if (_statusLabel is not null) _statusLabel.Text = "🔴 CANLI KAYIT ALINIYOR — Konuşun! (Video oynuyor, ses sessize alındı)";
         }
         catch (Exception ex)
         {
@@ -423,10 +431,11 @@ public partial class RecordingScreen : BaseScreen
             _isRecordingLocal = false;
             _currentTakeId = take.TakeId;
 
-            // Stop video
-            if (_videoPlayer is not null && _videoPlayer.IsPlaying())
+            // Stop video and restore normal volume
+            if (_videoPlayer is not null)
             {
-                _videoPlayer.Stop();
+                if (_videoPlayer.IsPlaying()) _videoPlayer.Stop();
+                _videoPlayer.VolumeDb = 0.0f;
             }
 
             // Calculate sync score

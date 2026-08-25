@@ -118,15 +118,39 @@ public partial class ScenePickerScreen : BaseScreen
         detailsLabel.AddThemeColorOverride("font_color", new Color(0.6f, 0.85f, 1.0f));
         infoVbox.AddChild(detailsLabel);
 
+        var btnContainer = new HBoxContainer();
+        btnContainer.AddThemeConstantOverride("separation", 8);
+        btnContainer.Alignment = BoxContainer.AlignmentMode.Center;
+        hbox.AddChild(btnContainer);
+
+        var editBtn = new Button
+        {
+            Text = "✏️ Düzenle",
+            CustomMinimumSize = new Vector2(100, 48),
+        };
+        editBtn.Pressed += () => OnEditScenePressed(package);
+        btnContainer.AddChild(editBtn);
+
         var selectBtn = new Button
         {
             Text = "🎮 Bu Sahneyi Seç",
-            CustomMinimumSize = new Vector2(160, 48),
+            CustomMinimumSize = new Vector2(150, 48),
         };
         selectBtn.Pressed += () => OnSceneSelected(package);
-        hbox.AddChild(selectBtn);
+        btnContainer.AddChild(selectBtn);
 
         return panel;
+    }
+
+    private void OnEditScenePressed(ScenePackage package)
+    {
+        if (Coordinator is not null)
+        {
+            Coordinator.SelectedScenePackage = package;
+            Coordinator.CurrentScene = package.Document;
+        }
+
+        Navigator?.NavigateTo(AppScreen.SceneEditor);
     }
 
     private void OnSceneSelected(ScenePackage package)

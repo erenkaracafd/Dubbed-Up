@@ -37,7 +37,7 @@ public sealed class LocalSessionCoordinator
 
     public ScenePackage? SelectedScenePackage { get; set; }
 
-    public OfficialSceneDocument? CurrentScene { get; private set; }
+    public OfficialSceneDocument? CurrentScene { get; set; }
 
     public IVoiceRecorder VoiceRecorder => _voiceRecorder;
 

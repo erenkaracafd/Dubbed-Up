@@ -1,0 +1,120 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/Screens/SceneEditorScreen.cs" id="1_editor"]
+
+[node name="SceneEditorScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_editor")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(850, 0)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "✏️ Sahne & Replik Editörü"
+horizontal_alignment = 1
+
+[node name="HeaderGrid" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="TitleNameLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
+layout_mode = 2
+text = "Sahne Başlığı:"
+
+[node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
+custom_minimum_size = Vector2(340, 36)
+layout_mode = 2
+placeholder_text = "Sahne Başlığı..."
+
+[node name="DurationLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
+layout_mode = 2
+text = "Toplam Süre (sn):"
+
+[node name="DurationInput" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+min_value = 1.0
+max_value = 600.0
+step = 0.5
+value = 22.0
+
+[node name="VideoPanel" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(640, 260)
+layout_mode = 2
+
+[node name="VideoPlayer" type="VideoStreamPlayer" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoPanel"]
+custom_minimum_size = Vector2(640, 260)
+layout_mode = 2
+expand = true
+
+[node name="VideoControls" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="PlayVideoButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(220, 36)
+layout_mode = 2
+text = "▶ Videoyu Baştan Oynat"
+
+[node name="VideoTimeLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+layout_mode = 2
+text = "⏱ Süre: 0.0s"
+
+[node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "🎭 Konuşulacak Aralıklar & Altyazılar (Replikler):"
+
+[node name="SlotsContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="AddSlotButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(300, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "➕ Yeni Replik / Konuşma Aralığı Ekle"
+
+[node name="StatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 1, 0.5, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="ActionsContainer" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
+custom_minimum_size = Vector2(240, 44)
+layout_mode = 2
+text = "💾 Değişiklikleri Kaydet"
+
+[node name="BackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
+custom_minimum_size = Vector2(180, 44)
+layout_mode = 2
+text = "🔙 Geri Dön"
