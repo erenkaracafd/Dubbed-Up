@@ -8,6 +8,8 @@ public sealed class GodotLiveMicrophoneService
     public static GodotLiveMicrophoneService Instance => _instance ??= new();
 
     private const string RecordBusName = "Record";
+    private const string SinkBusName = "RecordSink";
+
     private int _recordBusIndex = -1;
     private AudioEffectRecord? _recordEffect;
     private AudioStreamPlayer? _microphonePlayer;
@@ -54,7 +56,7 @@ public sealed class GodotLiveMicrophoneService
         {
             SetupRecordBus();
             EnsureMicrophonePlayer(contextNode);
-            GD.Print($"[Microphone] Initialized on bus '{RecordBusName}'. Device: '{AudioServer.InputDevice}'");
+            GD.Print($"[Microphone] Initialized on bus '{RecordBusName}' -> '{SinkBusName}'. Device: '{AudioServer.InputDevice}'");
         }
         catch (Exception ex)
         {
@@ -64,33 +66,43 @@ public sealed class GodotLiveMicrophoneService
 
     private void SetupRecordBus()
     {
+        // 1. Silent Sink Bus (muted output to prevent speaker echo)
+        var sinkBusIndex = AudioServer.GetBusIndex(SinkBusName);
+        if (sinkBusIndex == -1)
+        {
+            AudioServer.AddBus();
+            sinkBusIndex = AudioServer.BusCount - 1;
+            AudioServer.SetBusName(sinkBusIndex, SinkBusName);
+            AudioServer.SetBusMute(sinkBusIndex, true);
+        }
+
+        // 2. Record Bus (UNMUTED so AudioEffectRecord and BusPeak meters process active audio)
         _recordBusIndex = AudioServer.GetBusIndex(RecordBusName);
         if (_recordBusIndex == -1)
         {
             AudioServer.AddBus();
             _recordBusIndex = AudioServer.BusCount - 1;
             AudioServer.SetBusName(_recordBusIndex, RecordBusName);
-            AudioServer.SetBusMute(_recordBusIndex, true); // Mute to master output to prevent echo feedback
+        }
 
+        AudioServer.SetBusMute(_recordBusIndex, false);
+        AudioServer.SetBusSend(_recordBusIndex, SinkBusName);
+
+        // 3. AudioEffectRecord Effect
+        _recordEffect = null;
+        for (int i = 0; i < AudioServer.GetBusEffectCount(_recordBusIndex); i++)
+        {
+            if (AudioServer.GetBusEffect(_recordBusIndex, i) is AudioEffectRecord effect)
+            {
+                _recordEffect = effect;
+                break;
+            }
+        }
+
+        if (_recordEffect is null)
+        {
             _recordEffect = new AudioEffectRecord();
             AudioServer.AddBusEffect(_recordBusIndex, _recordEffect);
-        }
-        else
-        {
-            for (int i = 0; i < AudioServer.GetBusEffectCount(_recordBusIndex); i++)
-            {
-                if (AudioServer.GetBusEffect(_recordBusIndex, i) is AudioEffectRecord effect)
-                {
-                    _recordEffect = effect;
-                    break;
-                }
-            }
-
-            if (_recordEffect is null)
-            {
-                _recordEffect = new AudioEffectRecord();
-                AudioServer.AddBusEffect(_recordBusIndex, _recordEffect);
-            }
         }
     }
 
@@ -129,7 +141,7 @@ public sealed class GodotLiveMicrophoneService
 
             parent.AddChild(_microphonePlayer);
             _microphonePlayer.Play();
-            GD.Print($"[Microphone] Attached persistent microphone player to node: '{parent.Name}'");
+            GD.Print($"[Microphone] Attached persistent microphone player to node: '{parent.Name}' on bus '{RecordBusName}'");
         }
         catch (Exception ex)
         {
@@ -137,7 +149,7 @@ public sealed class GodotLiveMicrophoneService
         }
     }
 
-    public float GetLivePeakLevel(float gainMultiplier = 2.0f)
+    public float GetLivePeakLevel(float gainMultiplier = 2.5f)
     {
         if (_recordBusIndex == -1)
         {
@@ -153,7 +165,7 @@ public sealed class GodotLiveMicrophoneService
             var peakRight = AudioServer.GetBusPeakVolumeRightDb(_recordBusIndex, 0);
             var maxDb = Math.Max(peakLeft, peakRight);
 
-            if (maxDb <= -60.0f)
+            if (maxDb <= -60.0f || float.IsNegativeInfinity(maxDb) || float.IsNaN(maxDb))
             {
                 return 0.0f;
             }

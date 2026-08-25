@@ -1,64 +1,45 @@
 {
   "schemaVersion": 1,
   "sceneId": "speed-mama-homeless",
-  "title": "Speed: My Mom is Kinda Homeless",
+  "title": "D\u00FCzenlenmi\u015F Sahne",
   "durationMilliseconds": 22000,
   "sourceMedia": [
     {
       "mediaId": "video-speed",
-      "role": "sceneVideo",
+      "role": 0,
       "relativePath": "media/speed_homeless.ogv"
     }
   ],
   "characters": [
     {
-      "characterId": "acey-daddy",
-      "displayName": "Acey Daddy (Kid)"
-    },
-    {
-      "characterId": "teammate",
-      "displayName": "Teammate"
-    },
-    {
-      "characterId": "ishowspeed",
-      "displayName": "IShowSpeed"
+      "characterId": "char-new",
+      "displayName": "Yeni Karakter"
     }
   ],
   "voiceSlots": [
     {
       "voiceSlotId": "slot-1",
-      "characterId": "acey-daddy",
-      "prompt": "Please Speed, I need this win! My mom is kinda homeless, I live with my dad..."
+      "characterId": "char-new",
+      "prompt": "oh my god \u0131m going to lose"
     },
     {
       "voiceSlotId": "slot-2",
-      "characterId": "teammate",
-      "prompt": "Yo Speed, why are you smiling like that bro?! That is mad disrespectful!"
-    },
-    {
-      "voiceSlotId": "slot-3",
-      "characterId": "ishowspeed",
-      "prompt": "I'm not smiling bro! Wait... did you just say your mom is KINDA homeless?!"
+      "characterId": "char-new",
+      "prompt": "pls speed i need this my mom is kinda homeless"
     }
   ],
   "timeline": [
     {
       "timelineEntryId": "entry-1",
       "voiceSlotId": "slot-1",
-      "startMilliseconds": 200,
-      "endMilliseconds": 6400
+      "startMilliseconds": 3200,
+      "endMilliseconds": 7000
     },
     {
       "timelineEntryId": "entry-2",
       "voiceSlotId": "slot-2",
-      "startMilliseconds": 8500,
-      "endMilliseconds": 14500
-    },
-    {
-      "timelineEntryId": "entry-3",
-      "voiceSlotId": "slot-3",
-      "startMilliseconds": 15200,
-      "endMilliseconds": 21000
+      "startMilliseconds": 11500,
+      "endMilliseconds": 18700
     }
   ]
 }

@@ -383,14 +383,31 @@ public partial class SceneEditorScreen : BaseScreen
                 Timeline = timelineEntries
             };
 
-            // Save back to JSON file on disk
+            // Serialize using engine-standard ProjectJsonSerializer
+            var json = DubbedUp.Core.ProjectFormat.ProjectJsonSerializer.SerializeScene(updatedDoc);
+
+            // Save back to JSON file on disk across all discovery paths
             var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
-            if (!string.IsNullOrEmpty(folderPath))
+            if (!string.IsNullOrEmpty(folderPath) && System.IO.Directory.Exists(folderPath))
             {
                 var jsonPath = System.IO.Path.Combine(folderPath, "scene.json");
-                var json = JsonSerializer.Serialize(updatedDoc, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
                 System.IO.File.WriteAllText(jsonPath, json);
-                GD.Print($"[SceneEditor] Saved changes to '{jsonPath}'");
+                GD.Print($"[SceneEditor] Saved changes to package directory '{jsonPath}'");
+            }
+
+            // Sync with res://Content/OfficialScenes and repo scenes folder
+            var resSceneJson = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/scene.json");
+            if (System.IO.File.Exists(resSceneJson))
+            {
+                System.IO.File.WriteAllText(resSceneJson, json);
+                GD.Print($"[SceneEditor] Synced to official content '{resSceneJson}'");
+            }
+
+            var rootSceneJson = System.IO.Path.GetFullPath(System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "..", "scenes", sceneId, "scene.json"));
+            if (System.IO.File.Exists(rootSceneJson))
+            {
+                System.IO.File.WriteAllText(rootSceneJson, json);
+                GD.Print($"[SceneEditor] Synced to repo scenes folder '{rootSceneJson}'");
             }
 
             if (Coordinator is not null)
@@ -428,3 +445,4 @@ public partial class SceneEditorScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.ScenePicker);
     }
 }
+

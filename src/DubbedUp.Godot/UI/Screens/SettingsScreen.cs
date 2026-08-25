@@ -168,6 +168,12 @@ public partial class SettingsScreen : BaseScreen
     {
         _isTestingMic = !_isTestingMic;
 
+        if (_isTestingMic)
+        {
+            Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
+            Microphone.GodotLiveMicrophoneService.Instance.EnsureMicrophonePlayer(this);
+        }
+
         if (_testMeterBar is not null)
         {
             _testMeterBar.Visible = _isTestingMic;
@@ -185,7 +191,7 @@ public partial class SettingsScreen : BaseScreen
         if (_statusLabel is not null)
         {
             _statusLabel.Text = _isTestingMic
-                ? "Mic test active — speak into your microphone to see the level bar move!"
+                ? "🎙 Mic test active — speak into your microphone to see the level bar move!"
                 : "Mic test stopped.";
         }
     }
