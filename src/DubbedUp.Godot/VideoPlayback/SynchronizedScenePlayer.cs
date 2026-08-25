@@ -10,6 +10,7 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
 {
     private readonly List<VoiceTakeAudioPlayer> _takePlayers = [];
     private VideoStreamPlayer? _videoPlayer;
+    private AudioStreamPlayer? _backgroundAudioPlayer;
     private double _masterTimeSeconds = 0.0;
     private double _durationSeconds = 10.0;
     private bool _isPlaying = false;
@@ -44,6 +45,14 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             _videoPlayer.VolumeDb = -80.0f;
             _videoPlayer.Expand = true;
         }
+
+        _backgroundAudioPlayer = new AudioStreamPlayer
+        {
+            Name = "BackgroundAudioPlayer",
+            Bus = "Master",
+            VolumeDb = 0.0f,
+        };
+        AddChild(_backgroundAudioPlayer);
     }
 
     public void LoadScene(OfficialSceneDocument scene, DubProjectDocument? project, VoiceTakeStore? takeStore, string? sceneFolderPath = null)
@@ -62,6 +71,9 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             TryLoadVideo(videoAsset.RelativePath, sceneFolderPath);
         }
 
+        // Try to load separated ambient / background audio track (EffectsStem or MusicStem)
+        TryLoadBackgroundAudio(scene, sceneFolderPath);
+
         // Schedule take audio players
         foreach (var entry in scene.Timeline)
         {
@@ -77,6 +89,81 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
 
             var player = new VoiceTakeAudioPlayer(voiceSlotId, take?.TakeId ?? "missing", startSec, endSec, audioPath, this);
             _takePlayers.Add(player);
+        }
+    }
+
+    private void TryLoadBackgroundAudio(OfficialSceneDocument scene, string? sceneFolderPath)
+    {
+        if (_backgroundAudioPlayer is null) return;
+        _backgroundAudioPlayer.Stream = null;
+
+        string? bgRelPath = null;
+        var bgAsset = scene.SourceMedia.FirstOrDefault(m => m.Role == SourceMediaRole.BackgroundAudio);
+        if (bgAsset is not null)
+        {
+            bgRelPath = bgAsset.RelativePath;
+        }
+
+        string? resolvedPath = null;
+
+        // 1. Check relative path from package folder
+        if (!string.IsNullOrEmpty(sceneFolderPath))
+        {
+            var candidates = new List<string>();
+            if (!string.IsNullOrEmpty(bgRelPath)) candidates.Add(System.IO.Path.Combine(sceneFolderPath, bgRelPath));
+            candidates.Add(System.IO.Path.Combine(sceneFolderPath, "media", "background.wav"));
+            candidates.Add(System.IO.Path.Combine(sceneFolderPath, "background.wav"));
+
+            foreach (var c in candidates)
+            {
+                if (System.IO.File.Exists(c))
+                {
+                    resolvedPath = c;
+                    break;
+                }
+            }
+        }
+
+        // 2. Check official content folder
+        if (resolvedPath is null)
+        {
+            var candidates = new List<string>
+            {
+                ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{scene.SceneId}/media/background.wav"),
+                ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{scene.SceneId}/background.wav"),
+                ProjectSettings.GlobalizePath($"res://scenes/{scene.SceneId}/media/background.wav")
+            };
+
+            foreach (var c in candidates)
+            {
+                if (System.IO.File.Exists(c))
+                {
+                    resolvedPath = c;
+                    break;
+                }
+            }
+        }
+
+        if (resolvedPath is not null)
+        {
+            try
+            {
+                var bytes = System.IO.File.ReadAllBytes(resolvedPath);
+                var wav = VoiceTakeAudioPlayer.ParseWavBytes(bytes);
+                if (wav is not null)
+                {
+                    _backgroundAudioPlayer.Stream = wav;
+                    GD.Print($"[ScenePlayer] Loaded AI ambient background stem: '{resolvedPath}'");
+                }
+            }
+            catch (Exception ex)
+            {
+                GD.PrintErr($"[ScenePlayer] Failed to load background audio stem: {ex.Message}");
+            }
+        }
+        else
+        {
+            GD.Print($"[ScenePlayer] No ambient background stem found. Playing voice-only mode.");
         }
     }
 
@@ -102,11 +189,6 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             {
                 try
                 {
-                    // Godot 4 supports file:// absolute paths for VideoStreamPlayer in some builds
-                    // Use a GodotFileAccess load approach
-                    var fileUri = absolutePath.Replace("\\", "/");
-
-                    // Try with res:// via ProjectSettings globalize approach
                     var resPath = ProjectSettings.LocalizePath(absolutePath);
                     if (!string.IsNullOrEmpty(resPath) && ResourceLoader.Exists(resPath))
                     {
@@ -183,6 +265,18 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             _videoPlayer.StreamPosition = _masterTimeSeconds;
         }
 
+        if (_backgroundAudioPlayer is not null && _backgroundAudioPlayer.Stream is not null)
+        {
+            if (_backgroundAudioPlayer.StreamPaused)
+            {
+                _backgroundAudioPlayer.StreamPaused = false;
+            }
+            else if (!_backgroundAudioPlayer.Playing)
+            {
+                _backgroundAudioPlayer.Play((float)_masterTimeSeconds);
+            }
+        }
+
         foreach (var player in _takePlayers)
         {
             player.Resume();
@@ -195,6 +289,11 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         if (_videoPlayer is not null && _videoPlayer.IsPlaying())
         {
             _videoPlayer.Paused = true;
+        }
+
+        if (_backgroundAudioPlayer is not null && _backgroundAudioPlayer.Playing)
+        {
+            _backgroundAudioPlayer.StreamPaused = true;
         }
 
         foreach (var player in _takePlayers)
@@ -212,6 +311,12 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         if (_videoPlayer is not null)
         {
             _videoPlayer.Stop();
+        }
+
+        if (_backgroundAudioPlayer is not null)
+        {
+            _backgroundAudioPlayer.Stop();
+            _backgroundAudioPlayer.StreamPaused = false;
         }
 
         foreach (var player in _takePlayers)
@@ -236,6 +341,11 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         if (_videoPlayer is not null && _videoPlayer.Stream is not null)
         {
             _videoPlayer.StreamPosition = _masterTimeSeconds;
+        }
+
+        if (_backgroundAudioPlayer is not null && _backgroundAudioPlayer.Playing)
+        {
+            _backgroundAudioPlayer.Seek((float)_masterTimeSeconds);
         }
 
         foreach (var player in _takePlayers)
@@ -274,6 +384,11 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             _masterTimeSeconds = _durationSeconds;
             _isPlaying = false;
             _hasFinished = true;
+
+            if (_backgroundAudioPlayer is not null)
+            {
+                _backgroundAudioPlayer.Stop();
+            }
 
             foreach (var player in _takePlayers)
             {

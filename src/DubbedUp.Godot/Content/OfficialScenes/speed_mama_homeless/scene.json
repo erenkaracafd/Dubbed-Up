@@ -2,30 +2,48 @@
   "schemaVersion": 1,
   "sceneId": "speed-mama-homeless",
   "title": "D\u00FCzenlenmi\u015F Sahne",
-  "durationMilliseconds": 22000,
+  "durationMilliseconds": 26000,
   "sourceMedia": [
     {
       "mediaId": "video-speed",
-      "role": 0,
+      "role": "sceneVideo",
       "relativePath": "media/speed_homeless.ogv"
     }
   ],
   "characters": [
     {
-      "characterId": "char-new",
+      "characterId": "yeni-karakter",
       "displayName": "Yeni Karakter"
+    },
+    {
+      "characterId": "karakter-3",
+      "displayName": "Karakter 3"
+    },
+    {
+      "characterId": "karakter-4",
+      "displayName": "Karakter 4"
     }
   ],
   "voiceSlots": [
     {
       "voiceSlotId": "slot-1",
-      "characterId": "char-new",
+      "characterId": "yeni-karakter",
       "prompt": "oh my god \u0131m going to lose"
     },
     {
       "voiceSlotId": "slot-2",
-      "characterId": "char-new",
+      "characterId": "yeni-karakter",
       "prompt": "pls speed i need this my mom is kinda homeless"
+    },
+    {
+      "voiceSlotId": "slot-3",
+      "characterId": "karakter-3",
+      "prompt": "Yeni replik metni..."
+    },
+    {
+      "voiceSlotId": "slot-4",
+      "characterId": "karakter-4",
+      "prompt": "Yeni replik metni..."
     }
   ],
   "timeline": [
@@ -33,13 +51,25 @@
       "timelineEntryId": "entry-1",
       "voiceSlotId": "slot-1",
       "startMilliseconds": 3200,
-      "endMilliseconds": 7000
+      "endMilliseconds": 8000
     },
     {
       "timelineEntryId": "entry-2",
       "voiceSlotId": "slot-2",
-      "startMilliseconds": 11500,
-      "endMilliseconds": 18700
+      "startMilliseconds": 10000,
+      "endMilliseconds": 12000
+    },
+    {
+      "timelineEntryId": "entry-3",
+      "voiceSlotId": "slot-3",
+      "startMilliseconds": 12500,
+      "endMilliseconds": 19500
+    },
+    {
+      "timelineEntryId": "entry-4",
+      "voiceSlotId": "slot-4",
+      "startMilliseconds": 21500,
+      "endMilliseconds": 25000
     }
   ]
 }

@@ -339,15 +339,19 @@ public partial class RecordingScreen : BaseScreen
 
         if (!string.IsNullOrEmpty(folderPath))
         {
-            var candidate = System.IO.Path.Combine(folderPath, "media", "audio.wav");
-            if (System.IO.File.Exists(candidate)) wavPath = candidate;
+            var vocalsCandidate = System.IO.Path.Combine(folderPath, "media", "vocals.wav");
+            var audioCandidate = System.IO.Path.Combine(folderPath, "media", "audio.wav");
+            if (System.IO.File.Exists(vocalsCandidate)) wavPath = vocalsCandidate;
+            else if (System.IO.File.Exists(audioCandidate)) wavPath = audioCandidate;
         }
 
         if (wavPath is null && Coordinator?.CurrentScene is not null)
         {
             var sceneId = Coordinator.CurrentScene.SceneId;
-            var candidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/audio.wav");
-            if (System.IO.File.Exists(candidate)) wavPath = candidate;
+            var vocalsCandidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/vocals.wav");
+            var audioCandidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/audio.wav");
+            if (System.IO.File.Exists(vocalsCandidate)) wavPath = vocalsCandidate;
+            else if (System.IO.File.Exists(audioCandidate)) wavPath = audioCandidate;
         }
 
         if (wavPath is not null)
