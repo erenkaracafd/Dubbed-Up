@@ -33,8 +33,16 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
                 Expand = true,
                 AnchorRight = 1.0f,
                 AnchorBottom = 1.0f,
+                Bus = "RecordSink",
+                VolumeDb = -80.0f,
             };
             AddChild(_videoPlayer);
+        }
+        else
+        {
+            _videoPlayer.Bus = "RecordSink";
+            _videoPlayer.VolumeDb = -80.0f;
+            _videoPlayer.Expand = true;
         }
     }
 
@@ -169,6 +177,8 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         _isPlaying = true;
         if (_videoPlayer is not null && _videoPlayer.Stream is not null && !_videoPlayer.IsPlaying())
         {
+            _videoPlayer.Bus = "RecordSink";
+            _videoPlayer.VolumeDb = -80.0f;
             _videoPlayer.Play();
             _videoPlayer.StreamPosition = _masterTimeSeconds;
         }

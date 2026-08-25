@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using DubbedUp.Core.Characters;
+using DubbedUp.Core.ProjectFormat;
 using DubbedUp.Core.Scenes;
 using DubbedUp.Core.Timeline;
 using DubbedUp.Godot.LocalSession;
@@ -25,10 +27,10 @@ public partial class SceneEditorScreen : BaseScreen
 
     private sealed class EditableVoiceSlot
     {
-        public string SlotId { get; set; } = $"slot-{Guid.NewGuid():N}";
+        public string SlotId { get; set; } = "slot-1";
         public string CharacterId { get; set; } = "char-1";
         public string CharacterName { get; set; } = "Karakter";
-        public string Prompt { get; set; } = "";
+        public string Prompt { get; set; } = "Replik metni";
         public double StartSeconds { get; set; } = 0.0;
         public double EndSeconds { get; set; } = 4.0;
     }
@@ -182,8 +184,8 @@ public partial class SceneEditorScreen : BaseScreen
             };
             charInput.TextChanged += (newText) =>
             {
-                slot.CharacterName = newText.Trim();
-                slot.CharacterId = newText.Trim().ToLowerInvariant().Replace(" ", "-");
+                slot.CharacterName = string.IsNullOrWhiteSpace(newText) ? $"Karakter {slotIndex + 1}" : newText.Trim();
+                slot.CharacterId = ToKebabCaseId(slot.CharacterName, $"char-{slotIndex + 1}");
             };
             topRow.AddChild(charInput);
 
@@ -198,7 +200,14 @@ public partial class SceneEditorScreen : BaseScreen
                 Value = slot.StartSeconds,
                 CustomMinimumSize = new Vector2(90, 32),
             };
-            startSpin.ValueChanged += (newVal) => slot.StartSeconds = newVal;
+            startSpin.ValueChanged += (newVal) =>
+            {
+                slot.StartSeconds = newVal;
+                if (slot.EndSeconds <= slot.StartSeconds)
+                {
+                    slot.EndSeconds = slot.StartSeconds + 1.0;
+                }
+            };
             topRow.AddChild(startSpin);
 
             var endLabel = new Label { Text = "Bitiş (sn):" };
@@ -212,7 +221,14 @@ public partial class SceneEditorScreen : BaseScreen
                 Value = slot.EndSeconds,
                 CustomMinimumSize = new Vector2(90, 32),
             };
-            endSpin.ValueChanged += (newVal) => slot.EndSeconds = newVal;
+            endSpin.ValueChanged += (newVal) =>
+            {
+                slot.EndSeconds = newVal;
+                if (_durationInput is not null && slot.EndSeconds > _durationInput.Value)
+                {
+                    _durationInput.Value = Math.Ceiling(slot.EndSeconds + 1.0);
+                }
+            };
             topRow.AddChild(endSpin);
 
             var playRangeBtn = new Button
@@ -239,7 +255,7 @@ public partial class SceneEditorScreen : BaseScreen
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 CustomMinimumSize = new Vector2(0, 34),
             };
-            promptInput.TextChanged += (newText) => slot.Prompt = newText;
+            promptInput.TextChanged += (newText) => slot.Prompt = string.IsNullOrWhiteSpace(newText) ? "Replik metni..." : newText.Trim();
             vbox.AddChild(promptInput);
 
             _slotsContainer.AddChild(panel);
@@ -255,6 +271,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_videoPlayer is null || _videoPlayer.Stream is null) return;
 
+        _videoPlayer.Bus = "Master";
         _videoPlayer.VolumeDb = 0.0f; // Enable audio for review
         _videoPlayer.Play();
         _videoPlayer.StreamPosition = startSec;
@@ -300,6 +317,7 @@ public partial class SceneEditorScreen : BaseScreen
         }
         else
         {
+            _videoPlayer.Bus = "Master";
             _videoPlayer.VolumeDb = 0.0f;
             _videoPlayer.Play();
             _videoPlayer.StreamPosition = 0.0;
@@ -313,16 +331,22 @@ public partial class SceneEditorScreen : BaseScreen
         var lastSlot = _editableSlots.LastOrDefault();
         var start = lastSlot is not null ? lastSlot.EndSeconds + 0.5 : 0.0;
         var end = start + 3.0;
+        var num = _editableSlots.Count + 1;
 
         _editableSlots.Add(new EditableVoiceSlot
         {
-            SlotId = $"slot-{_editableSlots.Count + 1}",
-            CharacterId = "char-new",
-            CharacterName = "Yeni Karakter",
+            SlotId = $"slot-{num}",
+            CharacterId = $"char-{num}",
+            CharacterName = $"Karakter {num}",
             Prompt = "Yeni replik metni...",
             StartSeconds = start,
             EndSeconds = end
         });
+
+        if (_durationInput is not null && end > _durationInput.Value)
+        {
+            _durationInput.Value = Math.Ceiling(end + 1.0);
+        }
 
         RebuildSlotsUi();
     }
@@ -336,25 +360,71 @@ public partial class SceneEditorScreen : BaseScreen
         }
     }
 
+    private static string ToKebabCaseId(string input, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return fallback;
+
+        // Convert Turkish special characters to ASCII equivalents for strict kebab-case ID compliance
+        var s = input.ToLowerInvariant()
+            .Replace("ç", "c")
+            .Replace("ğ", "g")
+            .Replace("ı", "i")
+            .Replace("ö", "o")
+            .Replace("ş", "s")
+            .Replace("ü", "u");
+
+        // Keep only alphanumeric characters and hyphens
+        var clean = Regex.Replace(s, @"[^a-z0-9]+", "-").Trim('-');
+        return string.IsNullOrEmpty(clean) ? fallback : clean;
+    }
+
     private void OnSavePressed()
     {
         try
         {
             var title = string.IsNullOrWhiteSpace(_titleInput?.Text) ? "Düzenlenmiş Sahne" : _titleInput.Text.Trim();
-            var durationMs = (long)((_durationInput?.Value ?? 10.0) * 1000);
 
-            var distinctChars = _editableSlots
-                .GroupBy(s => s.CharacterId)
-                .Select(g => new CharacterDefinition
-                {
-                    CharacterId = g.Key,
-                    DisplayName = g.First().CharacterName
-                })
-                .ToList();
-
-            if (distinctChars.Count == 0)
+            // Ensure at least 1 slot
+            if (_editableSlots.Count == 0)
             {
-                distinctChars.Add(new CharacterDefinition { CharacterId = "default-char", DisplayName = "Oyuncu" });
+                _editableSlots.Add(new EditableVoiceSlot
+                {
+                    SlotId = "slot-1",
+                    CharacterId = "char-1",
+                    CharacterName = "Oyuncu",
+                    Prompt = "Replik metni...",
+                    StartSeconds = 0.0,
+                    EndSeconds = 4.0
+                });
+            }
+
+            // Calculate max slot end time and ensure total duration is strictly larger
+            var maxSlotEndMs = _editableSlots.Max(s => (long)(Math.Max(s.StartSeconds + 0.5, s.EndSeconds) * 1000));
+            var inputDurationMs = (long)((_durationInput?.Value ?? 10.0) * 1000);
+            var durationMs = Math.Max(inputDurationMs, maxSlotEndMs + 500);
+
+            var existingDoc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
+            var sceneId = existingDoc is not null ? ToKebabCaseId(existingDoc.SceneId, "custom-scene") : "custom-scene";
+
+            var distinctChars = new List<CharacterDefinition>();
+            var charMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < _editableSlots.Count; i++)
+            {
+                var s = _editableSlots[i];
+                var rawCharName = string.IsNullOrWhiteSpace(s.CharacterName) ? $"Karakter {i + 1}" : s.CharacterName.Trim();
+                var charId = ToKebabCaseId(rawCharName, $"char-{i + 1}");
+
+                if (!charMap.ContainsKey(charId))
+                {
+                    charMap[charId] = rawCharName;
+                    distinctChars.Add(new CharacterDefinition
+                    {
+                        CharacterId = charId,
+                        DisplayName = rawCharName
+                    });
+                }
+                s.CharacterId = charId;
             }
 
             var voiceSlots = new List<VoiceSlotDefinition>();
@@ -363,27 +433,32 @@ public partial class SceneEditorScreen : BaseScreen
             for (int i = 0; i < _editableSlots.Count; i++)
             {
                 var s = _editableSlots[i];
-                var slotId = string.IsNullOrWhiteSpace(s.SlotId) ? $"slot-{i + 1}" : s.SlotId;
+                var slotId = $"slot-{i + 1}";
+                var startMs = (long)(Math.Max(0.0, s.StartSeconds) * 1000);
+                var endMs = (long)(Math.Max(s.StartSeconds + 0.5, s.EndSeconds) * 1000);
+                var promptText = string.IsNullOrWhiteSpace(s.Prompt) ? "Replik metni..." : s.Prompt.Trim();
 
                 voiceSlots.Add(new VoiceSlotDefinition
                 {
                     VoiceSlotId = slotId,
                     CharacterId = s.CharacterId,
-                    Prompt = s.Prompt
+                    Prompt = promptText
                 });
 
                 timelineEntries.Add(new TimelineEntry
                 {
                     TimelineEntryId = $"entry-{i + 1}",
                     VoiceSlotId = slotId,
-                    StartMilliseconds = (long)(s.StartSeconds * 1000),
-                    EndMilliseconds = (long)(s.EndSeconds * 1000)
+                    StartMilliseconds = startMs,
+                    EndMilliseconds = endMs
                 });
             }
 
-            var existingDoc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
-            var sourceMedia = existingDoc?.SourceMedia ?? [new SourceMediaAsset { MediaId = "video-main", Role = SourceMediaRole.SceneVideo, RelativePath = "media/speed_homeless.ogv" }];
-            var sceneId = existingDoc?.SceneId ?? $"custom-scene-{Guid.NewGuid():N}";
+            var sourceMedia = existingDoc?.SourceMedia;
+            if (sourceMedia is null || sourceMedia.Count == 0 || sourceMedia.All(m => m.Role != SourceMediaRole.SceneVideo))
+            {
+                sourceMedia = [new SourceMediaAsset { MediaId = "video-main", Role = SourceMediaRole.SceneVideo, RelativePath = "media/speed_homeless.ogv" }];
+            }
 
             var updatedDoc = new OfficialSceneDocument
             {
@@ -397,10 +472,10 @@ public partial class SceneEditorScreen : BaseScreen
                 Timeline = timelineEntries
             };
 
-            // Serialize using engine-standard ProjectJsonSerializer
-            var json = DubbedUp.Core.ProjectFormat.ProjectJsonSerializer.SerializeScene(updatedDoc);
+            // Validate and serialize using ProjectJsonSerializer
+            var json = ProjectJsonSerializer.SerializeScene(updatedDoc);
 
-            // Save back to JSON file on disk across all discovery paths
+            // 1. Save to package directory
             var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
             if (!string.IsNullOrEmpty(folderPath) && System.IO.Directory.Exists(folderPath))
             {
@@ -409,21 +484,25 @@ public partial class SceneEditorScreen : BaseScreen
                 GD.Print($"[SceneEditor] Saved changes to package directory '{jsonPath}'");
             }
 
-            // Sync with res://Content/OfficialScenes and repo scenes folder
-            var resSceneJson = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/scene.json");
-            if (System.IO.File.Exists(resSceneJson))
+            // 2. Sync to res://Content/OfficialScenes/<sceneId>/scene.json
+            var resFolder = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}");
+            if (System.IO.Directory.Exists(resFolder))
             {
+                var resSceneJson = System.IO.Path.Combine(resFolder, "scene.json");
                 System.IO.File.WriteAllText(resSceneJson, json);
                 GD.Print($"[SceneEditor] Synced to official content '{resSceneJson}'");
             }
 
-            var rootSceneJson = System.IO.Path.GetFullPath(System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "..", "scenes", sceneId, "scene.json"));
-            if (System.IO.File.Exists(rootSceneJson))
+            // 3. Sync to root scenes/<sceneId>/scene.json
+            var rootFolder = System.IO.Path.GetFullPath(System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "..", "scenes", sceneId));
+            if (System.IO.Directory.Exists(rootFolder))
             {
+                var rootSceneJson = System.IO.Path.Combine(rootFolder, "scene.json");
                 System.IO.File.WriteAllText(rootSceneJson, json);
                 GD.Print($"[SceneEditor] Synced to repo scenes folder '{rootSceneJson}'");
             }
 
+            // Update Coordinator state
             if (Coordinator is not null)
             {
                 Coordinator.CurrentScene = updatedDoc;
@@ -440,8 +519,14 @@ public partial class SceneEditorScreen : BaseScreen
 
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "✅ Sahne başarıyla kaydedildi ve güncellendi!";
+                _statusLabel.Text = "✅ Sahne başarıyla doğrulandı ve kaydedildi!";
             }
+        }
+        catch (ProjectValidationException ex)
+        {
+            var errStr = string.Join("; ", ex.Errors);
+            GD.PrintErr($"[SceneEditor] Validation error: {errStr}");
+            if (_statusLabel is not null) _statusLabel.Text = $"❌ Sahne kuralları hatası: {errStr}";
         }
         catch (Exception ex)
         {
