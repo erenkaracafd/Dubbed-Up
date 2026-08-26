@@ -22,15 +22,17 @@ grow_vertical = 2
 [node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
 layout_mode = 2
 custom_minimum_size = Vector2(850, 0)
+size_flags_horizontal = 3
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
 layout_mode = 2
+custom_minimum_size = Vector2(840, 0)
 theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "✏️ Sahne & Replik Editörü"
+theme_override_font_sizes/font_size = 26
+text = "✏️ Sahne, Replik & Timeline Editörü"
 horizontal_alignment = 1
 
 [node name="HeaderGrid" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
@@ -60,43 +62,77 @@ step = 0.5
 value = 22.0
 
 [node name="VideoPanel" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(640, 260)
+custom_minimum_size = Vector2(820, 320)
 layout_mode = 2
 
 [node name="VideoPlayer" type="VideoStreamPlayer" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoPanel"]
-custom_minimum_size = Vector2(640, 260)
+custom_minimum_size = Vector2(820, 320)
 layout_mode = 2
 expand = true
 
 [node name="VideoControls" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 alignment = 1
-theme_override_constants/separation = 20
+theme_override_constants/separation = 12
 
-[node name="PlayVideoButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
-custom_minimum_size = Vector2(220, 36)
+[node name="SeekBackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(100, 38)
 layout_mode = 2
-text = "▶ Videoyu Baştan Oynat"
+text = "⏪ -5s"
+
+[node name="PlayPauseButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(160, 38)
+layout_mode = 2
+text = "▶ Oynat"
+
+[node name="SeekForwardButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(100, 38)
+layout_mode = 2
+text = "⏩ +5s"
+
+[node name="StopButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+text = "⏹ Başa Al"
 
 [node name="VideoTimeLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
-text = "⏱ Süre: 0.0s"
+theme_override_font_sizes/font_size = 15
+text = "⏱ 00.0s / 22.0s"
+horizontal_alignment = 2
+
+[node name="TimeSlider" type="HSlider" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(820, 24)
+layout_mode = 2
+max_value = 22.0
+step = 0.1
+
+[node name="TimelineLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "📊 Ses Dalgası & Konuşma Kutucukları (Kutucukları sürükleyip genişletebilirsiniz):"
+
+[node name="TimelineContainer" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(820, 115)
+layout_mode = 2
+
+[node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(380, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "➕ Şu Anki Zamana Yeni Konuşma Kutucuğu Ekle"
 
 [node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.85, 1, 1)
-theme_override_font_sizes/font_size = 18
-text = "🎭 Konuşulacak Aralıklar & Altyazılar (Replikler):"
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+theme_override_font_sizes/font_size = 16
+text = "🎭 Konuşulacak Replikler & Altyazılar:"
 
 [node name="SlotsContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 10
-
-[node name="AddSlotButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(300, 40)
-layout_mode = 2
-size_flags_horizontal = 4
-text = "➕ Yeni Replik / Konuşma Aralığı Ekle"
 
 [node name="StatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -118,4 +154,3 @@ text = "💾 Değişiklikleri Kaydet"
 custom_minimum_size = Vector2(180, 44)
 layout_mode = 2
 text = "🔙 Geri Dön"
-

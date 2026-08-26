@@ -3,7 +3,9 @@ using DubbedUp.Core.Characters;
 using DubbedUp.Core.ProjectFormat;
 using DubbedUp.Core.Scenes;
 using DubbedUp.Core.Timeline;
+using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
+using DubbedUp.Godot.UI.Controls;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -13,17 +15,26 @@ public partial class SceneEditorScreen : BaseScreen
     private LineEdit? _titleInput;
     private SpinBox? _durationInput;
     private VideoStreamPlayer? _videoPlayer;
-    private Button? _playVideoButton;
+    private Button? _seekBackButton;
+    private Button? _playPauseButton;
+    private Button? _seekForwardButton;
+    private Button? _stopButton;
     private Label? _videoTimeLabel;
+    private HSlider? _timeSlider;
+    private PanelContainer? _timelineContainer;
+    private Button? _addBoxButton;
     private VBoxContainer? _slotsContainer;
-    private Button? _addSlotButton;
+    private Label? _statusLabel;
     private Button? _saveButton;
     private Button? _backButton;
-    private Label? _statusLabel;
 
+    private TimelineWaveformEditor? _timelineEditor;
     private readonly List<EditableVoiceSlot> _editableSlots = [];
     private bool _isPreviewingSlot = false;
     private double _previewEndSec = 0.0;
+    private bool _isSliderDragging = false;
+    private bool _isPlaying = false;
+    private double _totalDuration = 22.0;
 
     private sealed class EditableVoiceSlot
     {
@@ -46,18 +57,60 @@ public partial class SceneEditorScreen : BaseScreen
         _titleInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid/TitleInput");
         _durationInput = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid/DurationInput");
         _videoPlayer = GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoPanel/VideoPlayer");
-        _playVideoButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/PlayVideoButton");
+        _seekBackButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/SeekBackButton");
+        _playPauseButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/PlayPauseButton");
+        _seekForwardButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/SeekForwardButton");
+        _stopButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/StopButton");
         _videoTimeLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/VideoTimeLabel");
+        _timeSlider = GetNodeOrNull<HSlider>("ScrollContainer/CenterContainer/VBoxContainer/TimeSlider");
+        _timelineContainer = GetNodeOrNull<PanelContainer>("ScrollContainer/CenterContainer/VBoxContainer/TimelineContainer");
+        _addBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/AddBoxButton");
         _slotsContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/SlotsContainer");
-        _addSlotButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/AddSlotButton");
+        _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
         _saveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/SaveButton");
         _backButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/BackButton");
-        _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
 
-        if (_playVideoButton is not null) _playVideoButton.Pressed += OnPlayVideoPressed;
-        if (_addSlotButton is not null) _addSlotButton.Pressed += OnAddSlotPressed;
+        // Create and add TimelineWaveformEditor
+        if (_timelineContainer is not null)
+        {
+            _timelineEditor = new TimelineWaveformEditor();
+            _timelineContainer.AddChild(_timelineEditor);
+            _timelineEditor.SeekRequested += OnTimelineSeekRequested;
+            _timelineEditor.SlotSelected += OnTimelineSlotSelected;
+            _timelineEditor.SlotChanged += OnTimelineSlotChanged;
+        }
+
+        if (_playPauseButton is not null) _playPauseButton.Pressed += OnPlayPausePressed;
+        if (_seekBackButton is not null) _seekBackButton.Pressed += () => SeekRelative(-5.0);
+        if (_seekForwardButton is not null) _seekForwardButton.Pressed += () => SeekRelative(5.0);
+        if (_stopButton is not null) _stopButton.Pressed += OnStopPressed;
+        if (_addBoxButton is not null) _addBoxButton.Pressed += OnAddBoxPressed;
         if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
         if (_backButton is not null) _backButton.Pressed += OnBackPressed;
+
+        if (_durationInput is not null)
+        {
+            _durationInput.ValueChanged += val =>
+            {
+                _totalDuration = Math.Max(1.0, val);
+                if (_timeSlider is not null) _timeSlider.MaxValue = _totalDuration;
+                SyncTimelineData();
+            };
+        }
+
+        if (_timeSlider is not null)
+        {
+            _timeSlider.DragStarted += () => _isSliderDragging = true;
+            _timeSlider.DragEnded += _ =>
+            {
+                _isSliderDragging = false;
+                if (_timeSlider is not null) SeekTo(_timeSlider.Value);
+            };
+            _timeSlider.ValueChanged += val =>
+            {
+                if (_isSliderDragging) SeekTo(val);
+            };
+        }
 
         if (Coordinator is not null)
         {
@@ -74,8 +127,14 @@ public partial class SceneEditorScreen : BaseScreen
             return;
         }
 
+        _totalDuration = doc.DurationMilliseconds / 1000.0;
         if (_titleInput is not null) _titleInput.Text = doc.Title;
-        if (_durationInput is not null) _durationInput.Value = doc.DurationMilliseconds / 1000.0;
+        if (_durationInput is not null) _durationInput.Value = _totalDuration;
+        if (_timeSlider is not null)
+        {
+            _timeSlider.MaxValue = _totalDuration;
+            _timeSlider.Value = 0.0;
+        }
 
         _editableSlots.Clear();
         foreach (var slot in doc.VoiceSlots)
@@ -94,50 +153,247 @@ public partial class SceneEditorScreen : BaseScreen
             });
         }
 
-        LoadVideo();
+        LoadVideoAndAudioWaveform();
         RebuildSlotsUi();
+        SyncTimelineData();
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"🎬 '{doc.Title}' yüklendi ({_editableSlots.Count} replik). Değişiklik yapıp 'Değişiklikleri Kaydet'e basabilirsiniz.";
+            _statusLabel.Text = $"💡 Sahne yüklendi: '{doc.Title}' ({_editableSlots.Count} replik kutucuğu)";
         }
     }
 
-    private void LoadVideo()
+    private void LoadVideoAndAudioWaveform()
     {
-        if (_videoPlayer is null || Coordinator?.CurrentScene is null) return;
+        if (_videoPlayer is null) return;
 
-        var videoAsset = Coordinator.CurrentScene.SourceMedia.FirstOrDefault(m => m.Role == SourceMediaRole.SceneVideo);
-        var relPath = videoAsset?.RelativePath ?? "media/speed_homeless.ogv";
-        var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
+        var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
+        var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
+        if (doc is null) return;
 
-        string? resolvedFilePath = null;
+        var videoAsset = doc.SourceMedia.FirstOrDefault(m => m.Role == SourceMediaRole.SceneVideo);
+        if (videoAsset is not null)
+        {
+            var relPath = videoAsset.RelativePath;
+            if (!string.IsNullOrEmpty(folderPath))
+            {
+                var fullVideoPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(folderPath, relPath));
+                if (System.IO.File.Exists(fullVideoPath))
+                {
+                    var resPath = ProjectSettings.LocalizePath(fullVideoPath);
+                    if (!string.IsNullOrEmpty(resPath) && ResourceLoader.Exists(resPath))
+                    {
+                        _videoPlayer.Stream = GD.Load<VideoStream>(resPath);
+                    }
+                    else
+                    {
+                        var theora = new VideoStreamTheora { File = resPath ?? fullVideoPath.Replace("\\", "/") };
+                        _videoPlayer.Stream = theora;
+                    }
+                }
+            }
+
+            if (_videoPlayer.Stream is null && ResourceLoader.Exists(relPath))
+            {
+                _videoPlayer.Stream = GD.Load<VideoStream>(relPath);
+            }
+        }
+
+        // Load Waveform from vocals.wav or audio.wav
+        string? wavPath = null;
         if (!string.IsNullOrEmpty(folderPath))
         {
-            var candidate = System.IO.Path.Combine(folderPath, relPath);
-            if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
+            var vocals = System.IO.Path.Combine(folderPath, "media", "vocals.wav");
+            var audio = System.IO.Path.Combine(folderPath, "media", "audio.wav");
+            if (System.IO.File.Exists(vocals)) wavPath = vocals;
+            else if (System.IO.File.Exists(audio)) wavPath = audio;
         }
 
-        if (resolvedFilePath is null)
+        if (wavPath is null && doc is not null)
         {
-            var sceneId = Coordinator.CurrentScene.SceneId;
-            var candidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/{relPath}");
-            if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
+            var sceneId = doc.SceneId;
+            var vocals = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/vocals.wav");
+            var audio = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/audio.wav");
+            if (System.IO.File.Exists(vocals)) wavPath = vocals;
+            else if (System.IO.File.Exists(audio)) wavPath = audio;
         }
 
-        if (resolvedFilePath is not null)
+        if (wavPath is not null)
         {
-            try
+            var fullWaveform = AudioWaveformLoader.ExtractFullWaveform(wavPath, 350);
+            _timelineEditor?.SetWaveform(fullWaveform);
+            GD.Print($"[SceneEditor] Audio waveform loaded for timeline: {wavPath}");
+        }
+    }
+
+    private void SyncTimelineData()
+    {
+        if (_timelineEditor is null) return;
+
+        var timelineSlots = _editableSlots.Select(s => new TimelineWaveformEditor.TimelineSlotData
+        {
+            SlotId = s.SlotId,
+            CharacterName = s.CharacterName,
+            Prompt = s.Prompt,
+            StartSeconds = s.StartSeconds,
+            EndSeconds = s.EndSeconds,
+        }).ToList();
+
+        _timelineEditor.SetData(_totalDuration, timelineSlots);
+    }
+
+    private void OnTimelineSeekRequested(double targetSeconds)
+    {
+        SeekTo(targetSeconds);
+    }
+
+    private void OnTimelineSlotSelected(int slotIndex)
+    {
+        if (slotIndex >= 0 && slotIndex < _editableSlots.Count)
+        {
+            var slot = _editableSlots[slotIndex];
+            if (_statusLabel is not null)
             {
-                var localized = ProjectSettings.LocalizePath(resolvedFilePath);
-                var stream = new VideoStreamTheora();
-                stream.File = !string.IsNullOrEmpty(localized) ? localized : resolvedFilePath.Replace("\\", "/");
-                _videoPlayer.Stream = stream;
-                _videoPlayer.Expand = true;
+                _statusLabel.Text = $"👉 Seçilen Replik #{slotIndex + 1}: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
             }
-            catch (Exception ex)
+        }
+    }
+
+    private void OnTimelineSlotChanged(int slotIndex)
+    {
+        // When dragged on timeline, synchronize editable slots and UI cards
+        RebuildSlotsUi();
+    }
+
+    private void OnPlayPausePressed()
+    {
+        if (_videoPlayer is null || _videoPlayer.Stream is null) return;
+
+        if (_isPlaying)
+        {
+            PauseVideo();
+        }
+        else
+        {
+            PlayVideo();
+        }
+    }
+
+    private void PlayVideo()
+    {
+        if (_videoPlayer is null || _videoPlayer.Stream is null) return;
+
+        _isPreviewingSlot = false;
+        _isPlaying = true;
+        _videoPlayer.Paused = false;
+        if (!_videoPlayer.IsPlaying())
+        {
+            _videoPlayer.Play();
+        }
+
+        if (_playPauseButton is not null) _playPauseButton.Text = "⏸ Duraklat";
+    }
+
+    private void PauseVideo()
+    {
+        if (_videoPlayer is null) return;
+
+        _isPlaying = false;
+        _videoPlayer.Paused = true;
+        if (_playPauseButton is not null) _playPauseButton.Text = "▶ Oynat";
+    }
+
+    private void OnStopPressed()
+    {
+        SeekTo(0.0);
+        PauseVideo();
+    }
+
+    private void SeekRelative(double deltaSec)
+    {
+        var current = _videoPlayer is not null && _videoPlayer.IsPlaying() ? _videoPlayer.GetStreamPosition() : (_timeSlider?.Value ?? 0.0);
+        SeekTo(current + deltaSec);
+    }
+
+    private void SeekTo(double targetSec)
+    {
+        var clamped = Math.Clamp(targetSec, 0.0, _totalDuration);
+        if (_videoPlayer is not null && _videoPlayer.Stream is not null)
+        {
+            _videoPlayer.StreamPosition = clamped;
+        }
+
+        if (_timeSlider is not null && !_isSliderDragging)
+        {
+            _timeSlider.Value = clamped;
+        }
+
+        if (_videoTimeLabel is not null)
+        {
+            _videoTimeLabel.Text = $"⏱ {clamped:F1}s / {_totalDuration:F1}s";
+        }
+
+        _timelineEditor?.SetPlayhead(clamped);
+    }
+
+    private void OnAddBoxPressed()
+    {
+        var currentPos = _videoPlayer is not null && _videoPlayer.IsPlaying() ? _videoPlayer.GetStreamPosition() : (_timeSlider?.Value ?? 0.0);
+        var start = Math.Round(currentPos, 1);
+        var end = Math.Round(Math.Min(_totalDuration, start + 3.0), 1);
+        if (end <= start) end = Math.Min(_totalDuration, start + 1.0);
+
+        var nextIdx = _editableSlots.Count + 1;
+        var newSlot = new EditableVoiceSlot
+        {
+            SlotId = $"slot-{nextIdx}",
+            CharacterId = $"char-{nextIdx}",
+            CharacterName = $"Karakter {nextIdx}",
+            Prompt = "Yeni replik metnini girin...",
+            StartSeconds = start,
+            EndSeconds = end
+        };
+
+        _editableSlots.Add(newSlot);
+        RebuildSlotsUi();
+        SyncTimelineData();
+        _timelineEditor?.SelectSlot(_editableSlots.Count - 1);
+
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = $"✨ {start:F1}s zamanına yeni konuşma kutucuğu eklendi!";
+        }
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_videoPlayer is not null && _videoPlayer.Stream is not null && _videoPlayer.IsPlaying() && !_videoPlayer.Paused)
+        {
+            var pos = _videoPlayer.GetStreamPosition();
+            _isPlaying = true;
+
+            if (_timeSlider is not null && !_isSliderDragging)
             {
-                GD.PrintErr($"[SceneEditor] Video error: {ex.Message}");
+                _timeSlider.Value = pos;
+            }
+
+            if (_videoTimeLabel is not null)
+            {
+                _videoTimeLabel.Text = $"⏱ {pos:F1}s / {_totalDuration:F1}s";
+            }
+
+            _timelineEditor?.SetPlayhead(pos);
+
+            if (_isPreviewingSlot && pos >= _previewEndSec)
+            {
+                PauseVideo();
+                _isPreviewingSlot = false;
+            }
+
+            if (pos >= _totalDuration)
+            {
+                PauseVideo();
+                SeekTo(0.0);
             }
         }
     }
@@ -153,394 +409,307 @@ public partial class SceneEditorScreen : BaseScreen
 
         for (int i = 0; i < _editableSlots.Count; i++)
         {
-            var slotIndex = i;
+            var index = i;
             var slot = _editableSlots[i];
 
-            var panel = new PanelContainer();
-            panel.CustomMinimumSize = new Vector2(760, 95);
+            var panel = new PanelContainer
+            {
+                CustomMinimumSize = new Vector2(820, 0)
+            };
 
-            var vbox = new VBoxContainer();
-            vbox.AddThemeConstantOverride("separation", 6);
-            panel.AddChild(vbox);
+            var style = new StyleBoxFlat
+            {
+                BgColor = new Color(0.12f, 0.15f, 0.20f, 0.95f),
+                CornerRadiusBottomLeft = 6,
+                CornerRadiusBottomRight = 6,
+                CornerRadiusTopLeft = 6,
+                CornerRadiusTopRight = 6,
+                BorderWidthBottom = 2,
+                BorderWidthLeft = 4,
+                BorderWidthRight = 2,
+                BorderWidthTop = 2,
+                BorderColor = new Color(0.3f, 0.6f, 0.9f, 0.8f)
+            };
+            panel.AddThemeStyleboxOverride("panel", style);
 
-            // Row 1: Header + Character + Times + Delete
-            var topRow = new HBoxContainer();
-            topRow.AddThemeConstantOverride("separation", 10);
-            vbox.AddChild(topRow);
+            var mainVBox = new VBoxContainer();
+            mainVBox.AddThemeConstantOverride("separation", 6);
+            panel.AddChild(mainVBox);
+
+            // Row 1: Header (Number, Character, Start/End, Preview, Delete)
+            var row1 = new HBoxContainer();
+            row1.AddThemeConstantOverride("separation", 10);
+            mainVBox.AddChild(row1);
 
             var numLabel = new Label
             {
-                Text = $"#{slotIndex + 1}",
-                CustomMinimumSize = new Vector2(30, 0),
+                Text = $"#{index + 1}",
+                CustomMinimumSize = new Vector2(32, 0)
             };
-            numLabel.AddThemeColorOverride("font_color", new Color(1.0f, 0.85f, 0.2f));
-            topRow.AddChild(numLabel);
+            numLabel.AddThemeColorOverride("font_color", new Color(1.0f, 0.85f, 0.3f));
+            row1.AddChild(numLabel);
 
-            var charInput = new LineEdit
+            var charNameInput = new LineEdit
             {
                 Text = slot.CharacterName,
-                PlaceholderText = "Karakter Adı",
-                CustomMinimumSize = new Vector2(160, 32),
+                PlaceholderText = "Karakter Adı...",
+                CustomMinimumSize = new Vector2(160, 32)
             };
-            charInput.TextChanged += (newText) =>
+            charNameInput.TextChanged += text =>
             {
-                slot.CharacterName = string.IsNullOrWhiteSpace(newText) ? $"Karakter {slotIndex + 1}" : newText.Trim();
-                slot.CharacterId = ToKebabCaseId(slot.CharacterName, $"char-{slotIndex + 1}");
+                slot.CharacterName = text;
+                slot.CharacterId = ToKebabCaseId(text);
+                SyncTimelineData();
             };
-            topRow.AddChild(charInput);
+            row1.AddChild(charNameInput);
 
-            var startLabel = new Label { Text = "Başlangıç (sn):" };
-            topRow.AddChild(startLabel);
+            var startLabel = new Label { Text = "Başlangıç:" };
+            row1.AddChild(startLabel);
 
-            var startSpin = new SpinBox
+            var startInput = new SpinBox
             {
                 MinValue = 0.0,
                 MaxValue = 600.0,
                 Step = 0.1,
                 Value = slot.StartSeconds,
-                CustomMinimumSize = new Vector2(90, 32),
+                CustomMinimumSize = new Vector2(80, 32)
             };
-            startSpin.ValueChanged += (newVal) =>
+            startInput.ValueChanged += val =>
             {
-                slot.StartSeconds = newVal;
-                if (slot.EndSeconds <= slot.StartSeconds)
-                {
-                    slot.EndSeconds = slot.StartSeconds + 1.0;
-                }
+                slot.StartSeconds = val;
+                if (slot.EndSeconds <= slot.StartSeconds) slot.EndSeconds = slot.StartSeconds + 0.5;
+                SyncTimelineData();
             };
-            topRow.AddChild(startSpin);
+            row1.AddChild(startInput);
 
-            var endLabel = new Label { Text = "Bitiş (sn):" };
-            topRow.AddChild(endLabel);
+            var endLabel = new Label { Text = "Bitiş:" };
+            row1.AddChild(endLabel);
 
-            var endSpin = new SpinBox
+            var endInput = new SpinBox
             {
-                MinValue = 0.0,
+                MinValue = 0.1,
                 MaxValue = 600.0,
                 Step = 0.1,
                 Value = slot.EndSeconds,
-                CustomMinimumSize = new Vector2(90, 32),
+                CustomMinimumSize = new Vector2(80, 32)
             };
-            endSpin.ValueChanged += (newVal) =>
+            endInput.ValueChanged += val =>
             {
-                slot.EndSeconds = newVal;
-                if (_durationInput is not null && slot.EndSeconds > _durationInput.Value)
-                {
-                    _durationInput.Value = Math.Ceiling(slot.EndSeconds + 1.0);
-                }
+                slot.EndSeconds = val;
+                if (slot.EndSeconds <= slot.StartSeconds) slot.StartSeconds = Math.Max(0, slot.EndSeconds - 0.5);
+                SyncTimelineData();
             };
-            topRow.AddChild(endSpin);
+            row1.AddChild(endInput);
 
-            var playRangeBtn = new Button
+            var previewBtn = new Button
             {
-                Text = "🎧 Önizle",
-                CustomMinimumSize = new Vector2(85, 32),
+                Text = "🎧 Bu Kısmı Dinle",
+                CustomMinimumSize = new Vector2(120, 32)
             };
-            playRangeBtn.Pressed += () => PlaySlotRange(slot.StartSeconds, slot.EndSeconds);
-            topRow.AddChild(playRangeBtn);
+            previewBtn.Pressed += () => PreviewSlot(slot);
+            row1.AddChild(previewBtn);
 
             var deleteBtn = new Button
             {
                 Text = "🗑️ Sil",
-                CustomMinimumSize = new Vector2(65, 32),
+                CustomMinimumSize = new Vector2(60, 32)
             };
-            deleteBtn.Pressed += () => DeleteSlot(slotIndex);
-            topRow.AddChild(deleteBtn);
+            deleteBtn.AddThemeColorOverride("font_color", new Color(1, 0.4f, 0.4f));
+            deleteBtn.Pressed += () =>
+            {
+                _editableSlots.RemoveAt(index);
+                RebuildSlotsUi();
+                SyncTimelineData();
+            };
+            row1.AddChild(deleteBtn);
 
-            // Row 2: Prompt / Subtitle Text
+            // Row 2: Prompt / Subtitle Input
+            var row2 = new HBoxContainer();
+            row2.AddThemeConstantOverride("separation", 8);
+            mainVBox.AddChild(row2);
+
+            var promptLabel = new Label { Text = "💬 Altyazı / Metin:" };
+            row2.AddChild(promptLabel);
+
             var promptInput = new LineEdit
             {
                 Text = slot.Prompt,
-                PlaceholderText = "Repliğin / Altyazının metni...",
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                CustomMinimumSize = new Vector2(0, 34),
+                PlaceholderText = "Karakterin söyleyeceği replik metni / altyazı...",
+                SizeFlagsHorizontal = SizeFlags.ExpandFill,
+                CustomMinimumSize = new Vector2(0, 32)
             };
-            promptInput.TextChanged += (newText) => slot.Prompt = string.IsNullOrWhiteSpace(newText) ? "Replik metni..." : newText.Trim();
-            vbox.AddChild(promptInput);
+            promptInput.TextChanged += text =>
+            {
+                slot.Prompt = text;
+                SyncTimelineData();
+            };
+            row2.AddChild(promptInput);
 
             _slotsContainer.AddChild(panel);
         }
     }
 
-    private void PlaySlotRange(double startSec, double endSec)
+    private void PreviewSlot(EditableVoiceSlot slot)
     {
-        if (_videoPlayer is null || _videoPlayer.Stream is null)
-        {
-            LoadVideo();
-        }
-
         if (_videoPlayer is null || _videoPlayer.Stream is null) return;
 
-        _videoPlayer.Bus = "Master";
-        _videoPlayer.VolumeDb = 0.0f; // Enable audio for review
-        _videoPlayer.Play();
-        _videoPlayer.StreamPosition = startSec;
-        _previewEndSec = endSec;
         _isPreviewingSlot = true;
+        _previewEndSec = slot.EndSeconds;
+        SeekTo(slot.StartSeconds);
+        PlayVideo();
 
-        if (_statusLabel is not null) _statusLabel.Text = $"▶ Replik aralığı oynatılıyor: {startSec:F1}s - {endSec:F1}s";
-    }
-
-    public override void _Process(double delta)
-    {
-        if (_videoPlayer is not null && _videoPlayer.IsPlaying())
+        if (_statusLabel is not null)
         {
-            var pos = _videoPlayer.GetStreamPosition();
-            if (_videoTimeLabel is not null)
-            {
-                _videoTimeLabel.Text = $"⏱ Süre: {pos:F1}s";
-            }
-
-            if (_isPreviewingSlot && pos >= _previewEndSec)
-            {
-                _videoPlayer.Stop();
-                _isPreviewingSlot = false;
-                if (_statusLabel is not null) _statusLabel.Text = "Önizleme tamamlandı.";
-            }
+            _statusLabel.Text = $"🎧 Oynatılıyor: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
         }
     }
 
-    private void OnPlayVideoPressed()
+    private static string ToKebabCaseId(string input)
     {
-        if (_videoPlayer is null || _videoPlayer.Stream is null)
-        {
-            LoadVideo();
-        }
+        if (string.IsNullOrWhiteSpace(input)) return "slot";
 
-        if (_videoPlayer is null || _videoPlayer.Stream is null) return;
+        var sanitized = input
+            .Replace("ç", "c").Replace("Ç", "c")
+            .Replace("ğ", "g").Replace("Ğ", "g")
+            .Replace("ı", "i").Replace("I", "i").Replace("İ", "i")
+            .Replace("ö", "o").Replace("Ö", "o")
+            .Replace("ş", "s").Replace("Ş", "s")
+            .Replace("ü", "u").Replace("Ü", "u");
 
-        if (_videoPlayer.IsPlaying())
-        {
-            _videoPlayer.Stop();
-            _isPreviewingSlot = false;
-            if (_playVideoButton is not null) _playVideoButton.Text = "▶ Videoyu Baştan Oynat";
-        }
-        else
-        {
-            _videoPlayer.Bus = "Master";
-            _videoPlayer.VolumeDb = 0.0f;
-            _videoPlayer.Play();
-            _videoPlayer.StreamPosition = 0.0;
-            _isPreviewingSlot = false;
-            if (_playVideoButton is not null) _playVideoButton.Text = "⏹ Videoyu Durdur";
-        }
-    }
+        sanitized = Regex.Replace(sanitized, @"[^a-zA-Z0-9\s-]", "");
+        sanitized = Regex.Replace(sanitized, @"\s+", "-").Trim('-').ToLowerInvariant();
+        sanitized = Regex.Replace(sanitized, @"-+", "-");
 
-    private void OnAddSlotPressed()
-    {
-        var lastSlot = _editableSlots.LastOrDefault();
-        var start = lastSlot is not null ? lastSlot.EndSeconds + 0.5 : 0.0;
-        var end = start + 3.0;
-        var num = _editableSlots.Count + 1;
-
-        _editableSlots.Add(new EditableVoiceSlot
-        {
-            SlotId = $"slot-{num}",
-            CharacterId = $"char-{num}",
-            CharacterName = $"Karakter {num}",
-            Prompt = "Yeni replik metni...",
-            StartSeconds = start,
-            EndSeconds = end
-        });
-
-        if (_durationInput is not null && end > _durationInput.Value)
-        {
-            _durationInput.Value = Math.Ceiling(end + 1.0);
-        }
-
-        RebuildSlotsUi();
-    }
-
-    private void DeleteSlot(int index)
-    {
-        if (index >= 0 && index < _editableSlots.Count)
-        {
-            _editableSlots.RemoveAt(index);
-            RebuildSlotsUi();
-        }
-    }
-
-    private static string ToKebabCaseId(string input, string fallback)
-    {
-        if (string.IsNullOrWhiteSpace(input)) return fallback;
-
-        // Convert Turkish special characters to ASCII equivalents for strict kebab-case ID compliance
-        var s = input.ToLowerInvariant()
-            .Replace("ç", "c")
-            .Replace("ğ", "g")
-            .Replace("ı", "i")
-            .Replace("ö", "o")
-            .Replace("ş", "s")
-            .Replace("ü", "u");
-
-        // Keep only alphanumeric characters and hyphens
-        var clean = Regex.Replace(s, @"[^a-z0-9]+", "-").Trim('-');
-        return string.IsNullOrEmpty(clean) ? fallback : clean;
+        return string.IsNullOrEmpty(sanitized) ? "slot" : sanitized;
     }
 
     private void OnSavePressed()
     {
+        var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
+        if (doc is null)
+        {
+            if (_statusLabel is not null) _statusLabel.Text = "❌ Kaydedilecek sahne bulunamadı.";
+            return;
+        }
+
+        if (_editableSlots.Count == 0)
+        {
+            if (_statusLabel is not null) _statusLabel.Text = "❌ En az 1 konuşma kutucuğu / replik olmalıdır.";
+            return;
+        }
+
+        var newTitle = _titleInput?.Text?.Trim() ?? doc.Title;
+        if (string.IsNullOrWhiteSpace(newTitle)) newTitle = doc.Title;
+
+        var inputDurationMs = (int)((_durationInput?.Value ?? 22.0) * 1000);
+        var maxSlotEndMs = (int)(_editableSlots.Max(s => s.EndSeconds) * 1000);
+        var newDurationMs = Math.Max(inputDurationMs, maxSlotEndMs + 500);
+
+        var newCharacters = new List<CharacterDefinition>();
+        var newVoiceSlots = new List<VoiceSlotDefinition>();
+        var newTimeline = new List<TimelineEntry>();
+
+        var sortedSlots = _editableSlots.OrderBy(s => s.StartSeconds).ToList();
+        var charMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < sortedSlots.Count; i++)
+        {
+            var slot = sortedSlots[i];
+            var charKey = string.IsNullOrWhiteSpace(slot.CharacterName) ? $"Karakter {i + 1}" : slot.CharacterName.Trim();
+            if (!charMap.TryGetValue(charKey, out var charId))
+            {
+                charId = ToKebabCaseId(charKey);
+                if (newCharacters.Any(c => c.CharacterId == charId)) charId = $"{charId}-{i + 1}";
+
+                charMap[charKey] = charId;
+                newCharacters.Add(new CharacterDefinition
+                {
+                    CharacterId = charId,
+                    DisplayName = charKey
+                });
+            }
+
+            var slotId = $"slot-{i + 1}-{charId}";
+            var prompt = string.IsNullOrWhiteSpace(slot.Prompt) ? "Replik" : slot.Prompt.Trim();
+
+            newVoiceSlots.Add(new VoiceSlotDefinition
+            {
+                VoiceSlotId = slotId,
+                CharacterId = charId,
+                Prompt = prompt
+            });
+
+            var startMs = (int)(slot.StartSeconds * 1000);
+            var endMs = (int)(slot.EndSeconds * 1000);
+            if (endMs <= startMs) endMs = startMs + 1000;
+
+            newTimeline.Add(new TimelineEntry
+            {
+                TimelineEntryId = $"entry-{i + 1}-{slotId}",
+                VoiceSlotId = slotId,
+                StartMilliseconds = startMs,
+                EndMilliseconds = endMs
+            });
+        }
+
+        var updatedDoc = new OfficialSceneDocument
+        {
+            SchemaVersion = doc.SchemaVersion,
+            SceneId = doc.SceneId,
+            Title = newTitle,
+            DurationMilliseconds = newDurationMs,
+            SourceMedia = doc.SourceMedia,
+            Characters = newCharacters,
+            VoiceSlots = newVoiceSlots,
+            Timeline = newTimeline
+        };
+
         try
         {
-            var title = string.IsNullOrWhiteSpace(_titleInput?.Text) ? "Düzenlenmiş Sahne" : _titleInput.Text.Trim();
-
-            // Ensure at least 1 slot
-            if (_editableSlots.Count == 0)
-            {
-                _editableSlots.Add(new EditableVoiceSlot
-                {
-                    SlotId = "slot-1",
-                    CharacterId = "char-1",
-                    CharacterName = "Oyuncu",
-                    Prompt = "Replik metni...",
-                    StartSeconds = 0.0,
-                    EndSeconds = 4.0
-                });
-            }
-
-            // Calculate max slot end time and ensure total duration is strictly larger
-            var maxSlotEndMs = _editableSlots.Max(s => (long)(Math.Max(s.StartSeconds + 0.5, s.EndSeconds) * 1000));
-            var inputDurationMs = (long)((_durationInput?.Value ?? 10.0) * 1000);
-            var durationMs = Math.Max(inputDurationMs, maxSlotEndMs + 500);
-
-            var existingDoc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
-            var sceneId = existingDoc is not null ? ToKebabCaseId(existingDoc.SceneId, "custom-scene") : "custom-scene";
-
-            var distinctChars = new List<CharacterDefinition>();
-            var charMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            for (int i = 0; i < _editableSlots.Count; i++)
-            {
-                var s = _editableSlots[i];
-                var rawCharName = string.IsNullOrWhiteSpace(s.CharacterName) ? $"Karakter {i + 1}" : s.CharacterName.Trim();
-                var charId = ToKebabCaseId(rawCharName, $"char-{i + 1}");
-
-                if (!charMap.ContainsKey(charId))
-                {
-                    charMap[charId] = rawCharName;
-                    distinctChars.Add(new CharacterDefinition
-                    {
-                        CharacterId = charId,
-                        DisplayName = rawCharName
-                    });
-                }
-                s.CharacterId = charId;
-            }
-
-            var voiceSlots = new List<VoiceSlotDefinition>();
-            var timelineEntries = new List<TimelineEntry>();
-
-            for (int i = 0; i < _editableSlots.Count; i++)
-            {
-                var s = _editableSlots[i];
-                var slotId = $"slot-{i + 1}";
-                var startMs = (long)(Math.Max(0.0, s.StartSeconds) * 1000);
-                var endMs = (long)(Math.Max(s.StartSeconds + 0.5, s.EndSeconds) * 1000);
-                var promptText = string.IsNullOrWhiteSpace(s.Prompt) ? "Replik metni..." : s.Prompt.Trim();
-
-                voiceSlots.Add(new VoiceSlotDefinition
-                {
-                    VoiceSlotId = slotId,
-                    CharacterId = s.CharacterId,
-                    Prompt = promptText
-                });
-
-                timelineEntries.Add(new TimelineEntry
-                {
-                    TimelineEntryId = $"entry-{i + 1}",
-                    VoiceSlotId = slotId,
-                    StartMilliseconds = startMs,
-                    EndMilliseconds = endMs
-                });
-            }
-
-            var sourceMedia = existingDoc?.SourceMedia;
-            if (sourceMedia is null || sourceMedia.Count == 0 || sourceMedia.All(m => m.Role != SourceMediaRole.SceneVideo))
-            {
-                sourceMedia = [new SourceMediaAsset { MediaId = "video-main", Role = SourceMediaRole.SceneVideo, RelativePath = "media/speed_homeless.ogv" }];
-            }
-
-            var updatedDoc = new OfficialSceneDocument
-            {
-                SchemaVersion = 1,
-                SceneId = sceneId,
-                Title = title,
-                DurationMilliseconds = durationMs,
-                SourceMedia = sourceMedia,
-                Characters = distinctChars,
-                VoiceSlots = voiceSlots,
-                Timeline = timelineEntries
-            };
-
-            // Validate and serialize using ProjectJsonSerializer
-            var json = ProjectJsonSerializer.SerializeScene(updatedDoc);
-
-            // 1. Save to package directory
-            var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
-            if (!string.IsNullOrEmpty(folderPath) && System.IO.Directory.Exists(folderPath))
-            {
-                var jsonPath = System.IO.Path.Combine(folderPath, "scene.json");
-                System.IO.File.WriteAllText(jsonPath, json);
-                GD.Print($"[SceneEditor] Saved changes to package directory '{jsonPath}'");
-            }
-
-            // 2. Sync to res://Content/OfficialScenes/<sceneId>/scene.json
-            var resFolder = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}");
-            if (System.IO.Directory.Exists(resFolder))
-            {
-                var resSceneJson = System.IO.Path.Combine(resFolder, "scene.json");
-                System.IO.File.WriteAllText(resSceneJson, json);
-                GD.Print($"[SceneEditor] Synced to official content '{resSceneJson}'");
-            }
-
-            // 3. Sync to root scenes/<sceneId>/scene.json
-            var rootFolder = System.IO.Path.GetFullPath(System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "..", "scenes", sceneId));
-            if (System.IO.Directory.Exists(rootFolder))
-            {
-                var rootSceneJson = System.IO.Path.Combine(rootFolder, "scene.json");
-                System.IO.File.WriteAllText(rootSceneJson, json);
-                GD.Print($"[SceneEditor] Synced to repo scenes folder '{rootSceneJson}'");
-            }
-
-            // Update Coordinator state
-            if (Coordinator is not null)
-            {
-                Coordinator.CurrentScene = updatedDoc;
-                if (Coordinator.SelectedScenePackage is not null)
-                {
-                    Coordinator.SelectedScenePackage = new ScenePackage(
-                        updatedDoc,
-                        Coordinator.SelectedScenePackage.PackageDirectory,
-                        Coordinator.SelectedScenePackage.VideoFilePath,
-                        Coordinator.SelectedScenePackage.ThumbnailFilePath
-                    );
-                }
-            }
-
-            if (_statusLabel is not null)
-            {
-                _statusLabel.Text = "✅ Sahne başarıyla doğrulandı ve kaydedildi!";
-            }
-        }
-        catch (ProjectValidationException ex)
-        {
-            var errStr = string.Join("; ", ex.Errors);
-            GD.PrintErr($"[SceneEditor] Validation error: {errStr}");
-            if (_statusLabel is not null) _statusLabel.Text = $"❌ Sahne kuralları hatası: {errStr}";
+            ProjectValidator.Validate(updatedDoc);
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[SceneEditor] Save error: {ex.Message}");
+            GD.PrintErr($"[SceneEditor] Validation failed: {ex.Message}");
             if (_statusLabel is not null) _statusLabel.Text = $"❌ Kaydetme hatası: {ex.Message}";
+            return;
+        }
+
+        var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            var sceneJsonPath = System.IO.Path.Combine(folderPath, "scene.json");
+            var json = ProjectJsonSerializer.SerializeScene(updatedDoc);
+            System.IO.File.WriteAllText(sceneJsonPath, json);
+            GD.Print($"[SceneEditor] Saved updated scene to: {sceneJsonPath}");
+
+            if (Coordinator is not null)
+            {
+                try
+                {
+                    Coordinator.SelectedScenePackage = ScenePackageLoader.LoadPackageFromDirectory(folderPath);
+                    Coordinator.CurrentScene = Coordinator.SelectedScenePackage.Document;
+                }
+                catch
+                {
+                    Coordinator.CurrentScene = updatedDoc;
+                }
+            }
+        }
+        else if (Coordinator is not null)
+        {
+            Coordinator.CurrentScene = updatedDoc;
+        }
+
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = "✅ Sahne, konuşma kutucukları ve altyazılar başarıyla kaydedildi!";
         }
     }
 
     private void OnBackPressed()
     {
-        if (_videoPlayer is not null && _videoPlayer.IsPlaying())
-        {
-            _videoPlayer.Stop();
-        }
-        Navigator?.NavigateTo(AppScreen.ScenePicker);
+        PauseVideo();
+        Navigator?.NavigateTo(AppScreen.Setup);
     }
 }
