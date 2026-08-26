@@ -40,16 +40,16 @@ public partial class TimelineWaveformEditor : Control
 
     private static readonly Color[] PresetColors =
     [
-        new Color(1.0f, 0.65f, 0.2f, 0.38f),  // Amber
-        new Color(0.3f, 0.8f, 1.0f, 0.38f),   // Cyan
-        new Color(0.6f, 1.0f, 0.4f, 0.38f),   // Green
-        new Color(1.0f, 0.4f, 0.7f, 0.38f),   // Pink
-        new Color(0.8f, 0.5f, 1.0f, 0.38f),   // Purple
+        new Color(1.0f, 0.70f, 0.25f, 0.42f),  // Amber
+        new Color(0.25f, 0.85f, 1.0f, 0.42f),  // Cyan
+        new Color(0.50f, 1.0f, 0.45f, 0.42f),  // Green
+        new Color(1.0f, 0.45f, 0.75f, 0.42f),  // Pink
+        new Color(0.85f, 0.55f, 1.0f, 0.42f),  // Purple
     ];
 
     public override void _Ready()
     {
-        CustomMinimumSize = new Vector2(820, 110);
+        CustomMinimumSize = new Vector2(820, 115);
         MouseFilter = MouseFilterEnum.Stop;
     }
 
@@ -64,14 +64,21 @@ public partial class TimelineWaveformEditor : Control
             _slots.Add(s);
         }
 
-        _waveformPoints = waveform;
+        if (waveform is not null && waveform.Length > 0)
+        {
+            _waveformPoints = waveform;
+        }
+
         QueueRedraw();
     }
 
     public void SetWaveform(float[]? waveform)
     {
-        _waveformPoints = waveform;
-        QueueRedraw();
+        if (waveform is not null && waveform.Length > 0)
+        {
+            _waveformPoints = waveform;
+            QueueRedraw();
+        }
     }
 
     public void SetPlayhead(double currentSeconds)
@@ -91,98 +98,115 @@ public partial class TimelineWaveformEditor : Control
         var size = Size;
         if (size.X <= 0 || size.Y <= 0 || _totalDuration <= 0) return;
 
-        // 1. Background
+        // 1. Background Frame
         var bgRect = new Rect2(Vector2.Zero, size);
-        DrawRect(bgRect, new Color(0.08f, 0.10f, 0.14f, 1.0f));
-        DrawRect(bgRect, new Color(0.25f, 0.30f, 0.40f, 0.8f), false, 1.5f);
+        DrawRect(bgRect, new Color(0.06f, 0.08f, 0.12f, 1.0f));
+        DrawRect(bgRect, new Color(0.20f, 0.35f, 0.55f, 0.9f), false, 2.0f);
 
         // 2. Time Grid & Ruler Marks (every 1s / 5s)
-        var stepSec = _totalDuration > 60.0 ? 5.0 : (_totalDuration > 20.0 ? 2.0 : 1.0);
         var font = ThemeDB.FallbackFont;
         var fontSize = 11;
+        var stepSec = _totalDuration > 60.0 ? 5.0 : (_totalDuration > 20.0 ? 2.0 : 1.0);
 
         for (double t = 0; t <= _totalDuration; t += stepSec)
         {
             var x = (float)((t / _totalDuration) * size.X);
-            var isMajor = (int)t % 5 == 0;
-            var lineColor = isMajor ? new Color(0.4f, 0.45f, 0.55f, 0.6f) : new Color(0.2f, 0.25f, 0.35f, 0.3f);
-            var lineH = isMajor ? size.Y : size.Y * 0.4f;
+            var isMajor = ((int)Math.Round(t)) % 5 == 0;
+            var lineColor = isMajor ? new Color(0.45f, 0.55f, 0.70f, 0.7f) : new Color(0.20f, 0.25f, 0.35f, 0.4f);
+            var lineH = isMajor ? size.Y : 18.0f;
 
             DrawLine(new Vector2(x, 0), new Vector2(x, lineH), lineColor, 1.0f);
 
-            if (isMajor && x < size.X - 30)
+            if (isMajor && x < size.X - 35)
             {
-                DrawString(font, new Vector2(x + 3, 14), $"{t:F0}s", HorizontalAlignment.Left, -1, fontSize, new Color(0.7f, 0.75f, 0.85f, 0.8f));
+                DrawString(font, new Vector2(x + 4, 13), $"{t:F0}s", HorizontalAlignment.Left, -1, fontSize, new Color(0.8f, 0.88f, 1.0f, 0.9f));
             }
         }
 
-        // 3. Audio Waveform Center Line & Amplitude Bars
-        var centerY = size.Y * 0.58f;
-        var maxAmpH = size.Y * 0.32f;
+        // 3. Audio Waveform Track
+        var centerY = size.Y * 0.56f;
+        var maxAmpH = size.Y * 0.36f;
 
-        DrawLine(new Vector2(0, centerY), new Vector2(size.X, centerY), new Color(0.25f, 0.35f, 0.5f, 0.4f), 1.0f);
+        // Subtle center guide line
+        DrawLine(new Vector2(0, centerY), new Vector2(size.X, centerY), new Color(0.25f, 0.40f, 0.60f, 0.5f), 1.0f);
 
         if (_waveformPoints is not null && _waveformPoints.Length > 0)
         {
             var count = _waveformPoints.Length;
-            var barWidth = Math.Max(2.0f, size.X / count);
+            var stepPx = size.X / count;
+            var barWidth = Math.Max(2.0f, stepPx * 0.85f);
 
             for (int i = 0; i < count; i++)
             {
                 var x = (float)i / count * size.X;
-                var amp = Math.Clamp(_waveformPoints[i], 0.0f, 1.0f) * maxAmpH;
-                if (amp > 1.0f)
-                {
-                    DrawLine(new Vector2(x, centerY - amp), new Vector2(x, centerY + amp), new Color(0.2f, 0.75f, 1.0f, 0.65f), barWidth * 0.8f);
-                }
+                var rawAmp = _waveformPoints[i];
+                var amp = Math.Max(1.5f, Math.Clamp(rawAmp, 0.0f, 1.0f) * maxAmpH);
+
+                // Neon cyan / audio energy bars
+                var barColor = rawAmp > 0.05f
+                    ? new Color(0.20f, 0.85f, 1.0f, 0.85f)
+                    : new Color(0.15f, 0.45f, 0.65f, 0.40f);
+
+                DrawLine(new Vector2(x, centerY - amp), new Vector2(x, centerY + amp), barColor, barWidth);
+            }
+        }
+        else
+        {
+            // Placeholder idle wave pulse
+            for (float x = 0; x < size.X; x += 4)
+            {
+                var idleAmp = (float)(Math.Sin(x * 0.05) * 3.0);
+                DrawLine(new Vector2(x, centerY - idleAmp), new Vector2(x, centerY + idleAmp), new Color(0.2f, 0.5f, 0.7f, 0.4f), 2.0f);
             }
         }
 
-        // 4. Transparent Speech Selection Boxes
+        // 4. Transparent Speech Selection Boxes (Overlaid on Waveform)
         for (int i = 0; i < _slots.Count; i++)
         {
             var slot = _slots[i];
             var xStart = (float)(Math.Clamp(slot.StartSeconds / _totalDuration, 0.0, 1.0) * size.X);
             var xEnd = (float)(Math.Clamp(slot.EndSeconds / _totalDuration, 0.0, 1.0) * size.X);
-            var width = Math.Max(12.0f, xEnd - xStart);
+            var width = Math.Max(14.0f, xEnd - xStart);
 
             var isSelected = (i == _selectedSlotIndex);
-            var boxColor = isSelected ? new Color(0.2f, 0.9f, 0.4f, 0.48f) : slot.BoxColor;
-            var borderColor = isSelected ? new Color(0.4f, 1.0f, 0.6f, 1.0f) : new Color(slot.BoxColor.R, slot.BoxColor.G, slot.BoxColor.B, 0.95f);
+            var baseColor = slot.BoxColor;
+            var boxColor = isSelected ? new Color(0.2f, 0.95f, 0.45f, 0.55f) : baseColor;
+            var borderColor = isSelected ? new Color(0.4f, 1.0f, 0.6f, 1.0f) : new Color(baseColor.R, baseColor.G, baseColor.B, 0.95f);
 
-            var slotRect = new Rect2(xStart, 18, width, size.Y - 22);
+            var slotRect = new Rect2(xStart, 16, width, size.Y - 18);
 
-            // Fill transparent box
+            // Fill transparent colored box
             DrawRect(slotRect, boxColor);
             // Border
             DrawRect(slotRect, borderColor, false, isSelected ? 2.5f : 1.5f);
 
-            // Edge resize handle indicators
-            DrawRect(new Rect2(xStart, 18, 4, size.Y - 22), borderColor);
-            DrawRect(new Rect2(xStart + width - 4, 18, 4, size.Y - 22), borderColor);
+            // Left and Right resize handle bars
+            DrawRect(new Rect2(xStart, 16, 5, size.Y - 18), borderColor);
+            DrawRect(new Rect2(xStart + width - 5, 16, 5, size.Y - 18), borderColor);
 
             // Header Tag (Number & Character Name)
             var tagText = $"#{i + 1} {slot.CharacterName}";
-            var tagBgRect = new Rect2(xStart, 18, Math.Min(width, 140), 16);
-            DrawRect(tagBgRect, new Color(0.0f, 0.0f, 0.0f, 0.75f));
-            DrawString(font, new Vector2(xStart + 3, 30), tagText, HorizontalAlignment.Left, (int)width - 6, 10, new Color(1.0f, 1.0f, 1.0f, 0.95f));
+            var tagWidth = Math.Min(width, 160);
+            var tagBgRect = new Rect2(xStart, 16, tagWidth, 16);
+            DrawRect(tagBgRect, new Color(0.0f, 0.0f, 0.0f, 0.80f));
+            DrawString(font, new Vector2(xStart + 4, 28), tagText, HorizontalAlignment.Left, (int)tagWidth - 6, 11, new Color(1.0f, 1.0f, 1.0f, 1.0f));
         }
 
-        // 5. Playhead (Zaman Çubuğu)
+        // 5. Red Moving Playhead (Zaman Çubuğu)
         var playheadX = (float)((_currentPlayhead / _totalDuration) * size.X);
-        var playheadColor = new Color(1.0f, 0.25f, 0.25f, 1.0f);
+        var playheadColor = new Color(1.0f, 0.20f, 0.20f, 1.0f);
 
-        // Vertical Line
-        DrawLine(new Vector2(playheadX, 0), new Vector2(playheadX, size.Y), playheadColor, 2.0f);
+        // Vertical Playhead Line
+        DrawLine(new Vector2(playheadX, 0), new Vector2(playheadX, size.Y), playheadColor, 2.5f);
 
-        // Top triangle head
-        var points = new Vector2[]
+        // Top triangle pointer
+        var pointerPoints = new Vector2[]
         {
-            new(playheadX - 6, 0),
-            new(playheadX + 6, 0),
-            new(playheadX, 10)
+            new(playheadX - 7, 0),
+            new(playheadX + 7, 0),
+            new(playheadX, 11)
         };
-        DrawColoredPolygon(points, playheadColor);
+        DrawColoredPolygon(pointerPoints, playheadColor);
     }
 
     public override void _GuiInput(InputEvent @event)
@@ -209,11 +233,11 @@ public partial class TimelineWaveformEditor : Control
                         var x1 = (s.StartSeconds / _totalDuration) * size.X;
                         var x2 = (s.EndSeconds / _totalDuration) * size.X;
 
-                        if (mouseX >= x1 - 5 && mouseX <= x2 + 5)
+                        if (mouseX >= x1 - 6 && mouseX <= x2 + 6)
                         {
                             hitSlot = i;
-                            if (Math.Abs(mouseX - x1) <= 7) dragMode = DragMode.ResizeLeft;
-                            else if (Math.Abs(mouseX - x2) <= 7) dragMode = DragMode.ResizeRight;
+                            if (Math.Abs(mouseX - x1) <= 8) dragMode = DragMode.ResizeLeft;
+                            else if (Math.Abs(mouseX - x2) <= 8) dragMode = DragMode.ResizeRight;
                             else dragMode = DragMode.MoveBox;
                             break;
                         }

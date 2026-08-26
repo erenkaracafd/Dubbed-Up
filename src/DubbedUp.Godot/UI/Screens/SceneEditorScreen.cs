@@ -163,6 +163,8 @@ public partial class SceneEditorScreen : BaseScreen
         }
     }
 
+    private float[]? _currentWaveform;
+
     private void LoadVideoAndAudioWaveform()
     {
         if (_videoPlayer is null) return;
@@ -199,30 +201,55 @@ public partial class SceneEditorScreen : BaseScreen
             }
         }
 
-        // Load Waveform from vocals.wav or audio.wav
+        // Exhaustive audio waveform search
         string? wavPath = null;
+        var candidates = new List<string>();
+
         if (!string.IsNullOrEmpty(folderPath))
         {
-            var vocals = System.IO.Path.Combine(folderPath, "media", "vocals.wav");
-            var audio = System.IO.Path.Combine(folderPath, "media", "audio.wav");
-            if (System.IO.File.Exists(vocals)) wavPath = vocals;
-            else if (System.IO.File.Exists(audio)) wavPath = audio;
+            candidates.Add(System.IO.Path.Combine(folderPath, "media", "vocals.wav"));
+            candidates.Add(System.IO.Path.Combine(folderPath, "media", "audio.wav"));
+            candidates.Add(System.IO.Path.Combine(folderPath, "vocals.wav"));
+            candidates.Add(System.IO.Path.Combine(folderPath, "audio.wav"));
+            candidates.Add(System.IO.Path.Combine(folderPath, "media", "background.wav"));
         }
 
-        if (wavPath is null && doc is not null)
+        if (doc is not null)
         {
-            var sceneId = doc.SceneId;
-            var vocals = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/vocals.wav");
-            var audio = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/audio.wav");
-            if (System.IO.File.Exists(vocals)) wavPath = vocals;
-            else if (System.IO.File.Exists(audio)) wavPath = audio;
+            var id = doc.SceneId;
+            var idUnderscore = id.Replace("-", "_");
+            var idHyphen = id.Replace("_", "-");
+
+            candidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{id}/media/vocals.wav"));
+            candidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{idUnderscore}/media/vocals.wav"));
+            candidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{idHyphen}/media/vocals.wav"));
+            candidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{id}/media/audio.wav"));
+            candidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{idUnderscore}/media/audio.wav"));
+            candidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{idHyphen}/media/audio.wav"));
+            candidates.Add(ProjectSettings.GlobalizePath($"res://scenes/{id}/media/vocals.wav"));
+            candidates.Add(ProjectSettings.GlobalizePath($"res://scenes/{idUnderscore}/media/vocals.wav"));
+            candidates.Add(ProjectSettings.GlobalizePath($"res://scenes/{id}/media/audio.wav"));
+            candidates.Add(ProjectSettings.GlobalizePath($"res://scenes/{idUnderscore}/media/audio.wav"));
+        }
+
+        foreach (var c in candidates)
+        {
+            if (System.IO.File.Exists(c))
+            {
+                wavPath = c;
+                break;
+            }
         }
 
         if (wavPath is not null)
         {
-            var fullWaveform = AudioWaveformLoader.ExtractFullWaveform(wavPath, 350);
-            _timelineEditor?.SetWaveform(fullWaveform);
+            _currentWaveform = AudioWaveformLoader.ExtractFullWaveform(wavPath, 350);
+            _timelineEditor?.SetWaveform(_currentWaveform);
             GD.Print($"[SceneEditor] Audio waveform loaded for timeline: {wavPath}");
+        }
+        else
+        {
+            GD.PrintErr($"[SceneEditor] No audio file found for scene '{doc?.SceneId}'");
         }
     }
 
@@ -239,7 +266,7 @@ public partial class SceneEditorScreen : BaseScreen
             EndSeconds = s.EndSeconds,
         }).ToList();
 
-        _timelineEditor.SetData(_totalDuration, timelineSlots);
+        _timelineEditor.SetData(_totalDuration, timelineSlots, _currentWaveform);
     }
 
     private void OnTimelineSeekRequested(double targetSeconds)
