@@ -414,7 +414,7 @@ public partial class SynchronizedScenePlayer : Control
 
         foreach (var player in _takePlayers)
         {
-            player.SyncWithMasterTime(_masterTimeSeconds);
+            player.OnManualSeek(_masterTimeSeconds);
         }
 
         PlaybackProgress?.Invoke(_masterTimeSeconds, _durationSeconds);
@@ -439,7 +439,7 @@ public partial class SynchronizedScenePlayer : Control
         // Dynamic Audio Mixing:
         // Inside a dubbed speech box: Mute original dialogue, play clean ambient stem + player voice take
         // Outside speech boxes: Play original video audio with original actor dialogue
-        bool isInsideDubbedSlot = _dubbedRanges.Any(r => _masterTimeSeconds >= r.StartSec && _masterTimeSeconds <= r.EndSec);
+        bool isInsideDubbedSlot = _dubbedRanges.Any(r => _masterTimeSeconds >= (r.StartSec - 0.05) && _masterTimeSeconds <= (r.EndSec + 0.35));
 
         if (isInsideDubbedSlot)
         {

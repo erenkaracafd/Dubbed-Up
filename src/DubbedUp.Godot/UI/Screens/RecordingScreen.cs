@@ -239,7 +239,7 @@ public partial class RecordingScreen : BaseScreen
             _previewTakeDuration += delta;
             _waveformVisualizer?.SetPlayhead(_previewTakeDuration, false);
 
-            if (_previewTakeDuration >= _maxSlotDuration || (_previewPlayer is not null && !_previewPlayer.Playing && _previewTakeDuration > 0.3))
+            if (_previewTakeDuration >= _maxSlotDuration + 0.4 || (_previewPlayer is not null && !_previewPlayer.Playing && _previewTakeDuration > 0.3))
             {
                 StopTakePreview();
             }
