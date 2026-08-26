@@ -37,6 +37,10 @@ public partial class SceneEditorScreen : BaseScreen
     private bool _isPlaying = false;
     private double _totalDuration = 22.0;
 
+    private float[]? _currentWaveform;
+    private string? _currentWavPath;
+    private double _maxSourceDuration = 0.0;
+
     private sealed class EditableVoiceSlot
     {
         public string SlotId { get; set; } = "slot-1";
@@ -116,10 +120,6 @@ public partial class SceneEditorScreen : BaseScreen
             LoadSceneData();
         }
     }
-
-    private float[]? _currentWaveform;
-    private string? _currentWavPath;
-    private double _maxSourceDuration = 0.0;
 
     private void LoadSceneData()
     {
@@ -366,7 +366,6 @@ public partial class SceneEditorScreen : BaseScreen
 
     private void OnTimelineSlotChanged(int slotIndex)
     {
-        // When dragged on timeline, synchronize editable slots and UI cards
         RebuildSlotsUi();
     }
 
@@ -470,6 +469,34 @@ public partial class SceneEditorScreen : BaseScreen
         }
     }
 
+    private void OnDeleteSelectedBoxPressed()
+    {
+        var idx = _timelineEditor?.GetSelectedSlotIndex() ?? -1;
+        if (idx >= 0 && idx < _editableSlots.Count)
+        {
+            DeleteSlotAtIndex(idx);
+        }
+        else if (_editableSlots.Count > 0)
+        {
+            DeleteSlotAtIndex(_editableSlots.Count - 1);
+        }
+    }
+
+    private void DeleteSlotAtIndex(int index)
+    {
+        if (index >= 0 && index < _editableSlots.Count)
+        {
+            var charName = _editableSlots[index].CharacterName;
+            _editableSlots.RemoveAt(index);
+            RebuildSlotsUi();
+            SyncTimelineData();
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = $"🗑️ #{index + 1} ({charName}) konuşma kutucuğu silindi.";
+            }
+        }
+    }
+
     public override void _Process(double delta)
     {
         if (_videoPlayer is not null && _videoPlayer.Stream is not null && _videoPlayer.IsPlaying() && !_videoPlayer.Paused)
@@ -499,34 +526,6 @@ public partial class SceneEditorScreen : BaseScreen
             {
                 PauseVideo();
                 SeekTo(0.0);
-            }
-        }
-    }
-
-    private void OnDeleteSelectedBoxPressed()
-    {
-        var idx = _timelineEditor?.GetSelectedSlotIndex() ?? -1;
-        if (idx >= 0 && idx < _editableSlots.Count)
-        {
-            DeleteSlotAtIndex(idx);
-        }
-        else if (_editableSlots.Count > 0)
-        {
-            DeleteSlotAtIndex(_editableSlots.Count - 1);
-        }
-    }
-
-    private void DeleteSlotAtIndex(int index)
-    {
-        if (index >= 0 && index < _editableSlots.Count)
-        {
-            var charName = _editableSlots[index].CharacterName;
-            _editableSlots.RemoveAt(index);
-            RebuildSlotsUi();
-            SyncTimelineData();
-            if (_statusLabel is not null)
-            {
-                _statusLabel.Text = $"🗑️ #{index + 1} ({charName}) konuşma kutucuğu silindi.";
             }
         }
     }
