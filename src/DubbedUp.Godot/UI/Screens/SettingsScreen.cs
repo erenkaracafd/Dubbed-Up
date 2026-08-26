@@ -8,6 +8,8 @@ public partial class SettingsScreen : BaseScreen
     private Label? _masterVolumeValueLabel;
     private HSlider? _micGainSlider;
     private Label? _micGainValueLabel;
+    private HSlider? _micLatencySlider;
+    private Label? _micLatencyValueLabel;
     private OptionButton? _micDeviceOption;
     private Label? _micDeviceLabel;
     private Button? _micTestButton;
@@ -28,6 +30,9 @@ public partial class SettingsScreen : BaseScreen
 
         _micGainSlider = GetNodeOrNull<HSlider>("CenterContainer/VBoxContainer/FormContainer/MicGainHBox/MicGainSlider");
         _micGainValueLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/MicGainHBox/MicGainValueLabel");
+
+        _micLatencySlider = GetNodeOrNull<HSlider>("CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox/MicLatencySlider");
+        _micLatencyValueLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox/MicLatencyValueLabel");
 
         _micDeviceLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/MicDeviceLabel");
         _micDeviceOption = GetNodeOrNull<OptionButton>("CenterContainer/VBoxContainer/FormContainer/MicDeviceOption");
@@ -52,6 +57,11 @@ public partial class SettingsScreen : BaseScreen
         if (_micGainSlider is not null)
         {
             _micGainSlider.ValueChanged += OnMicGainChanged;
+        }
+
+        if (_micLatencySlider is not null)
+        {
+            _micLatencySlider.ValueChanged += OnMicLatencyChanged;
         }
 
         if (_micTestButton is not null)
@@ -98,48 +108,37 @@ public partial class SettingsScreen : BaseScreen
         var currentDevice = Microphone.GodotLiveMicrophoneService.Instance.CurrentInputDevice;
 
         // Always add default first
-        _micDeviceOption.AddItem("Default Microphone", 0);
+        _micDeviceOption.AddItem("Default Microphone (System Default)", 0);
 
-        var selectIdx = 0;
-        for (var i = 0; i < devices.Count; i++)
+        int selectIdx = 0;
+        for (int i = 0; i < devices.Count; i++)
         {
-            var device = devices[i];
-            _micDeviceOption.AddItem(device, i + 1);
-            if (device == currentDevice)
+            var dev = devices[i];
+            _micDeviceOption.AddItem(dev, i + 1);
+            if (dev == currentDevice)
             {
                 selectIdx = i + 1;
             }
         }
 
         _micDeviceOption.Select(selectIdx);
-        _micDeviceOption.ItemSelected += OnMicDeviceSelected;
-
-        if (_micDeviceLabel is not null)
-        {
-            _micDeviceLabel.Text = devices.Count == 0
-                ? "Microphone Device: (none detected — check system permissions)"
-                : $"Microphone Device: ({devices.Count} device(s) found)";
-        }
+        _micDeviceOption.ItemSelected += OnDeviceSelected;
     }
 
-    private void OnMicDeviceSelected(long index)
+    private void OnDeviceSelected(long index)
     {
         if (_micDeviceOption is null) return;
 
-        var deviceName = _micDeviceOption.GetItemText((int)index);
-
-        if (index == 0 || deviceName == "Default Microphone")
+        var selectedText = _micDeviceOption.GetItemText((int)index);
+        if (index == 0 || selectedText.StartsWith("Default"))
         {
-            Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice("Default");
+            Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice("");
+            if (_statusLabel is not null) _statusLabel.Text = "🎙 Switched to Default Microphone.";
         }
         else
         {
-            Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice(deviceName);
-        }
-
-        if (_statusLabel is not null)
-        {
-            _statusLabel.Text = $"🎙 Microphone set to: {deviceName}";
+            Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice(selectedText);
+            if (_statusLabel is not null) _statusLabel.Text = $"🎙 Selected Microphone: {selectedText}";
         }
     }
 
@@ -147,45 +146,58 @@ public partial class SettingsScreen : BaseScreen
     {
         if (_masterVolumeValueLabel is not null)
         {
-            _masterVolumeValueLabel.Text = $"{Math.Round(value)}%";
+            _masterVolumeValueLabel.Text = $"{value:F0}%";
         }
 
-        var linear = (float)(value / 100.0);
-        var db = linear > 0 ? Mathf.LinearToDb(linear) : -80.0f;
-        AudioServer.SetBusVolumeDb(0, db);
+        var masterBusIndex = AudioServer.GetBusIndex("Master");
+        if (masterBusIndex >= 0)
+        {
+            if (value <= 0)
+            {
+                AudioServer.SetBusMute(masterBusIndex, true);
+            }
+            else
+            {
+                AudioServer.SetBusMute(masterBusIndex, false);
+                // Linear to dB: 0-100 -> -40dB to +6dB
+                var db = Mathf.LinearToDb((float)(value / 100.0));
+                AudioServer.SetBusVolumeDb(masterBusIndex, db);
+            }
+        }
     }
 
     private void OnMicGainChanged(double value)
     {
-        _micGainMultiplier = (float)(value / 100.0);
         if (_micGainValueLabel is not null)
         {
-            _micGainValueLabel.Text = $"{Math.Round(value)}%";
+            _micGainValueLabel.Text = $"{value:F0}%";
         }
+
+        _micGainMultiplier = (float)(value / 100.0);
+    }
+
+    private void OnMicLatencyChanged(double value)
+    {
+        if (_micLatencyValueLabel is not null)
+        {
+            _micLatencyValueLabel.Text = $"-{value:F0}ms";
+        }
+
+        Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = value / 1000.0;
     }
 
     private void OnMicTestPressed()
     {
         _isTestingMic = !_isTestingMic;
 
-        if (_isTestingMic)
-        {
-            Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
-            Microphone.GodotLiveMicrophoneService.Instance.EnsureMicrophonePlayer(this);
-        }
-
         if (_testMeterBar is not null)
         {
             _testMeterBar.Visible = _isTestingMic;
-            if (!_isTestingMic)
-            {
-                _testMeterBar.Value = 0;
-            }
         }
 
         if (_micTestButton is not null)
         {
-            _micTestButton.Text = _isTestingMic ? "⏹ Stop Mic Test" : "🎙 Test Microphone Level";
+            _micTestButton.Text = _isTestingMic ? "⏹ Stop Microphone Test" : "🎙 Test Microphone Level";
         }
 
         if (_statusLabel is not null)
@@ -257,10 +269,14 @@ public partial class SettingsScreen : BaseScreen
         {
             var masterVol = (double)config.GetValue("Audio", "MasterVolume", 100.0);
             var micGain = (double)config.GetValue("Audio", "MicGain", 100.0);
+            var micLatency = (double)config.GetValue("Audio", "MicLatencyMs", 150.0);
             var micDevice = (string)config.GetValue("Audio", "MicDevice", "Default");
 
             if (_masterVolumeSlider is not null) _masterVolumeSlider.Value = masterVol;
             if (_micGainSlider is not null) _micGainSlider.Value = micGain;
+            if (_micLatencySlider is not null) _micLatencySlider.Value = micLatency;
+
+            Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = micLatency / 1000.0;
 
             if (micDevice != "Default" && _micDeviceOption is not null)
             {
@@ -279,6 +295,8 @@ public partial class SettingsScreen : BaseScreen
         {
             if (_masterVolumeSlider is not null) _masterVolumeSlider.Value = 100.0;
             if (_micGainSlider is not null) _micGainSlider.Value = 100.0;
+            if (_micLatencySlider is not null) _micLatencySlider.Value = 150.0;
+            Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = 0.15;
         }
     }
 
@@ -287,14 +305,18 @@ public partial class SettingsScreen : BaseScreen
         var config = new ConfigFile();
         var masterVol = _masterVolumeSlider?.Value ?? 100.0;
         var micGain = _micGainSlider?.Value ?? 100.0;
+        var micLatency = _micLatencySlider?.Value ?? 150.0;
         var micDevice = _micDeviceOption is not null
             ? _micDeviceOption.GetItemText(_micDeviceOption.Selected)
             : "Default";
 
         config.SetValue("Audio", "MasterVolume", masterVol);
         config.SetValue("Audio", "MicGain", micGain);
+        config.SetValue("Audio", "MicLatencyMs", micLatency);
         config.SetValue("Audio", "MicDevice", micDevice);
         config.Save("user://audio_settings.cfg");
+
+        Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = micLatency / 1000.0;
 
         if (_statusLabel is not null)
         {
@@ -305,8 +327,6 @@ public partial class SettingsScreen : BaseScreen
     private void OnBackPressed()
     {
         _isTestingMic = false;
-        Navigator?.NavigateTo(AppScreen.Settings == Navigator.CurrentScreen
-            ? AppScreen.MainMenu
-            : AppScreen.MainMenu);
+        Navigator?.NavigateTo(AppScreen.MainMenu);
     }
 }

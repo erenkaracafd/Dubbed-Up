@@ -14,6 +14,7 @@ public sealed class GodotLiveMicrophoneService
     private AudioEffectRecord? _recordEffect;
     private AudioStreamPlayer? _microphonePlayer;
     private string? _selectedInputDevice;
+    public double LatencyCompensationSeconds { get; set; } = 0.15; // 150ms default shift back
 
     public IReadOnlyList<string> GetAvailableInputDevices()
     {

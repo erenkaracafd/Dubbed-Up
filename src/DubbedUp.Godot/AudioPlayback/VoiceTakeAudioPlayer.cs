@@ -45,7 +45,8 @@ public sealed class VoiceTakeAudioPlayer
 
         if (masterTimeSeconds >= StartSeconds && masterTimeSeconds <= EndSeconds)
         {
-            var expectedAudioOffset = (float)(masterTimeSeconds - StartSeconds);
+            var latencyOffset = (float)Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds;
+            var expectedAudioOffset = (float)(masterTimeSeconds - StartSeconds) + latencyOffset;
 
             if (!_audioPlayer.Playing)
             {

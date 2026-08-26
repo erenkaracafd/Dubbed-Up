@@ -102,6 +102,29 @@ custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 text = "100%"
 
+[node name="MicLatencyLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "⏱ Mic Sync & Latency Offset (Shift Earlier):"
+
+[node name="MicLatencyHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MicLatencySlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox"]
+custom_minimum_size = Vector2(380, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 400.0
+step = 10.0
+value = 150.0
+
+[node name="MicLatencyValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "-150ms"
+
 [node name="MicTestButton" type="Button" parent="CenterContainer/VBoxContainer/FormContainer"]
 custom_minimum_size = Vector2(280, 40)
 layout_mode = 2

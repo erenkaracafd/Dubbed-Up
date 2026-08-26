@@ -567,7 +567,7 @@ public partial class RecordingScreen : BaseScreen
                 if (wav is not null)
                 {
                     _previewPlayer.Stream = wav;
-                    _previewPlayer.Play();
+                    _previewPlayer.Play((float)Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds);
 
                     // Start synchronized MUTED video playback
                     if (_videoPlayer is null || _videoPlayer.Stream is null) LoadSceneVideo();
