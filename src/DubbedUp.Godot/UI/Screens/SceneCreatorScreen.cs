@@ -193,13 +193,10 @@ public partial class SceneCreatorScreen : BaseScreen
         if (_titleInput is not null) _titleInput.Text = cleanTitle;
         if (_sceneIdInput is not null) _sceneIdInput.Text = ToKebabCase(fileNameWithoutExt);
 
-        if (ext is ".wav" or ".ogg")
+        var dur = AudioWaveformLoader.GetAudioDurationSeconds(selectedPath);
+        if (dur > 0 && _durationSpinBox is not null)
         {
-            var dur = AudioWaveformLoader.GetAudioDurationSeconds(selectedPath);
-            if (dur > 0 && _durationSpinBox is not null)
-            {
-                _durationSpinBox.Value = Math.Round(dur, 1);
-            }
+            _durationSpinBox.Value = Math.Round(dur, 1);
         }
     }
 
@@ -274,6 +271,46 @@ public partial class SceneCreatorScreen : BaseScreen
         }
     }
 
+    private static bool RunStemSeparation(string mediaFilePath, string outputMediaFolder)
+    {
+        try
+        {
+            var scriptPath = ProjectSettings.GlobalizePath("res://scripts/separate_stems.py");
+            if (!System.IO.File.Exists(scriptPath))
+            {
+                var repoScript = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.Environment.CurrentDirectory, "scripts", "separate_stems.py"));
+                if (System.IO.File.Exists(repoScript)) scriptPath = repoScript;
+            }
+
+            if (System.IO.File.Exists(scriptPath))
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "python",
+                    Arguments = $"\"{scriptPath}\" \"{mediaFilePath}\" \"{outputMediaFolder}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                using var process = System.Diagnostics.Process.Start(psi);
+                if (process is not null)
+                {
+                    process.WaitForExit(120000); // 2 minutes max
+                    GD.Print($"[SceneCreator] Stem separation exit code: {process.ExitCode}");
+                    return process.ExitCode == 0;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[SceneCreator] Stem separation execution error: {ex.Message}");
+        }
+
+        return false;
+    }
+
     private void OnSavePressed()
     {
         if (_errorLabel is not null) _errorLabel.Visible = false;
@@ -313,7 +350,7 @@ public partial class SceneCreatorScreen : BaseScreen
 
             string videoRelPath = "media/video.ogv";
 
-            // If a media file was selected, copy it to target folder media/
+            // If a media file was selected, copy it to target folder media/ and run stem separation
             if (_mediaOption is not null && _discoveredMediaFiles.Count > 0)
             {
                 var selectedIdx = _mediaOption.Selected;
@@ -329,6 +366,33 @@ public partial class SceneCreatorScreen : BaseScreen
                     }
 
                     videoRelPath = $"media/{mediaFileName}";
+
+                    // Execute AI stem separation to produce vocals.wav and background.wav
+                    if (_aiStatusLabel is not null)
+                    {
+                        _aiStatusLabel.Text = "🤖 AI Stem Separation: Isolating vocals and background music...";
+                    }
+
+                    RunStemSeparation(destMediaPath, mediaFolder);
+
+                    var vocalsDst = System.IO.Path.Combine(mediaFolder, "vocals.wav");
+                    var audioDst = System.IO.Path.Combine(mediaFolder, "audio.wav");
+
+                    if (!System.IO.File.Exists(vocalsDst) && System.IO.Path.GetExtension(sourceMediaFile).Equals(".wav", StringComparison.OrdinalIgnoreCase))
+                    {
+                        System.IO.File.Copy(destMediaPath, vocalsDst, true);
+                        System.IO.File.Copy(destMediaPath, audioDst, true);
+                    }
+
+                    // Detect exact duration if vocals WAV exists
+                    if (System.IO.File.Exists(vocalsDst))
+                    {
+                        var audioDur = AudioWaveformLoader.GetAudioDurationSeconds(vocalsDst);
+                        if (audioDur > 0)
+                        {
+                            durationMs = (long)(audioDur * 1000.0);
+                        }
+                    }
                 }
             }
 

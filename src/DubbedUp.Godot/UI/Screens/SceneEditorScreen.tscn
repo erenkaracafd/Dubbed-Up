@@ -155,12 +155,17 @@ layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 16
 
+[node name="SaveAndProceedButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "✅ Save & Go to Scene Selection"
+
 [node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(180, 44)
 layout_mode = 2
 text = "💾 Save Changes"
 
 [node name="BackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
-custom_minimum_size = Vector2(180, 44)
+custom_minimum_size = Vector2(160, 44)
 layout_mode = 2
-text = "🔙 Back to Setup"
+text = "🔙 Back"

@@ -26,6 +26,7 @@ public partial class SceneEditorScreen : BaseScreen
     private Button? _deleteBoxButton;
     private VBoxContainer? _slotsContainer;
     private Label? _statusLabel;
+    private Button? _saveAndProceedButton;
     private Button? _saveButton;
     private Button? _backButton;
 
@@ -73,6 +74,7 @@ public partial class SceneEditorScreen : BaseScreen
         _deleteBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/DeleteBoxButton");
         _slotsContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/SlotsContainer");
         _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
+        _saveAndProceedButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/SaveAndProceedButton");
         _saveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/SaveButton");
         _backButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/BackButton");
 
@@ -93,6 +95,7 @@ public partial class SceneEditorScreen : BaseScreen
         if (_stopButton is not null) _stopButton.Pressed += OnStopPressed;
         if (_addBoxButton is not null) _addBoxButton.Pressed += OnAddBoxPressed;
         if (_deleteBoxButton is not null) _deleteBoxButton.Pressed += OnDeleteSelectedBoxPressed;
+        if (_saveAndProceedButton is not null) _saveAndProceedButton.Pressed += OnSaveAndProceedPressed;
         if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
         if (_backButton is not null) _backButton.Pressed += OnBackPressed;
 
@@ -710,19 +713,19 @@ public partial class SceneEditorScreen : BaseScreen
         return string.IsNullOrEmpty(sanitized) ? "slot" : sanitized;
     }
 
-    private void OnSavePressed()
+    private bool SaveSceneData()
     {
         var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
         if (doc is null)
         {
             if (_statusLabel is not null) _statusLabel.Text = "❌ No scene loaded to save.";
-            return;
+            return false;
         }
 
         if (_editableSlots.Count == 0)
         {
             if (_statusLabel is not null) _statusLabel.Text = "❌ At least 1 speech slot is required.";
-            return;
+            return false;
         }
 
         var newTitle = _titleInput?.Text?.Trim() ?? doc.Title;
@@ -799,7 +802,7 @@ public partial class SceneEditorScreen : BaseScreen
         {
             GD.PrintErr($"[SceneEditor] Validation failed: {ex.Message}");
             if (_statusLabel is not null) _statusLabel.Text = $"❌ Validation error: {ex.Message}";
-            return;
+            return false;
         }
 
         var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
@@ -831,6 +834,22 @@ public partial class SceneEditorScreen : BaseScreen
         if (_statusLabel is not null)
         {
             _statusLabel.Text = "✅ Scene, speech timeline, and subtitles saved successfully!";
+        }
+
+        return true;
+    }
+
+    private void OnSavePressed()
+    {
+        SaveSceneData();
+    }
+
+    private void OnSaveAndProceedPressed()
+    {
+        if (SaveSceneData())
+        {
+            PauseVideo();
+            Navigator?.NavigateTo(AppScreen.ScenePicker);
         }
     }
 
