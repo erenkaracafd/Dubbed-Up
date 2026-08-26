@@ -6,23 +6,29 @@ using Godot;
 
 namespace DubbedUp.Godot.VideoPlayback;
 
-public partial class SynchronizedScenePlayer : Control, IMediaPlayer
+public partial class SynchronizedScenePlayer : Control
 {
-    private readonly List<VoiceTakeAudioPlayer> _takePlayers = [];
+    public delegate void PlaybackProgressEventHandler(double currentTimeSeconds, double totalDurationSeconds);
+    public event PlaybackProgressEventHandler? PlaybackProgress;
+
+    public delegate void PlaybackFinishedEventHandler();
+    public event PlaybackFinishedEventHandler? PlaybackFinished;
+
     private VideoStreamPlayer? _videoPlayer;
     private AudioStreamPlayer? _backgroundAudioPlayer;
+    private AudioStreamPlayer? _originalAudioPlayer;
+    private readonly List<VoiceTakeAudioPlayer> _takePlayers = [];
+    private readonly List<(double StartSec, double EndSec)> _dubbedRanges = [];
+
     private double _masterTimeSeconds = 0.0;
-    private double _durationSeconds = 10.0;
+    private double _durationSeconds = 1.0;
     private bool _isPlaying = false;
     private bool _hasFinished = false;
     private string? _sceneFolderPath;
 
-    public bool IsPlaying => _isPlaying;
     public double CurrentTimeSeconds => _masterTimeSeconds;
-    public double DurationSeconds => _durationSeconds;
-
-    public event Action? PlaybackFinished;
-    public event Action<double, double>? PlaybackProgress;
+    public double TotalDurationSeconds => _durationSeconds;
+    public bool IsPlaying => _isPlaying;
 
     public override void _Ready()
     {
@@ -31,19 +37,14 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         {
             _videoPlayer = new VideoStreamPlayer
             {
+                Name = "VideoStreamPlayer",
                 Expand = true,
                 AnchorRight = 1.0f,
                 AnchorBottom = 1.0f,
-                Bus = "RecordSink",
+                Bus = "RecordSink", // Default muted
                 VolumeDb = -80.0f,
             };
             AddChild(_videoPlayer);
-        }
-        else
-        {
-            _videoPlayer.Bus = "RecordSink";
-            _videoPlayer.VolumeDb = -80.0f;
-            _videoPlayer.Expand = true;
         }
 
         _backgroundAudioPlayer = new AudioStreamPlayer
@@ -53,11 +54,20 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             VolumeDb = 0.0f,
         };
         AddChild(_backgroundAudioPlayer);
+
+        _originalAudioPlayer = new AudioStreamPlayer
+        {
+            Name = "OriginalAudioPlayer",
+            Bus = "Master",
+            VolumeDb = 0.0f,
+        };
+        AddChild(_originalAudioPlayer);
     }
 
     public void LoadScene(OfficialSceneDocument scene, DubProjectDocument? project, VoiceTakeStore? takeStore, string? sceneFolderPath = null)
     {
         ClearTakePlayers();
+        _dubbedRanges.Clear();
 
         _durationSeconds = scene.DurationMilliseconds / 1000.0;
         _masterTimeSeconds = 0.0;
@@ -71,8 +81,11 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             TryLoadVideo(videoAsset.RelativePath, sceneFolderPath);
         }
 
-        // Try to load separated ambient / background audio track (EffectsStem or MusicStem)
+        // Try to load separated ambient background audio track (background.wav)
         TryLoadBackgroundAudio(scene, sceneFolderPath);
+
+        // Try to load original mixed audio track (audio.wav)
+        TryLoadOriginalAudio(scene, sceneFolderPath);
 
         // Schedule take audio players
         foreach (var entry in scene.Timeline)
@@ -87,8 +100,55 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             var startSec = entry.StartMilliseconds / 1000.0;
             var endSec = entry.EndMilliseconds / 1000.0;
 
+            _dubbedRanges.Add((startSec, endSec));
+
             var player = new VoiceTakeAudioPlayer(voiceSlotId, take?.TakeId ?? "missing", startSec, endSec, audioPath, this);
             _takePlayers.Add(player);
+        }
+    }
+
+    private void TryLoadOriginalAudio(OfficialSceneDocument scene, string? sceneFolderPath)
+    {
+        if (_originalAudioPlayer is null) return;
+        _originalAudioPlayer.Stream = null;
+
+        string? resolvedPath = null;
+        var candidates = new List<string>();
+
+        if (!string.IsNullOrEmpty(sceneFolderPath))
+        {
+            candidates.Add(System.IO.Path.Combine(sceneFolderPath, "media", "audio.wav"));
+            candidates.Add(System.IO.Path.Combine(sceneFolderPath, "audio.wav"));
+        }
+
+        candidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{scene.SceneId}/media/audio.wav"));
+        candidates.Add(ProjectSettings.GlobalizePath($"res://scenes/{scene.SceneId}/media/audio.wav"));
+
+        foreach (var c in candidates)
+        {
+            if (System.IO.File.Exists(c))
+            {
+                resolvedPath = c;
+                break;
+            }
+        }
+
+        if (resolvedPath is not null)
+        {
+            try
+            {
+                var bytes = System.IO.File.ReadAllBytes(resolvedPath);
+                var wav = VoiceTakeAudioPlayer.ParseWavBytes(bytes);
+                if (wav is not null)
+                {
+                    _originalAudioPlayer.Stream = wav;
+                    GD.Print($"[ScenePlayer] Loaded original audio mix: '{resolvedPath}'");
+                }
+            }
+            catch (Exception ex)
+            {
+                GD.PrintErr($"[ScenePlayer] Failed to load original audio mix: {ex.Message}");
+            }
         }
     }
 
@@ -163,7 +223,7 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         }
         else
         {
-            GD.Print($"[ScenePlayer] No ambient background stem found. Playing voice-only mode.");
+            GD.Print($"[ScenePlayer] No ambient background stem found.");
         }
     }
 
@@ -224,28 +284,12 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             if (!string.IsNullOrEmpty(localized) && ResourceLoader.Exists(localized))
             {
                 _videoPlayer.Stream = GD.Load<VideoStream>(localized);
-                GD.Print($"[VideoPlayer] Loaded via globalized path: {localized}");
+                GD.Print($"[VideoPlayer] Loaded via globalized/localized path: {localized}");
                 return;
             }
-
-            var theora = new VideoStreamTheora();
-            theora.File = globalPath.Replace("\\", "/");
-            _videoPlayer.Stream = theora;
-            GD.Print($"[VideoPlayer] Loaded via globalized VideoStreamTheora: {globalPath}");
-            return;
         }
 
-        GD.Print($"[VideoPlayer] No video stream found for path: '{relativePath}'. Playing audio-only mode.");
-    }
-
-    public void ScheduleTakes(IEnumerable<(string slotId, string takeId, double startSec, double endSec, string path)> takes)
-    {
-        ClearTakePlayers();
-        foreach (var take in takes)
-        {
-            var player = new VoiceTakeAudioPlayer(take.slotId, take.takeId, take.startSec, take.endSec, take.path, this);
-            _takePlayers.Add(player);
-        }
+        GD.PrintErr($"[VideoPlayer] Video stream not found: {relativePath}");
     }
 
     public void SetDuration(double durationSeconds)
@@ -264,22 +308,20 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         _isPlaying = true;
         if (_videoPlayer is not null && _videoPlayer.Stream is not null && !_videoPlayer.IsPlaying())
         {
-            _videoPlayer.Bus = "RecordSink";
-            _videoPlayer.VolumeDb = -80.0f;
             _videoPlayer.Play();
             _videoPlayer.StreamPosition = _masterTimeSeconds;
         }
 
+        if (_originalAudioPlayer is not null && _originalAudioPlayer.Stream is not null)
+        {
+            if (_originalAudioPlayer.StreamPaused) _originalAudioPlayer.StreamPaused = false;
+            else if (!_originalAudioPlayer.Playing) _originalAudioPlayer.Play((float)_masterTimeSeconds);
+        }
+
         if (_backgroundAudioPlayer is not null && _backgroundAudioPlayer.Stream is not null)
         {
-            if (_backgroundAudioPlayer.StreamPaused)
-            {
-                _backgroundAudioPlayer.StreamPaused = false;
-            }
-            else if (!_backgroundAudioPlayer.Playing)
-            {
-                _backgroundAudioPlayer.Play((float)_masterTimeSeconds);
-            }
+            if (_backgroundAudioPlayer.StreamPaused) _backgroundAudioPlayer.StreamPaused = false;
+            else if (!_backgroundAudioPlayer.Playing) _backgroundAudioPlayer.Play((float)_masterTimeSeconds);
         }
 
         foreach (var player in _takePlayers)
@@ -294,6 +336,11 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         if (_videoPlayer is not null && _videoPlayer.IsPlaying())
         {
             _videoPlayer.Paused = true;
+        }
+
+        if (_originalAudioPlayer is not null && _originalAudioPlayer.Playing)
+        {
+            _originalAudioPlayer.StreamPaused = true;
         }
 
         if (_backgroundAudioPlayer is not null && _backgroundAudioPlayer.Playing)
@@ -316,6 +363,13 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         if (_videoPlayer is not null)
         {
             _videoPlayer.Stop();
+            _videoPlayer.Paused = false;
+        }
+
+        if (_originalAudioPlayer is not null)
+        {
+            _originalAudioPlayer.Stop();
+            _originalAudioPlayer.StreamPaused = false;
         }
 
         if (_backgroundAudioPlayer is not null)
@@ -348,6 +402,11 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             _videoPlayer.StreamPosition = _masterTimeSeconds;
         }
 
+        if (_originalAudioPlayer is not null && _originalAudioPlayer.Playing)
+        {
+            _originalAudioPlayer.Seek((float)_masterTimeSeconds);
+        }
+
         if (_backgroundAudioPlayer is not null && _backgroundAudioPlayer.Playing)
         {
             _backgroundAudioPlayer.Seek((float)_masterTimeSeconds);
@@ -377,6 +436,33 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             _masterTimeSeconds += delta;
         }
 
+        // Dynamic Audio Mixing:
+        // Inside a dubbed speech box: Mute original dialogue, play clean ambient stem + player voice take
+        // Outside speech boxes: Play original video audio with original actor dialogue
+        bool isInsideDubbedSlot = _dubbedRanges.Any(r => _masterTimeSeconds >= r.StartSec && _masterTimeSeconds <= r.EndSec);
+
+        if (isInsideDubbedSlot)
+        {
+            if (_originalAudioPlayer is not null) _originalAudioPlayer.VolumeDb = -80.0f;
+            if (_videoPlayer is not null) _videoPlayer.VolumeDb = -80.0f;
+            if (_backgroundAudioPlayer is not null) _backgroundAudioPlayer.VolumeDb = 0.0f;
+        }
+        else
+        {
+            if (_originalAudioPlayer is not null && _originalAudioPlayer.Stream is not null)
+            {
+                _originalAudioPlayer.VolumeDb = 0.0f;
+                if (_videoPlayer is not null) _videoPlayer.VolumeDb = -80.0f;
+            }
+            else if (_videoPlayer is not null)
+            {
+                _videoPlayer.Bus = "Master";
+                _videoPlayer.VolumeDb = 0.0f;
+            }
+
+            if (_backgroundAudioPlayer is not null) _backgroundAudioPlayer.VolumeDb = -80.0f;
+        }
+
         foreach (var player in _takePlayers)
         {
             player.SyncWithMasterTime(_masterTimeSeconds);
@@ -386,9 +472,8 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
 
         if (_masterTimeSeconds >= _durationSeconds)
         {
-            _masterTimeSeconds = _durationSeconds;
-            _isPlaying = false;
             _hasFinished = true;
+            _isPlaying = false;
 
             if (_videoPlayer is not null)
             {
@@ -396,10 +481,16 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
                 _videoPlayer.Paused = true;
             }
 
+            if (_originalAudioPlayer is not null)
+            {
+                _originalAudioPlayer.Stop();
+                _originalAudioPlayer.StreamPaused = true;
+            }
+
             if (_backgroundAudioPlayer is not null)
             {
                 _backgroundAudioPlayer.Stop();
-                _backgroundAudioPlayer.StreamPaused = false;
+                _backgroundAudioPlayer.StreamPaused = true;
             }
 
             foreach (var player in _takePlayers)
@@ -418,5 +509,10 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             player.Dispose();
         }
         _takePlayers.Clear();
+    }
+
+    public override void _ExitTree()
+    {
+        ClearTakePlayers();
     }
 }

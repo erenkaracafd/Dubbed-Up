@@ -376,6 +376,15 @@ public partial class SceneEditorScreen : BaseScreen
 
     private void OnTimelineSlotChanged(int slotIndex)
     {
+        if (_timelineEditor is not null && slotIndex >= 0 && slotIndex < _editableSlots.Count)
+        {
+            var editorSlot = _timelineEditor.GetSlot(slotIndex);
+            if (editorSlot is not null)
+            {
+                _editableSlots[slotIndex].StartSeconds = editorSlot.StartSeconds;
+                _editableSlots[slotIndex].EndSeconds = editorSlot.EndSeconds;
+            }
+        }
         RebuildSlotsUi();
     }
 

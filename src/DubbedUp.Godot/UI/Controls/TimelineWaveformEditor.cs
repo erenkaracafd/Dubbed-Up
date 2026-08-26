@@ -93,11 +93,19 @@ public partial class TimelineWaveformEditor : Control
 
     public void SelectSlot(int index)
     {
-        _selectedSlotIndex = Math.Clamp(index, -1, _slots.Count - 1);
+        _selectedSlotIndex = (index >= 0 && index < _slots.Count) ? index : -1;
         QueueRedraw();
     }
 
     public int GetSelectedSlotIndex() => _selectedSlotIndex;
+
+    public TimelineSlotData? GetSlot(int index)
+    {
+        if (index >= 0 && index < _slots.Count) return _slots[index];
+        return null;
+    }
+
+    public IReadOnlyList<TimelineSlotData> GetSlots() => _slots;
 
     public override void _Draw()
     {
