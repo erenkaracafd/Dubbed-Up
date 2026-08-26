@@ -1,18 +1,37 @@
-# Project status
+# Project Status
 
-- Milestone: MVP & Steam/Multiplayer Expansion Complete (with Local AI & Real Audio)
-- Completed foundations:
-  - #1 architecture/CI, #2 project format, #3 Godot UI shell, #4 local session/round, #6 microphone recording workflow, #7 synchronized playback composition, #8 local round orchestration & end-to-end local loop, #9 voting/scoring foundations, #10 playtest hardening & integration tests.
-  - Workstream A (ScenePackageLoader & GameMode: Solo, Co-op, Competitive).
-  - Workstream B (ScenePicker, Setup character preview, Co-op direct playback flow, auto-advance).
-  - Workstream C (Steam Workshop UGC Provider & Local Custom Scenes Folder, user://workshop_scenes).
-  - Workstream D (Multiplayer Lobby & Remote Audio Take Sync via Godot High-Level Multiplayer).
-  - Audio & Hardware Subsystem: Dynamic input device selector (`SettingsScreen`), programmatic speaker test beep, real RIFF/WAVE parsing (`VoiceTakeAudioPlayer`), early mic bus initialization (`LocalNavigationController`).
-  - Content & Video: IShowSpeed 16s scene package (`speed_mama_homeless`) with synchronized 20.9MB MP4 video playback.
-  - Local AI Pipeline: `DubbedUp.Core.Ai` (`AiSceneBuilder`, `DetectedSpeechSegment`) and `LocalAiSceneExtractor` (SRT/VAD parser) for offline, local automatic scene generation inside `SceneCreatorScreen`.
-- Implementation frontier: Full playable end-to-end local (Solo, Co-op, Competitive) and multiplayer loop; Steam-ready local AI scene generation; live playtest checklist ready (`docs/PLAYTEST_CHECKLIST.md`).
-- Verification: .NET restored and built the full solution with zero warnings/errors; 69 Core unit and integration tests pass; Godot solution builds cleanly; git working tree clean.
-- Known blockers: none.
-- Repository protection: public repository; `main` requires pull requests and passing Core/consistency CI.
-- Coordination: cross-contributor roadmap documented in `docs/STEAM_MULTIPLAYER_PLAN.md`; playtest guide in `docs/PLAYTEST_CHECKLIST.md`.
-- Next available work: In-person playtesting, Steamworks AppID provisioning, and packaging release builds.
+- **Milestone:** MVP, Local Round Integration, Interactive Audio Waveform Editor & AI Stem Separation Complete
+- **Active Branch:** `issue-8-local-round-integration`
+- **Completed Foundations & Subsystems:**
+  - **Core Architecture & Engine Separation:**
+    - `DubbedUp.Core` remains purely engine-agnostic and platform-independent (.NET 8/.NET 10).
+    - `DubbedUp.Core.Tests` with 69 comprehensive unit and integration tests passing.
+  - **AI Stem Separation & Background Ambient Mixing:**
+    - Demucs 4-stem separation executed on official scene audio to isolate `vocals.wav` (isolated speech) and `background.wav` (ambient music, sound effects, foley).
+    - `SynchronizedScenePlayer.cs` mutes original video audio to `RecordSink` (-80dB) and plays `background.wav` on `Master` in lockstep with the video, allowing player dub takes to mix cleanly over original ambiance.
+  - **Interactive Waveform & Speech Timeline Editor (`TimelineWaveformEditor.cs` & `SceneEditorScreen.cs`):**
+    - High-performance PCM waveform visualization extracting RMS energy envelopes (`AudioWaveformLoader.cs`).
+    - DAW-style interactive Godot control featuring dynamic time ruler marks, neon amplitude bars, synchronized playhead, and draggable/resizable speech selection boxes.
+    - Full box deletion support: box header `✕` icon, `Delete`/`Backspace` keyboard shortcuts, timeline delete button (`Delete Selected Speech Box`), and individual card delete buttons.
+    - Dynamic duration scaling: automatically detects full media duration, and dynamically resamples/scales the waveform when total duration is modified.
+    - Strict playback clamping: stops video and audio precisely at the configured scene duration during playback and review.
+  - **Custom Scene Creator & Media Folder Workflow (`SceneCreatorScreen.cs`):**
+    - Dedicated custom scenes directory (`user://workshop_scenes` / `scenes/`).
+    - One-click "Open Custom Scenes Folder" button (`OS.ShellOpen`) to drop `.ogv`, `.mp4`, `.webm`, `.wav` files.
+    - Automatic media scanning and dropdown selection, auto-populating Title, ID, and Duration.
+    - Offline subtitle and script extraction via `LocalAiSceneExtractor.cs` and `AiSceneBuilder.cs`.
+    - Direct "Save & Open in Editor" workflow for immediate visual speech timing tuning.
+  - **Game Mode & Session Loop:**
+    - Solo Dubbing (1 player voices all roles), Co-op Dubbing (2 players voice distinct characters and watch synchronized playback), and Competitive Voting.
+    - Full take recording with real-time waveform visualization, rhythm matching score, take review, and full synchronized playback composition.
+  - **Localization:**
+    - 100% of game UI, screens, status toasts, countdowns, buttons, and settings are fully localized in clean English.
+- **Verification:**
+  - `dotnet build DubbedUp.sln --configuration Debug`: 0 Errors, 0 Warnings.
+  - `dotnet test tests/DubbedUp.Core.Tests`: 69/69 tests passing.
+  - Standalone game run verified via `.\run-game.ps1`.
+- **Known Blockers:** None.
+- **Next Steps for Next Contributor / Agent:**
+  - Steamworks SDK integration & UGC Workshop upload button binding.
+  - Additional official scene video/audio packages.
+  - Online multiplayer lobby polish.
