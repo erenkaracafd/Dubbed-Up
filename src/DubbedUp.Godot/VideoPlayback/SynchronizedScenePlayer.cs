@@ -182,32 +182,37 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
         // 2. Try absolute path from scene folder
         if (!string.IsNullOrEmpty(sceneFolderPath))
         {
-            var absolutePath = System.IO.Path.Combine(sceneFolderPath, relativePath);
-            absolutePath = System.IO.Path.GetFullPath(absolutePath);
+            var candidates = new List<string>();
+            if (!string.IsNullOrEmpty(relativePath)) candidates.Add(System.IO.Path.Combine(sceneFolderPath, relativePath));
+            candidates.Add(System.IO.Path.Combine(sceneFolderPath, "media", "video.ogv"));
+            candidates.Add(System.IO.Path.Combine(sceneFolderPath, "video.ogv"));
 
-            if (System.IO.File.Exists(absolutePath))
+            foreach (var cand in candidates)
             {
-                try
+                var absolutePath = System.IO.Path.GetFullPath(cand);
+                if (System.IO.File.Exists(absolutePath))
                 {
-                    var resPath = ProjectSettings.LocalizePath(absolutePath);
-                    if (!string.IsNullOrEmpty(resPath) && ResourceLoader.Exists(resPath))
+                    try
                     {
-                        _videoPlayer.Stream = GD.Load<VideoStream>(resPath);
-                        GD.Print($"[VideoPlayer] Loaded via localized path: {resPath}");
+                        var resPath = ProjectSettings.LocalizePath(absolutePath);
+                        if (!string.IsNullOrEmpty(resPath) && ResourceLoader.Exists(resPath))
+                        {
+                            _videoPlayer.Stream = GD.Load<VideoStream>(resPath);
+                            GD.Print($"[VideoPlayer] Loaded via localized path: {resPath}");
+                            return;
+                        }
+
+                        var theora = new VideoStreamTheora();
+                        theora.File = !string.IsNullOrEmpty(resPath) ? resPath : absolutePath.Replace("\\", "/");
+                        _videoPlayer.Stream = theora;
+                        GD.Print($"[VideoPlayer] Loaded via VideoStreamTheora: {theora.File}");
                         return;
                     }
-
-                    var theora = new VideoStreamTheora();
-                    theora.File = !string.IsNullOrEmpty(resPath) ? resPath : absolutePath.Replace("\\", "/");
-                    _videoPlayer.Stream = theora;
-                    GD.Print($"[VideoPlayer] Loaded via VideoStreamTheora: {theora.File}");
-                    return;
+                    catch (Exception ex)
+                    {
+                        GD.PrintErr($"[VideoPlayer] Failed to load external video '{absolutePath}': {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    GD.PrintErr($"[VideoPlayer] Failed to load external video: {ex.Message}");
-                }
-                return;
             }
         }
 

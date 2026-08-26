@@ -116,16 +116,23 @@ public partial class RecordingScreen : BaseScreen
         // 1. Direct package folder check
         if (!string.IsNullOrEmpty(folderPath))
         {
+            var ogvCandidate = System.IO.Path.Combine(folderPath, "media", "video.ogv");
+            var ogvCandidate2 = System.IO.Path.Combine(folderPath, "video.ogv");
             var candidate = System.IO.Path.Combine(folderPath, relPath);
-            if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
+
+            if (System.IO.File.Exists(ogvCandidate)) resolvedFilePath = ogvCandidate;
+            else if (System.IO.File.Exists(ogvCandidate2)) resolvedFilePath = ogvCandidate2;
+            else if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
         }
 
         // 2. Official scenes folder check
         if (resolvedFilePath is null)
         {
             var sceneId = Coordinator.CurrentScene.SceneId;
+            var ogvCandidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/video.ogv");
             var candidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/{relPath}");
-            if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
+            if (System.IO.File.Exists(ogvCandidate)) resolvedFilePath = ogvCandidate;
+            else if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
         }
 
         // 3. Fallback to direct res:// path

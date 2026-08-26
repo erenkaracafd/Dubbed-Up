@@ -367,13 +367,19 @@ public partial class SceneCreatorScreen : BaseScreen
 
                     videoRelPath = $"media/{mediaFileName}";
 
-                    // Execute AI stem separation to produce vocals.wav and background.wav
+                    // Execute AI stem separation to produce video.ogv, vocals.wav, and background.wav
                     if (_aiStatusLabel is not null)
                     {
-                        _aiStatusLabel.Text = "🤖 AI Stem Separation: Isolating vocals and background music...";
+                        _aiStatusLabel.Text = "🤖 Converting video to OGV & separating audio stems...";
                     }
 
                     RunStemSeparation(destMediaPath, mediaFolder);
+
+                    var ogvDst = System.IO.Path.Combine(mediaFolder, "video.ogv");
+                    if (System.IO.File.Exists(ogvDst))
+                    {
+                        videoRelPath = "media/video.ogv";
+                    }
 
                     var vocalsDst = System.IO.Path.Combine(mediaFolder, "vocals.wav");
                     var audioDst = System.IO.Path.Combine(mediaFolder, "audio.wav");
@@ -384,10 +390,11 @@ public partial class SceneCreatorScreen : BaseScreen
                         System.IO.File.Copy(destMediaPath, audioDst, true);
                     }
 
-                    // Detect exact duration if vocals WAV exists
-                    if (System.IO.File.Exists(vocalsDst))
+                    // Detect exact duration if vocals WAV or audio WAV exists
+                    var wavForDur = System.IO.File.Exists(vocalsDst) ? vocalsDst : (System.IO.File.Exists(audioDst) ? audioDst : null);
+                    if (wavForDur is not null)
                     {
-                        var audioDur = AudioWaveformLoader.GetAudioDurationSeconds(vocalsDst);
+                        var audioDur = AudioWaveformLoader.GetAudioDurationSeconds(wavForDur);
                         if (audioDur > 0)
                         {
                             durationMs = (long)(audioDur * 1000.0);

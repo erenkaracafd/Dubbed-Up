@@ -4,9 +4,53 @@ import subprocess
 import shutil
 from pathlib import Path
 
+def convert_to_ogv(input_video: Path, output_ogv: Path):
+    """
+    Converts any video format (mp4, webm, mov, mkv, etc.) to Godot 4-compatible Ogg Theora (.ogv).
+    """
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", str(input_video),
+        "-c:v", "libtheora",
+        "-q:v", "7",
+        "-c:a", "libvorbis",
+        "-q:a", "5",
+        "-pix_fmt", "yuv420p",
+        str(output_ogv)
+    ]
+    print(f"[MediaProcessor] Converting video to OGV: {' '.join(cmd)}")
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode == 0 and output_ogv.exists():
+        print(f"[MediaProcessor] OGV Video created successfully: {output_ogv}")
+        return True
+    else:
+        print(f"[MediaProcessor] OGV conversion failed:\n{res.stderr}", file=sys.stderr)
+        return False
+
+def extract_wav(input_media: Path, output_wav: Path):
+    """
+    Extracts 16-bit 44.1kHz stereo PCM WAV from video/audio using ffmpeg.
+    """
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", str(input_media),
+        "-vn",
+        "-acodec", "pcm_s16le",
+        "-ar", "44100",
+        "-ac", "2",
+        str(output_wav)
+    ]
+    print(f"[MediaProcessor] Extracting WAV: {' '.join(cmd)}")
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    return res.returncode == 0 and output_wav.exists()
+
 def separate_media_stems(input_file: str, output_dir: str):
     """
-    Separates input audio/video file into vocals.wav and background.wav using Demucs.
+    Processes media file into:
+    1. video.ogv (if input is video)
+    2. audio.wav (full mix PCM)
+    3. vocals.wav (isolated dialogue)
+    4. background.wav (isolated ambient / music)
     """
     input_path = Path(input_file).resolve()
     out_dir = Path(output_dir).resolve()
@@ -16,52 +60,71 @@ def separate_media_stems(input_file: str, output_dir: str):
         print(f"Error: Input file does not exist: {input_path}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"[StemSeparation] Processing input: {input_path}")
-    print(f"[StemSeparation] Output directory: {out_dir}")
+    print(f"[MediaProcessor] Processing: {input_path} -> {out_dir}")
 
-    # Run Demucs 2-stem separation (vocals vs no_vocals)
+    is_video = input_path.suffix.lower() in [".mp4", ".webm", ".mov", ".mkv", ".avi", ".ogv", ".flv"]
+    
+    # 1. Generate Godot-compatible video.ogv
+    ogv_target = out_dir / "video.ogv"
+    if is_video:
+        if input_path.suffix.lower() == ".ogv" and input_path != ogv_target:
+            shutil.copy2(input_path, ogv_target)
+        elif not ogv_target.exists():
+            convert_to_ogv(input_path, ogv_target)
+
+    # 2. Extract full mix audio.wav
+    audio_wav = out_dir / "audio.wav"
+    if not audio_wav.exists():
+        extract_wav(input_path, audio_wav)
+
+    # 3. AI Stem Separation with Demucs
+    demucs_input = audio_wav if audio_wav.exists() else input_path
+    temp_dir = out_dir / "_demucs_temp"
+
     cmd = [
         sys.executable, "-m", "demucs",
         "--two-stems=vocals",
         "-n", "htdemucs",
-        "--out", str(out_dir / "_demucs_temp"),
-        str(input_path)
+        "--out", str(temp_dir),
+        str(demucs_input)
     ]
 
-    print(f"[StemSeparation] Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    print(f"[MediaProcessor] Running Demucs: {' '.join(cmd)}")
+    res = subprocess.run(cmd, capture_output=True, text=True)
 
-    if result.returncode != 0:
-        print(f"[StemSeparation] Demucs output/error:\n{result.stderr}\n{result.stdout}", file=sys.stderr)
+    track_name = demucs_input.stem
+    htdemucs_dir = temp_dir / "htdemucs" / track_name
 
-    # Locate generated files inside _demucs_temp/htdemucs/<filename>/
-    track_name = input_path.stem
-    temp_dir = out_dir / "_demucs_temp" / "htdemucs" / track_name
-
-    vocals_src = temp_dir / "vocals.wav"
-    no_vocals_src = temp_dir / "no_vocals.wav"
+    vocals_src = htdemucs_dir / "vocals.wav"
+    no_vocals_src = htdemucs_dir / "no_vocals.wav"
 
     final_vocals = out_dir / "vocals.wav"
     final_bg = out_dir / "background.wav"
 
     if vocals_src.exists():
         shutil.copy2(vocals_src, final_vocals)
-        print(f"[StemSeparation] Created: {final_vocals}")
+        print(f"[MediaProcessor] Generated vocals.wav: {final_vocals}")
     
     if no_vocals_src.exists():
         shutil.copy2(no_vocals_src, final_bg)
-        print(f"[StemSeparation] Created: {final_bg}")
+        print(f"[MediaProcessor] Generated background.wav: {final_bg}")
 
-    # Clean up temp folder
+    # Fallback if Demucs fails or is unavailable
+    if not final_vocals.exists() and audio_wav.exists():
+        print("[MediaProcessor] Demucs vocals fallback to audio.wav")
+        shutil.copy2(audio_wav, final_vocals)
+
+    if not final_bg.exists() and audio_wav.exists():
+        print("[MediaProcessor] Demucs background fallback to audio.wav")
+        shutil.copy2(audio_wav, final_bg)
+
+    # Clean up temp
     try:
-        shutil.rmtree(out_dir / "_demucs_temp", ignore_errors=True)
+        shutil.rmtree(temp_dir, ignore_errors=True)
     except Exception:
         pass
 
-    if final_vocals.exists():
-        print("[StemSeparation] Success! Stems separated.")
-    else:
-        print("[StemSeparation] Warning: Could not locate separated stems.", file=sys.stderr)
+    print("[MediaProcessor] Processing complete!")
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:

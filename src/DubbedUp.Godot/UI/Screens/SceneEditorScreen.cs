@@ -171,30 +171,37 @@ public partial class SceneEditorScreen : BaseScreen
         if (doc is null) return;
 
         var videoAsset = doc.SourceMedia.FirstOrDefault(m => m.Role == SourceMediaRole.SceneVideo);
-        if (videoAsset is not null)
-        {
-            var relPath = videoAsset.RelativePath;
-            if (!string.IsNullOrEmpty(folderPath))
-            {
-                var fullVideoPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(folderPath, relPath));
-                if (System.IO.File.Exists(fullVideoPath))
-                {
-                    var resPath = ProjectSettings.LocalizePath(fullVideoPath);
-                    if (!string.IsNullOrEmpty(resPath) && ResourceLoader.Exists(resPath))
-                    {
-                        _videoPlayer.Stream = GD.Load<VideoStream>(resPath);
-                    }
-                    else
-                    {
-                        var theora = new VideoStreamTheora { File = resPath ?? fullVideoPath.Replace("\\", "/") };
-                        _videoPlayer.Stream = theora;
-                    }
-                }
-            }
+        var relPath = videoAsset?.RelativePath;
 
-            if (_videoPlayer.Stream is null && ResourceLoader.Exists(relPath))
+        var videoCandidates = new List<string>();
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            if (!string.IsNullOrEmpty(relPath)) videoCandidates.Add(System.IO.Path.Combine(folderPath, relPath));
+            videoCandidates.Add(System.IO.Path.Combine(folderPath, "media", "video.ogv"));
+            videoCandidates.Add(System.IO.Path.Combine(folderPath, "video.ogv"));
+        }
+        if (!string.IsNullOrEmpty(relPath))
+        {
+            videoCandidates.Add(ProjectSettings.GlobalizePath(relPath));
+            videoCandidates.Add(relPath);
+        }
+
+        foreach (var cand in videoCandidates)
+        {
+            if (System.IO.File.Exists(cand))
             {
-                _videoPlayer.Stream = GD.Load<VideoStream>(relPath);
+                var resPath = ProjectSettings.LocalizePath(cand);
+                if (!string.IsNullOrEmpty(resPath) && ResourceLoader.Exists(resPath))
+                {
+                    _videoPlayer.Stream = GD.Load<VideoStream>(resPath);
+                    break;
+                }
+                else
+                {
+                    var theora = new VideoStreamTheora { File = !string.IsNullOrEmpty(resPath) ? resPath : cand.Replace("\\", "/") };
+                    _videoPlayer.Stream = theora;
+                    break;
+                }
             }
         }
 
