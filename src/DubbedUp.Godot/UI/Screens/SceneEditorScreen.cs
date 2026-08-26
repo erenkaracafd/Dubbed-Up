@@ -23,6 +23,7 @@ public partial class SceneEditorScreen : BaseScreen
     private HSlider? _timeSlider;
     private PanelContainer? _timelineContainer;
     private Button? _addBoxButton;
+    private Button? _deleteBoxButton;
     private VBoxContainer? _slotsContainer;
     private Label? _statusLabel;
     private Button? _saveButton;
@@ -64,7 +65,8 @@ public partial class SceneEditorScreen : BaseScreen
         _videoTimeLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/VideoTimeLabel");
         _timeSlider = GetNodeOrNull<HSlider>("ScrollContainer/CenterContainer/VBoxContainer/TimeSlider");
         _timelineContainer = GetNodeOrNull<PanelContainer>("ScrollContainer/CenterContainer/VBoxContainer/TimelineContainer");
-        _addBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/AddBoxButton");
+        _addBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/AddBoxButton");
+        _deleteBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/DeleteBoxButton");
         _slotsContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/SlotsContainer");
         _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
         _saveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/SaveButton");
@@ -78,6 +80,7 @@ public partial class SceneEditorScreen : BaseScreen
             _timelineEditor.SeekRequested += OnTimelineSeekRequested;
             _timelineEditor.SlotSelected += OnTimelineSlotSelected;
             _timelineEditor.SlotChanged += OnTimelineSlotChanged;
+            _timelineEditor.SlotDeleteRequested += DeleteSlotAtIndex;
         }
 
         if (_playPauseButton is not null) _playPauseButton.Pressed += OnPlayPausePressed;
@@ -85,6 +88,7 @@ public partial class SceneEditorScreen : BaseScreen
         if (_seekForwardButton is not null) _seekForwardButton.Pressed += () => SeekRelative(5.0);
         if (_stopButton is not null) _stopButton.Pressed += OnStopPressed;
         if (_addBoxButton is not null) _addBoxButton.Pressed += OnAddBoxPressed;
+        if (_deleteBoxButton is not null) _deleteBoxButton.Pressed += OnDeleteSelectedBoxPressed;
         if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
         if (_backButton is not null) _backButton.Pressed += OnBackPressed;
 
@@ -499,6 +503,34 @@ public partial class SceneEditorScreen : BaseScreen
         }
     }
 
+    private void OnDeleteSelectedBoxPressed()
+    {
+        var idx = _timelineEditor?.GetSelectedSlotIndex() ?? -1;
+        if (idx >= 0 && idx < _editableSlots.Count)
+        {
+            DeleteSlotAtIndex(idx);
+        }
+        else if (_editableSlots.Count > 0)
+        {
+            DeleteSlotAtIndex(_editableSlots.Count - 1);
+        }
+    }
+
+    private void DeleteSlotAtIndex(int index)
+    {
+        if (index >= 0 && index < _editableSlots.Count)
+        {
+            var charName = _editableSlots[index].CharacterName;
+            _editableSlots.RemoveAt(index);
+            RebuildSlotsUi();
+            SyncTimelineData();
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = $"🗑️ #{index + 1} ({charName}) konuşma kutucuğu silindi.";
+            }
+        }
+    }
+
     private void RebuildSlotsUi()
     {
         if (_slotsContainer is null) return;
@@ -613,15 +645,10 @@ public partial class SceneEditorScreen : BaseScreen
             var deleteBtn = new Button
             {
                 Text = "🗑️ Sil",
-                CustomMinimumSize = new Vector2(60, 32)
+                CustomMinimumSize = new Vector2(70, 32)
             };
-            deleteBtn.AddThemeColorOverride("font_color", new Color(1, 0.4f, 0.4f));
-            deleteBtn.Pressed += () =>
-            {
-                _editableSlots.RemoveAt(index);
-                RebuildSlotsUi();
-                SyncTimelineData();
-            };
+            deleteBtn.AddThemeColorOverride("font_color", new Color(1.0f, 0.4f, 0.4f));
+            deleteBtn.Pressed += () => DeleteSlotAtIndex(index);
             row1.AddChild(deleteBtn);
 
             // Row 2: Prompt / Subtitle Input

@@ -118,11 +118,21 @@ text = "📊 Ses Dalgası & Konuşma Kutucukları (Kutucukları sürükleyip gen
 custom_minimum_size = Vector2(820, 115)
 layout_mode = 2
 
-[node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(380, 40)
+[node name="TimelineButtons" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
-size_flags_horizontal = 4
-text = "➕ Şu Anki Zamana Yeni Konuşma Kutucuğu Ekle"
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
+custom_minimum_size = Vector2(360, 40)
+layout_mode = 2
+text = "➕ Şu Anki Zamana Konuşma Kutucuğu Ekle"
+
+[node name="DeleteBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
+custom_minimum_size = Vector2(260, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+text = "🗑️ Seçili Konuşma Kutucuğunu Sil"
 
 [node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2

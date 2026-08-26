@@ -14,6 +14,9 @@ public partial class TimelineWaveformEditor : Control
     [Signal]
     public delegate void SlotChangedEventHandler(int slotIndex);
 
+    [Signal]
+    public delegate void SlotDeleteRequestedEventHandler(int slotIndex);
+
     public sealed class TimelineSlotData
     {
         public string SlotId { get; set; } = "";
@@ -51,6 +54,7 @@ public partial class TimelineWaveformEditor : Control
     {
         CustomMinimumSize = new Vector2(820, 115);
         MouseFilter = MouseFilterEnum.Stop;
+        FocusMode = FocusModeEnum.All;
     }
 
     public void SetData(double totalDuration, List<TimelineSlotData> slots, float[]? waveform = null)
@@ -93,6 +97,8 @@ public partial class TimelineWaveformEditor : Control
         QueueRedraw();
     }
 
+    public int GetSelectedSlotIndex() => _selectedSlotIndex;
+
     public override void _Draw()
     {
         var size = Size;
@@ -103,7 +109,7 @@ public partial class TimelineWaveformEditor : Control
         DrawRect(bgRect, new Color(0.06f, 0.08f, 0.12f, 1.0f));
         DrawRect(bgRect, new Color(0.20f, 0.35f, 0.55f, 0.9f), false, 2.0f);
 
-        // 2. Time Grid & Ruler Marks (every 1s / 5s)
+        // 2. Time Grid & Ruler Marks
         var font = ThemeDB.FallbackFont;
         var fontSize = 11;
         var stepSec = _totalDuration > 60.0 ? 5.0 : (_totalDuration > 20.0 ? 2.0 : 1.0);
@@ -127,7 +133,6 @@ public partial class TimelineWaveformEditor : Control
         var centerY = size.Y * 0.56f;
         var maxAmpH = size.Y * 0.36f;
 
-        // Subtle center guide line
         DrawLine(new Vector2(0, centerY), new Vector2(size.X, centerY), new Color(0.25f, 0.40f, 0.60f, 0.5f), 1.0f);
 
         if (_waveformPoints is not null && _waveformPoints.Length > 0)
@@ -142,7 +147,6 @@ public partial class TimelineWaveformEditor : Control
                 var rawAmp = _waveformPoints[i];
                 var amp = Math.Max(1.5f, Math.Clamp(rawAmp, 0.0f, 1.0f) * maxAmpH);
 
-                // Neon cyan / audio energy bars
                 var barColor = rawAmp > 0.05f
                     ? new Color(0.20f, 0.85f, 1.0f, 0.85f)
                     : new Color(0.15f, 0.45f, 0.65f, 0.40f);
@@ -152,7 +156,6 @@ public partial class TimelineWaveformEditor : Control
         }
         else
         {
-            // Placeholder idle wave pulse
             for (float x = 0; x < size.X; x += 4)
             {
                 var idleAmp = (float)(Math.Sin(x * 0.05) * 3.0);
@@ -189,17 +192,23 @@ public partial class TimelineWaveformEditor : Control
             var tagWidth = Math.Min(width, 160);
             var tagBgRect = new Rect2(xStart, 16, tagWidth, 16);
             DrawRect(tagBgRect, new Color(0.0f, 0.0f, 0.0f, 0.80f));
-            DrawString(font, new Vector2(xStart + 4, 28), tagText, HorizontalAlignment.Left, (int)tagWidth - 6, 11, new Color(1.0f, 1.0f, 1.0f, 1.0f));
+            DrawString(font, new Vector2(xStart + 4, 28), tagText, HorizontalAlignment.Left, (int)tagWidth - 20, 11, new Color(1.0f, 1.0f, 1.0f, 1.0f));
+
+            // Delete 'x' Icon button at top right of the box if width allows
+            if (width >= 35)
+            {
+                var deleteIconRect = new Rect2(xStart + width - 16, 16, 16, 16);
+                DrawRect(deleteIconRect, isSelected ? new Color(0.9f, 0.2f, 0.2f, 0.9f) : new Color(0.0f, 0.0f, 0.0f, 0.7f));
+                DrawString(font, new Vector2(xStart + width - 13, 28), "✕", HorizontalAlignment.Left, -1, 10, new Color(1.0f, 1.0f, 1.0f, 1.0f));
+            }
         }
 
-        // 5. Red Moving Playhead (Zaman Çubuğu)
+        // 5. Red Moving Playhead
         var playheadX = (float)((_currentPlayhead / _totalDuration) * size.X);
         var playheadColor = new Color(1.0f, 0.20f, 0.20f, 1.0f);
 
-        // Vertical Playhead Line
         DrawLine(new Vector2(playheadX, 0), new Vector2(playheadX, size.Y), playheadColor, 2.5f);
 
-        // Top triangle pointer
         var pointerPoints = new Vector2[]
         {
             new(playheadX - 7, 0),
@@ -214,16 +223,31 @@ public partial class TimelineWaveformEditor : Control
         var size = Size;
         if (size.X <= 0 || _totalDuration <= 0) return;
 
+        if (@event is InputEventKey ek && ek.Pressed)
+        {
+            if (ek.Keycode == Key.Delete || ek.Keycode == Key.Backspace)
+            {
+                if (_selectedSlotIndex >= 0 && _selectedSlotIndex < _slots.Count)
+                {
+                    EmitSignal(SignalName.SlotDeleteRequested, _selectedSlotIndex);
+                    return;
+                }
+            }
+        }
+
         if (@event is InputEventMouseButton mb)
         {
             var mouseX = mb.Position.X;
+            var mouseY = mb.Position.Y;
             var clickedSec = (mouseX / size.X) * _totalDuration;
 
             if (mb.ButtonIndex == MouseButton.Left)
             {
                 if (mb.Pressed)
                 {
-                    // Check if clicked on slot box or resize edges
+                    GrabFocus();
+
+                    // Check if clicked on slot box, delete icon, or resize edges
                     var hitSlot = -1;
                     var dragMode = DragMode.Playhead;
 
@@ -235,6 +259,13 @@ public partial class TimelineWaveformEditor : Control
 
                         if (mouseX >= x1 - 6 && mouseX <= x2 + 6)
                         {
+                            // Check delete icon hit (top-right 16x16 area)
+                            if (mouseY >= 16 && mouseY <= 32 && mouseX >= x2 - 18 && mouseX <= x2 + 2)
+                            {
+                                EmitSignal(SignalName.SlotDeleteRequested, i);
+                                return;
+                            }
+
                             hitSlot = i;
                             if (Math.Abs(mouseX - x1) <= 8) dragMode = DragMode.ResizeLeft;
                             else if (Math.Abs(mouseX - x2) <= 8) dragMode = DragMode.ResizeRight;
@@ -255,7 +286,6 @@ public partial class TimelineWaveformEditor : Control
                     }
                     else
                     {
-                        // Clicked timeline background -> Seek playhead
                         _currentDragMode = DragMode.Playhead;
                         _currentPlayhead = Math.Clamp(clickedSec, 0.0, _totalDuration);
                         EmitSignal(SignalName.SeekRequested, _currentPlayhead);
@@ -264,7 +294,6 @@ public partial class TimelineWaveformEditor : Control
                 }
                 else
                 {
-                    // Released
                     if (_currentDragMode != DragMode.None && _draggedSlotIndex != -1)
                     {
                         EmitSignal(SignalName.SlotChanged, _draggedSlotIndex);

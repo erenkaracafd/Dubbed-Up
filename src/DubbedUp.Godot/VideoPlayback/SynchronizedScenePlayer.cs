@@ -385,9 +385,16 @@ public partial class SynchronizedScenePlayer : Control, IMediaPlayer
             _isPlaying = false;
             _hasFinished = true;
 
+            if (_videoPlayer is not null)
+            {
+                _videoPlayer.Stop();
+                _videoPlayer.Paused = true;
+            }
+
             if (_backgroundAudioPlayer is not null)
             {
                 _backgroundAudioPlayer.Stop();
+                _backgroundAudioPlayer.StreamPaused = false;
             }
 
             foreach (var player in _takePlayers)
