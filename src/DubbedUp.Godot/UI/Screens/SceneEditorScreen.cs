@@ -90,12 +90,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_durationInput is not null)
         {
-            _durationInput.ValueChanged += val =>
-            {
-                _totalDuration = Math.Max(1.0, val);
-                if (_timeSlider is not null) _timeSlider.MaxValue = _totalDuration;
-                SyncTimelineData();
-            };
+            _durationInput.ValueChanged += OnDurationChanged;
         }
 
         if (_timeSlider is not null)
@@ -118,6 +113,10 @@ public partial class SceneEditorScreen : BaseScreen
         }
     }
 
+    private float[]? _currentWaveform;
+    private string? _currentWavPath;
+    private double _maxSourceDuration = 0.0;
+
     private void LoadSceneData()
     {
         var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
@@ -127,14 +126,7 @@ public partial class SceneEditorScreen : BaseScreen
             return;
         }
 
-        _totalDuration = doc.DurationMilliseconds / 1000.0;
         if (_titleInput is not null) _titleInput.Text = doc.Title;
-        if (_durationInput is not null) _durationInput.Value = _totalDuration;
-        if (_timeSlider is not null)
-        {
-            _timeSlider.MaxValue = _totalDuration;
-            _timeSlider.Value = 0.0;
-        }
 
         _editableSlots.Clear();
         foreach (var slot in doc.VoiceSlots)
@@ -159,11 +151,9 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"💡 Sahne yüklendi: '{doc.Title}' ({_editableSlots.Count} replik kutucuğu)";
+            _statusLabel.Text = $"💡 Sahne yüklendi: '{doc.Title}' (Toplam Süre: {_totalDuration:F1}s, {_editableSlots.Count} replik kutucuğu)";
         }
     }
-
-    private float[]? _currentWaveform;
 
     private void LoadVideoAndAudioWaveform()
     {
@@ -241,15 +231,99 @@ public partial class SceneEditorScreen : BaseScreen
             }
         }
 
+        _currentWavPath = wavPath;
         if (wavPath is not null)
         {
-            _currentWaveform = AudioWaveformLoader.ExtractFullWaveform(wavPath, 350);
+            _maxSourceDuration = AudioWaveformLoader.GetAudioDurationSeconds(wavPath);
+            GD.Print($"[SceneEditor] Audio source duration detected: {_maxSourceDuration:F2}s from '{wavPath}'");
+        }
+
+        var docDurationSec = (doc?.DurationMilliseconds ?? 22000) / 1000.0;
+        if (_maxSourceDuration > 0)
+        {
+            _totalDuration = docDurationSec > 0 ? Math.Min(docDurationSec, _maxSourceDuration) : _maxSourceDuration;
+            if (_durationInput is not null)
+            {
+                _durationInput.MaxValue = Math.Ceiling(_maxSourceDuration);
+                _durationInput.MinValue = 1.0;
+                _durationInput.Value = _totalDuration;
+            }
+        }
+        else
+        {
+            _totalDuration = Math.Max(1.0, docDurationSec > 0 ? docDurationSec : 22.0);
+            if (_durationInput is not null)
+            {
+                _durationInput.MaxValue = 600.0;
+                _durationInput.MinValue = 1.0;
+                _durationInput.Value = _totalDuration;
+            }
+        }
+
+        if (_timeSlider is not null)
+        {
+            _timeSlider.MaxValue = _totalDuration;
+            _timeSlider.Value = 0.0;
+        }
+
+        if (_currentWavPath is not null)
+        {
+            _currentWaveform = AudioWaveformLoader.ExtractWaveformSegment(_currentWavPath, 0.0, _totalDuration, 350);
             _timelineEditor?.SetWaveform(_currentWaveform);
-            GD.Print($"[SceneEditor] Audio waveform loaded for timeline: {wavPath}");
+            GD.Print($"[SceneEditor] Audio waveform loaded for duration [0 - {_totalDuration:F1}s]");
         }
         else
         {
             GD.PrintErr($"[SceneEditor] No audio file found for scene '{doc?.SceneId}'");
+        }
+    }
+
+    private void OnDurationChanged(double newDuration)
+    {
+        _totalDuration = Math.Max(1.0, newDuration);
+        if (_maxSourceDuration > 0 && _totalDuration > _maxSourceDuration)
+        {
+            _totalDuration = _maxSourceDuration;
+        }
+
+        if (_timeSlider is not null)
+        {
+            _timeSlider.MaxValue = _totalDuration;
+            if (_timeSlider.Value > _totalDuration) _timeSlider.Value = _totalDuration;
+        }
+
+        // Re-extract waveform for new clamped time window [0.0 to _totalDuration]
+        if (_currentWavPath is not null)
+        {
+            _currentWaveform = AudioWaveformLoader.ExtractWaveformSegment(_currentWavPath, 0.0, _totalDuration, 350);
+        }
+
+        // Clamp any slots that exceed the new duration
+        bool slotChanged = false;
+        foreach (var s in _editableSlots)
+        {
+            if (s.EndSeconds > _totalDuration)
+            {
+                s.EndSeconds = Math.Round(_totalDuration, 1);
+                slotChanged = true;
+            }
+            if (s.StartSeconds >= s.EndSeconds)
+            {
+                s.StartSeconds = Math.Round(Math.Max(0.0, s.EndSeconds - 0.5), 1);
+                slotChanged = true;
+            }
+        }
+
+        if (slotChanged)
+        {
+            RebuildSlotsUi();
+        }
+
+        SyncTimelineData();
+
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = $"⏱ Toplam süre {_totalDuration:F1}s olarak ayarlandı. Ses dalgası güncellendi.";
         }
     }
 

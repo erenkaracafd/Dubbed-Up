@@ -9,7 +9,50 @@ public static class AudioWaveformLoader
 {
     public const int Resolution = 150;
 
-    public static float[]? ExtractWaveformSegment(string wavFilePath, double startSeconds, double endSeconds)
+    public static double GetAudioDurationSeconds(string wavFilePath)
+    {
+        if (string.IsNullOrWhiteSpace(wavFilePath)) return 0.0;
+
+        try
+        {
+            byte[]? bytes = null;
+            if (global::Godot.FileAccess.FileExists(wavFilePath))
+            {
+                bytes = global::Godot.FileAccess.GetFileAsBytes(wavFilePath);
+            }
+            else
+            {
+                var globalPath = ProjectSettings.GlobalizePath(wavFilePath);
+                if (System.IO.File.Exists(globalPath))
+                {
+                    bytes = System.IO.File.ReadAllBytes(globalPath);
+                }
+                else if (System.IO.File.Exists(wavFilePath))
+                {
+                    bytes = System.IO.File.ReadAllBytes(wavFilePath);
+                }
+            }
+
+            if (bytes is null || bytes.Length < 44) return 0.0;
+
+            int sampleRate = BitConverter.ToInt32(bytes, 24);
+            short channels = BitConverter.ToInt16(bytes, 22);
+            short bitsPerSample = BitConverter.ToInt16(bytes, 34);
+
+            if (sampleRate <= 0 || channels <= 0 || bitsPerSample != 16) return 0.0;
+
+            int bytesPerSample = (bitsPerSample / 8) * channels;
+            int totalPcmBytes = bytes.Length - 44;
+            int totalSamples = totalPcmBytes / bytesPerSample;
+            return (double)totalSamples / sampleRate;
+        }
+        catch
+        {
+            return 0.0;
+        }
+    }
+
+    public static float[]? ExtractWaveformSegment(string wavFilePath, double startSeconds, double endSeconds, int resolution = 300)
     {
         if (string.IsNullOrWhiteSpace(wavFilePath)) return null;
 
@@ -51,11 +94,11 @@ public static class AudioWaveformLoader
             var endSample = (int)(Math.Clamp(endSeconds, startSeconds + 0.1, totalDuration) * sampleRate);
             var sampleCount = Math.Max(1, endSample - startSample);
 
-            var samplesPerBin = (double)sampleCount / Resolution;
-            var result = new float[Resolution];
+            var samplesPerBin = (double)sampleCount / resolution;
+            var result = new float[resolution];
             float maxRms = 0.001f;
 
-            for (int bin = 0; bin < Resolution; bin++)
+            for (int bin = 0; bin < resolution; bin++)
             {
                 int binStart = startSample + (int)(bin * samplesPerBin);
                 int binEnd = startSample + (int)((bin + 1) * samplesPerBin);
@@ -80,11 +123,9 @@ public static class AudioWaveformLoader
                 if (rms > maxRms) maxRms = rms;
             }
 
-            // Normalize between 0.0 and 1.0 with noise gating
-            for (int bin = 0; bin < Resolution; bin++)
+            for (int bin = 0; bin < resolution; bin++)
             {
                 var normalized = result[bin] / maxRms;
-                // Subtle curve shaping
                 result[bin] = (float)Math.Clamp(Math.Pow(normalized, 0.85), 0.0, 1.0);
             }
 
