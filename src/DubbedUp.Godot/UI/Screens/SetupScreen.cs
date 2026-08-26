@@ -13,6 +13,7 @@ public partial class SetupScreen : BaseScreen
     private Label? _player2Label;
     private OptionButton? _gameModeOption;
     private Label? _errorLabel;
+    private Button? _editSceneButton;
 
     public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
     {
@@ -29,6 +30,7 @@ public partial class SetupScreen : BaseScreen
         _player2Input = GetNodeOrNull<LineEdit>("CenterContainer/VBoxContainer/Player2Input");
         _gameModeOption = GetNodeOrNull<OptionButton>("CenterContainer/VBoxContainer/GameModeOption");
         _errorLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/ErrorLabel");
+        _editSceneButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/EditSceneButton");
 
         UpdateSetupInfo();
 
@@ -49,6 +51,11 @@ public partial class SetupScreen : BaseScreen
             startButton.Pressed += OnStartRoundPressed;
         }
 
+        if (_editSceneButton is not null)
+        {
+            _editSceneButton.Pressed += () => Navigator?.NavigateTo(AppScreen.SceneEditor);
+        }
+
         var backButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/BackButton");
         if (backButton is not null)
         {
@@ -62,7 +69,7 @@ public partial class SetupScreen : BaseScreen
         if (_sceneTitleLabel is not null)
         {
             _sceneTitleLabel.Text = selectedScene is not null
-                ? $"🎬 {selectedScene.Title}  ({selectedScene.DurationMilliseconds / 1000.0:F0}s)"
+                ? $"🎬 {selectedScene.Title}  ({selectedScene.DurationMilliseconds / 1000.0:F1}s)"
                 : "🎬 Scene: Default (Museum Mix-up)";
         }
 
@@ -97,56 +104,63 @@ public partial class SetupScreen : BaseScreen
         if (isSolo)
         {
             var lines = chars.Select(c => $"   🎭 {c.DisplayName}").ToList();
-            _characterPreviewLabel.Text = $"Seslendireceğin karakterler (solo):\n{string.Join("\n", lines)}";
+            _characterPreviewLabel.Text = $"Characters you will voice (Solo):\n{string.Join("\n", lines)}";
         }
         else
         {
-            var sb = new System.Text.StringBuilder("Karakter dağılımı:\n");
-            for (int i = 0; i < chars.Count; i++)
-            {
-                var player = (i % 2 == 0) ? "👤 1. Oyuncu" : "👥 2. Oyuncu";
-                sb.AppendLine($"   {player}: 🎭 {chars[i].DisplayName}");
-            }
-            _characterPreviewLabel.Text = sb.ToString().TrimEnd();
+            var p1Char = chars.FirstOrDefault()?.DisplayName ?? "Character 1";
+            var p2Char = chars.Skip(1).FirstOrDefault()?.DisplayName ?? "Character 2";
+            _characterPreviewLabel.Text = $"Character Assignment:\n   🎭 Player 1 -> {p1Char}\n   🎭 Player 2 -> {p2Char}";
         }
     }
 
     private void OnStartRoundPressed()
     {
-        if (_errorLabel is not null) _errorLabel.Visible = false;
+        if (Coordinator is null)
+        {
+            ShowError("Session coordinator is not initialized.");
+            return;
+        }
 
-        var p1 = string.IsNullOrWhiteSpace(_player1Input?.Text) ? "Player" : _player1Input.Text.Trim();
+        var p1Name = _player1Input?.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(p1Name))
+        {
+            ShowError("Please enter Player 1's name.");
+            return;
+        }
+
         var isSolo = _gameModeOption?.Selected == 0;
-        var isVoting = _gameModeOption?.Selected == 2;
+        var mode = _gameModeOption?.Selected == 2 ? GameMode.CompetitiveVoting : GameMode.CoopDubbing;
 
-        var playerList = new List<string> { p1 };
+        var playerNames = new List<string> { p1Name };
+
         if (!isSolo)
         {
-            var p2 = string.IsNullOrWhiteSpace(_player2Input?.Text) ? "Player 2" : _player2Input.Text.Trim();
-            playerList.Add(p2);
-        }
-
-        var selectedMode = isVoting ? GameMode.CompetitiveVoting : GameMode.CoopDubbing;
-        var sceneDoc = Coordinator?.SelectedScenePackage?.Document;
-
-        try
-        {
-            Coordinator?.StartSession(playerList, sceneDoc, selectedMode);
-            Navigator?.NavigateTo(AppScreen.Recording);
-        }
-        catch (Exception ex)
-        {
-            if (_errorLabel is not null)
+            var p2Name = _player2Input?.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(p2Name))
             {
-                _errorLabel.Text = $"Setup error: {ex.Message}";
-                _errorLabel.Visible = true;
+                ShowError("Please enter Player 2's name.");
+                return;
             }
+            playerNames.Add(p2Name);
         }
+
+        var scene = Coordinator.SelectedScenePackage?.Document ?? Coordinator.CurrentScene;
+        Coordinator.StartSession(playerNames, scene, mode);
+        Navigator?.NavigateTo(AppScreen.Recording);
     }
 
     private void OnBackPressed()
     {
-        Coordinator?.ResetSession();
         Navigator?.NavigateTo(AppScreen.ScenePicker);
+    }
+
+    private void ShowError(string message)
+    {
+        if (_errorLabel is not null)
+        {
+            _errorLabel.Text = message;
+            _errorLabel.Visible = true;
+        }
     }
 }

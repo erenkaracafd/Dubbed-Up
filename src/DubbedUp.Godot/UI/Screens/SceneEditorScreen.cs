@@ -45,8 +45,8 @@ public partial class SceneEditorScreen : BaseScreen
     {
         public string SlotId { get; set; } = "slot-1";
         public string CharacterId { get; set; } = "char-1";
-        public string CharacterName { get; set; } = "Karakter";
-        public string Prompt { get; set; } = "Replik metni";
+        public string CharacterName { get; set; } = "Character";
+        public string Prompt { get; set; } = "Subtitle prompt";
         public double StartSeconds { get; set; } = 0.0;
         public double EndSeconds { get; set; } = 4.0;
     }
@@ -126,7 +126,7 @@ public partial class SceneEditorScreen : BaseScreen
         var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
         if (doc is null)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "❌ Düzenlenecek sahne bulunamadı.";
+            if (_statusLabel is not null) _statusLabel.Text = "❌ No scene loaded to edit.";
             return;
         }
 
@@ -155,7 +155,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"💡 Sahne yüklendi: '{doc.Title}' (Toplam Süre: {_totalDuration:F1}s, {_editableSlots.Count} replik kutucuğu)";
+            _statusLabel.Text = $"💡 Scene loaded: '{doc.Title}' (Duration: {_totalDuration:F1}s, {_editableSlots.Count} speech slots)";
         }
     }
 
@@ -327,7 +327,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"⏱ Toplam süre {_totalDuration:F1}s olarak ayarlandı. Ses dalgası güncellendi.";
+            _statusLabel.Text = $"⏱ Total duration set to {_totalDuration:F1}s. Waveform updated.";
         }
     }
 
@@ -359,7 +359,7 @@ public partial class SceneEditorScreen : BaseScreen
             var slot = _editableSlots[slotIndex];
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"👉 Seçilen Replik #{slotIndex + 1}: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
+                _statusLabel.Text = $"👉 Selected Line #{slotIndex + 1}: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
             }
         }
     }
@@ -395,7 +395,7 @@ public partial class SceneEditorScreen : BaseScreen
             _videoPlayer.Play();
         }
 
-        if (_playPauseButton is not null) _playPauseButton.Text = "⏸ Duraklat";
+        if (_playPauseButton is not null) _playPauseButton.Text = "⏸ Pause";
     }
 
     private void PauseVideo()
@@ -404,7 +404,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         _isPlaying = false;
         _videoPlayer.Paused = true;
-        if (_playPauseButton is not null) _playPauseButton.Text = "▶ Oynat";
+        if (_playPauseButton is not null) _playPauseButton.Text = "▶ Play";
     }
 
     private void OnStopPressed()
@@ -452,8 +452,8 @@ public partial class SceneEditorScreen : BaseScreen
         {
             SlotId = $"slot-{nextIdx}",
             CharacterId = $"char-{nextIdx}",
-            CharacterName = $"Karakter {nextIdx}",
-            Prompt = "Yeni replik metnini girin...",
+            CharacterName = $"Character {nextIdx}",
+            Prompt = "Enter dialogue prompt here...",
             StartSeconds = start,
             EndSeconds = end
         };
@@ -465,7 +465,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"✨ {start:F1}s zamanına yeni konuşma kutucuğu eklendi!";
+            _statusLabel.Text = $"✨ Added new speech slot at {start:F1}s!";
         }
     }
 
@@ -492,7 +492,7 @@ public partial class SceneEditorScreen : BaseScreen
             SyncTimelineData();
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"🗑️ #{index + 1} ({charName}) konuşma kutucuğu silindi.";
+                _statusLabel.Text = $"🗑️ Deleted speech slot #{index + 1} ({charName}).";
             }
         }
     }
@@ -584,7 +584,7 @@ public partial class SceneEditorScreen : BaseScreen
             var charNameInput = new LineEdit
             {
                 Text = slot.CharacterName,
-                PlaceholderText = "Karakter Adı...",
+                PlaceholderText = "Character Name...",
                 CustomMinimumSize = new Vector2(160, 32)
             };
             charNameInput.TextChanged += text =>
@@ -595,7 +595,7 @@ public partial class SceneEditorScreen : BaseScreen
             };
             row1.AddChild(charNameInput);
 
-            var startLabel = new Label { Text = "Başlangıç:" };
+            var startLabel = new Label { Text = "Start:" };
             row1.AddChild(startLabel);
 
             var startInput = new SpinBox
@@ -614,7 +614,7 @@ public partial class SceneEditorScreen : BaseScreen
             };
             row1.AddChild(startInput);
 
-            var endLabel = new Label { Text = "Bitiş:" };
+            var endLabel = new Label { Text = "End:" };
             row1.AddChild(endLabel);
 
             var endInput = new SpinBox
@@ -635,7 +635,7 @@ public partial class SceneEditorScreen : BaseScreen
 
             var previewBtn = new Button
             {
-                Text = "🎧 Bu Kısmı Dinle",
+                Text = "🎧 Preview Line",
                 CustomMinimumSize = new Vector2(120, 32)
             };
             previewBtn.Pressed += () => PreviewSlot(slot);
@@ -643,7 +643,7 @@ public partial class SceneEditorScreen : BaseScreen
 
             var deleteBtn = new Button
             {
-                Text = "🗑️ Sil",
+                Text = "🗑️ Delete",
                 CustomMinimumSize = new Vector2(70, 32)
             };
             deleteBtn.AddThemeColorOverride("font_color", new Color(1.0f, 0.4f, 0.4f));
@@ -655,13 +655,13 @@ public partial class SceneEditorScreen : BaseScreen
             row2.AddThemeConstantOverride("separation", 8);
             mainVBox.AddChild(row2);
 
-            var promptLabel = new Label { Text = "💬 Altyazı / Metin:" };
+            var promptLabel = new Label { Text = "💬 Subtitle / Prompt:" };
             row2.AddChild(promptLabel);
 
             var promptInput = new LineEdit
             {
                 Text = slot.Prompt,
-                PlaceholderText = "Karakterin söyleyeceği replik metni / altyazı...",
+                PlaceholderText = "Enter character dialogue prompt / subtitle...",
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
                 CustomMinimumSize = new Vector2(0, 32)
             };
@@ -687,7 +687,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"🎧 Oynatılıyor: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
+            _statusLabel.Text = $"🎧 Previewing: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
         }
     }
 
@@ -715,13 +715,13 @@ public partial class SceneEditorScreen : BaseScreen
         var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
         if (doc is null)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "❌ Kaydedilecek sahne bulunamadı.";
+            if (_statusLabel is not null) _statusLabel.Text = "❌ No scene loaded to save.";
             return;
         }
 
         if (_editableSlots.Count == 0)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "❌ En az 1 konuşma kutucuğu / replik olmalıdır.";
+            if (_statusLabel is not null) _statusLabel.Text = "❌ At least 1 speech slot is required.";
             return;
         }
 
@@ -742,7 +742,7 @@ public partial class SceneEditorScreen : BaseScreen
         for (int i = 0; i < sortedSlots.Count; i++)
         {
             var slot = sortedSlots[i];
-            var charKey = string.IsNullOrWhiteSpace(slot.CharacterName) ? $"Karakter {i + 1}" : slot.CharacterName.Trim();
+            var charKey = string.IsNullOrWhiteSpace(slot.CharacterName) ? $"Character {i + 1}" : slot.CharacterName.Trim();
             if (!charMap.TryGetValue(charKey, out var charId))
             {
                 charId = ToKebabCaseId(charKey);
@@ -757,7 +757,7 @@ public partial class SceneEditorScreen : BaseScreen
             }
 
             var slotId = $"slot-{i + 1}-{charId}";
-            var prompt = string.IsNullOrWhiteSpace(slot.Prompt) ? "Replik" : slot.Prompt.Trim();
+            var prompt = string.IsNullOrWhiteSpace(slot.Prompt) ? "Dialogue line" : slot.Prompt.Trim();
 
             newVoiceSlots.Add(new VoiceSlotDefinition
             {
@@ -798,7 +798,7 @@ public partial class SceneEditorScreen : BaseScreen
         catch (Exception ex)
         {
             GD.PrintErr($"[SceneEditor] Validation failed: {ex.Message}");
-            if (_statusLabel is not null) _statusLabel.Text = $"❌ Kaydetme hatası: {ex.Message}";
+            if (_statusLabel is not null) _statusLabel.Text = $"❌ Validation error: {ex.Message}";
             return;
         }
 
@@ -830,7 +830,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = "✅ Sahne, konuşma kutucukları ve altyazılar başarıyla kaydedildi!";
+            _statusLabel.Text = "✅ Scene, speech timeline, and subtitles saved successfully!";
         }
     }
 

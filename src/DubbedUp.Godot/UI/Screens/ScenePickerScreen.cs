@@ -66,7 +66,7 @@ public partial class ScenePickerScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"🎬 {_availableScenes.Count} oynanabilir sahne bulundu. Seslendirmek için bir sahne seçin:";
+            _statusLabel.Text = $"🎬 Found {_availableScenes.Count} playable scenes. Select a scene to dub or edit:";
         }
 
         foreach (var package in _availableScenes)
@@ -112,7 +112,7 @@ public partial class ScenePickerScreen : BaseScreen
         var durationSec = package.DurationMilliseconds / 1000.0;
         var detailsLabel = new Label
         {
-            Text = $"⏱ {durationSec:F1}s  |  👥 Karakterler: {charNames} ({package.Document.VoiceSlots.Count} Replik)",
+            Text = $"⏱ {durationSec:F1}s  |  👥 Characters: {charNames} ({package.Document.VoiceSlots.Count} Lines)",
         };
         detailsLabel.AddThemeFontSizeOverride("font_size", 13);
         detailsLabel.AddThemeColorOverride("font_color", new Color(0.6f, 0.85f, 1.0f));
@@ -125,16 +125,16 @@ public partial class ScenePickerScreen : BaseScreen
 
         var editBtn = new Button
         {
-            Text = "✏️ Düzenle",
-            CustomMinimumSize = new Vector2(100, 48),
+            Text = "✏️ Edit",
+            CustomMinimumSize = new Vector2(90, 44),
         };
         editBtn.Pressed += () => OnEditScenePressed(package);
         btnContainer.AddChild(editBtn);
 
         var selectBtn = new Button
         {
-            Text = "🎮 Bu Sahneyi Seç",
-            CustomMinimumSize = new Vector2(150, 48),
+            Text = "🎮 Select Scene",
+            CustomMinimumSize = new Vector2(140, 44),
         };
         selectBtn.Pressed += () => OnSceneSelected(package);
         btnContainer.AddChild(selectBtn);

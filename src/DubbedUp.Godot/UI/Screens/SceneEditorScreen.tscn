@@ -32,7 +32,7 @@ theme_override_constants/separation = 12
 [node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
-text = "✏️ Sahne, Replik & Timeline Editörü"
+text = "✏️ Scene & Speech Timeline Editor"
 horizontal_alignment = 1
 
 [node name="HeaderGrid" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
@@ -42,16 +42,16 @@ theme_override_constants/separation = 16
 
 [node name="TitleNameLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
 layout_mode = 2
-text = "Sahne Başlığı:"
+text = "Scene Title:"
 
 [node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
 custom_minimum_size = Vector2(340, 36)
 layout_mode = 2
-placeholder_text = "Sahne Başlığı..."
+placeholder_text = "Scene Title..."
 
 [node name="DurationLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
 layout_mode = 2
-text = "Toplam Süre (sn):"
+text = "Total Duration (sec):"
 
 [node name="DurationInput" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
 custom_minimum_size = Vector2(100, 36)
@@ -83,7 +83,7 @@ text = "⏪ -5s"
 [node name="PlayPauseButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
 custom_minimum_size = Vector2(160, 38)
 layout_mode = 2
-text = "▶ Oynat"
+text = "▶ Play"
 
 [node name="SeekForwardButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
 custom_minimum_size = Vector2(100, 38)
@@ -93,7 +93,7 @@ text = "⏩ +5s"
 [node name="StopButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
 custom_minimum_size = Vector2(110, 38)
 layout_mode = 2
-text = "⏹ Başa Al"
+text = "⏹ Reset"
 
 [node name="VideoTimeLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
 custom_minimum_size = Vector2(160, 0)
@@ -112,7 +112,7 @@ step = 0.1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 16
-text = "📊 Ses Dalgası & Konuşma Kutucukları (Kutucukları sürükleyip genişletebilirsiniz):"
+text = "📊 Audio Waveform & Speech Slots (Drag & resize boxes over the waveform):"
 
 [node name="TimelineContainer" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(820, 115)
@@ -126,19 +126,19 @@ theme_override_constants/separation = 16
 [node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(360, 40)
 layout_mode = 2
-text = "➕ Şu Anki Zamana Konuşma Kutucuğu Ekle"
+text = "➕ Add Speech Box at Current Time"
 
 [node name="DeleteBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(260, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
-text = "🗑️ Seçili Konuşma Kutucuğunu Sil"
+text = "🗑️ Delete Selected Speech Box"
 
 [node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
 theme_override_font_sizes/font_size = 16
-text = "🎭 Konuşulacak Replikler & Altyazılar:"
+text = "🎭 Dialogue Lines & Subtitles:"
 
 [node name="SlotsContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -158,9 +158,9 @@ theme_override_constants/separation = 16
 [node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(240, 44)
 layout_mode = 2
-text = "💾 Değişiklikleri Kaydet"
+text = "💾 Save Changes"
 
 [node name="BackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(180, 44)
 layout_mode = 2
-text = "🔙 Geri Dön"
+text = "🔙 Back to Setup"

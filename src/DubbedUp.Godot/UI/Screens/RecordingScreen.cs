@@ -169,7 +169,7 @@ public partial class RecordingScreen : BaseScreen
             if (_countdownLabel is not null)
             {
                 var count = (int)Math.Ceiling(_countdownTimer);
-                _countdownLabel.Text = count > 0 ? $"🎙 Kayıt Başlıyor: {count}..." : "🔴 ŞİMDİ KONUŞ!";
+                _countdownLabel.Text = count > 0 ? $"🎙 Recording in: {count}..." : "🔴 SPEAK NOW!";
             }
 
             if (_countdownTimer <= 0.0)
@@ -221,7 +221,7 @@ public partial class RecordingScreen : BaseScreen
                 _videoPlayer.Stop();
                 _isPreviewingOriginal = false;
                 _waveformVisualizer?.SetPlayhead(0, false);
-                if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Orijinal Sahneyi Dinle & İzle";
+                if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Listen to Original Reference";
             }
             return;
         }
@@ -248,8 +248,8 @@ public partial class RecordingScreen : BaseScreen
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
 
         _waveformVisualizer?.SetPlayhead(0.0, false);
-        if (_previewTakeButton is not null) _previewTakeButton.Text = "▶ Kendi Kaydımı Dinle";
-        if (_statusLabel is not null) _statusLabel.Text = "Önizleme tamamlandı.";
+        if (_previewTakeButton is not null) _previewTakeButton.Text = "▶ Listen to My Take";
+        if (_statusLabel is not null) _statusLabel.Text = "Take preview finished.";
     }
 
     private void UpdateUiState()
@@ -288,7 +288,7 @@ public partial class RecordingScreen : BaseScreen
 
         if (_slotInfoLabel is not null)
         {
-            _slotInfoLabel.Text = $"Replik {_currentSlotIndex + 1} / {voiceSlots.Count}  |  Karakter: 🎭 {charName}  ({playerName})  |  Süre: {_maxSlotDuration:F1}s";
+            _slotInfoLabel.Text = $"Line {_currentSlotIndex + 1} / {voiceSlots.Count}  |  Character: 🎭 {charName}  ({playerName})  |  Duration: {_maxSlotDuration:F1}s";
         }
 
         if (_promptSubtitleLabel is not null)
@@ -307,7 +307,7 @@ public partial class RecordingScreen : BaseScreen
         if (_previewOriginalButton is not null) _previewOriginalButton.Visible = true;
         if (_recordButton is not null)
         {
-            _recordButton.Text = isRecorded ? "🎙️ Yeniden Kaydet (Üstüne Yaz)" : "🎙️ Kayda Başla (3-2-1)";
+            _recordButton.Text = isRecorded ? "🎙️ Re-Record (Overwrite)" : "🎙️ Start Recording (3-2-1)";
         }
         if (_previewTakeButton is not null) _previewTakeButton.Visible = isRecorded;
         if (_reRecordButton is not null) _reRecordButton.Visible = isRecorded;
@@ -320,14 +320,14 @@ public partial class RecordingScreen : BaseScreen
         if (_proceedButton is not null)
         {
             _proceedButton.Visible = allDone;
-            _proceedButton.Text = "🎬 Tüm Replikler Tamam — Playback'i İzle!";
+            _proceedButton.Text = "🎬 All Lines Recorded — Watch Full Playback!";
         }
 
         if (_statusLabel is not null)
         {
             _statusLabel.Text = isRecorded
-                ? $"✅ Replik kaydedildi! Kendi kaydını dinleyebilir veya sonraki repliğe geçebilirsin."
-                : "Hazır. 'Orijinal Sahneyi Dinle' ile klibi dinleyebilir veya 'Kayda Başla'ya basabilirsin.";
+                ? "✅ Take recorded! You can preview your take, re-record, or proceed to the next line."
+                : "Ready. Press 'Listen to Original' or 'Start Recording'.";
         }
     }
 
@@ -373,7 +373,7 @@ public partial class RecordingScreen : BaseScreen
 
         if (_videoPlayer is null || _videoPlayer.Stream is null)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "ℹ️ Bu sahne için video akışı bulunamadı.";
+            if (_statusLabel is not null) _statusLabel.Text = "ℹ️ No video stream found for this scene.";
             return;
         }
 
@@ -381,7 +381,7 @@ public partial class RecordingScreen : BaseScreen
         {
             _videoPlayer.Stop();
             _isPreviewingOriginal = false;
-            if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Orijinal Sahneyi Dinle & İzle";
+            if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Listen to Original Reference";
             return;
         }
 
@@ -392,8 +392,8 @@ public partial class RecordingScreen : BaseScreen
         _videoPlayer.Play();
         _videoPlayer.StreamPosition = _slotStartSec;
 
-        if (_previewOriginalButton is not null) _previewOriginalButton.Text = "⏹ Oynatmayı Durdur";
-        if (_statusLabel is not null) _statusLabel.Text = "🎧 Orijinal sahne klibi oynatılıyor...";
+        if (_previewOriginalButton is not null) _previewOriginalButton.Text = "⏹ Stop Playing";
+        if (_statusLabel is not null) _statusLabel.Text = "🎧 Playing original reference clip...";
     }
 
     private void OnRecordButtonPressed()
@@ -405,7 +405,7 @@ public partial class RecordingScreen : BaseScreen
         {
             _isCountingDown = false;
             if (_countdownLabel is not null) _countdownLabel.Visible = false;
-            if (_recordButton is not null) _recordButton.Text = "🎙️ Kayda Başla (3-2-1)";
+            if (_recordButton is not null) _recordButton.Text = "🎙️ Start Recording (3-2-1)";
             return;
         }
 
@@ -415,11 +415,11 @@ public partial class RecordingScreen : BaseScreen
             _countdownTimer = 2.0; // 2 seconds countdown
             if (_countdownLabel is not null)
             {
-                _countdownLabel.Text = "🎙 Hazır ol... 2";
+                _countdownLabel.Text = "🎙 Get Ready... 2";
                 _countdownLabel.Visible = true;
             }
-            if (_recordButton is not null) _recordButton.Text = "İptal Et";
-            if (_statusLabel is not null) _statusLabel.Text = "Geri sayım başladı... Karakterin dudak hareketine odaklan!";
+            if (_recordButton is not null) _recordButton.Text = "Cancel";
+            if (_statusLabel is not null) _statusLabel.Text = "Countdown started... Focus on character lip movements!";
         }
         else
         {
@@ -457,12 +457,12 @@ public partial class RecordingScreen : BaseScreen
                 _videoPlayer.StreamPosition = _slotStartSec;
             }
 
-            if (_recordButton is not null) _recordButton.Text = "⏹ Kaydı Bitir (Tamam)";
-            if (_statusLabel is not null) _statusLabel.Text = "🔴 CANLI KAYIT ALINIYOR — Konuşun! (Video oynuyor, ses tamamen sessizde)";
+            if (_recordButton is not null) _recordButton.Text = "⏹ Stop Recording";
+            if (_statusLabel is not null) _statusLabel.Text = "🔴 RECORDING LIVE — Speak your line!";
         }
         catch (Exception ex)
         {
-            ShowError($"Kayıt başlatılamadı: {ex.Message}");
+            ShowError($"Failed to start recording: {ex.Message}");
         }
     }
 
@@ -486,7 +486,7 @@ public partial class RecordingScreen : BaseScreen
             var matchPercent = _waveformVisualizer?.CalculateSyncMatchPercentage() ?? 90.0f;
             if (_syncScoreLabel is not null)
             {
-                _syncScoreLabel.Text = $"⭐ Zamanlama & Ritim Uyumu: %{matchPercent:F0}";
+                _syncScoreLabel.Text = $"⭐ Timing & Rhythm Match: {matchPercent:F0}%";
                 _syncScoreLabel.Visible = true;
             }
 
@@ -515,7 +515,7 @@ public partial class RecordingScreen : BaseScreen
         catch (Exception ex)
         {
             _isRecordingLocal = false;
-            ShowError($"Kayıt durdurulamadı: {ex.Message}");
+            ShowError($"Failed to stop recording: {ex.Message}");
         }
     }
 
@@ -576,14 +576,14 @@ public partial class RecordingScreen : BaseScreen
                     _previewTakeDuration = 0.0;
                     _waveformVisualizer?.SetPlayhead(0.0, false);
 
-                    if (_previewTakeButton is not null) _previewTakeButton.Text = "⏹ Dinlemeyi Durdur";
-                    if (_statusLabel is not null) _statusLabel.Text = "▶ Kendi kaydın ve video eşzamanlı oynatılıyor...";
+                    if (_previewTakeButton is not null) _previewTakeButton.Text = "⏹ Stop Preview";
+                    if (_statusLabel is not null) _statusLabel.Text = "▶ Playing your take in sync with video...";
                 }
             }
         }
         catch (Exception ex)
         {
-            ShowError($"Dinleme hatası: {ex.Message}");
+            ShowError($"Take preview error: {ex.Message}");
         }
     }
 

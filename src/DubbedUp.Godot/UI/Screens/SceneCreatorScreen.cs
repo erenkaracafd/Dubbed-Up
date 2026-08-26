@@ -1,18 +1,24 @@
+using System.Text.RegularExpressions;
 using DubbedUp.Core.Ai;
 using DubbedUp.Core.Characters;
 using DubbedUp.Core.ProjectFormat;
 using DubbedUp.Core.Scenes;
 using DubbedUp.Core.Timeline;
 using DubbedUp.Godot.Ai;
+using DubbedUp.Godot.AudioPlayback;
+using DubbedUp.Godot.LocalSession;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
 
 public partial class SceneCreatorScreen : BaseScreen
 {
+    private Button? _openFolderButton;
+    private Button? _refreshMediaButton;
+    private OptionButton? _mediaOption;
+
     private LineEdit? _titleInput;
     private LineEdit? _sceneIdInput;
-    private LineEdit? _videoPathInput;
     private SpinBox? _durationSpinBox;
     private LineEdit? _char1NameInput;
     private LineEdit? _char2NameInput;
@@ -32,11 +38,16 @@ public partial class SceneCreatorScreen : BaseScreen
     private Button? _saveButton;
     private Button? _cancelButton;
 
+    private readonly List<string> _discoveredMediaFiles = [];
+
     public override void _Ready()
     {
+        _openFolderButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/OpenFolderButton");
+        _refreshMediaButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/RefreshMediaButton");
+        _mediaOption = GetNodeOrNull<OptionButton>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/MediaOption");
+
         _titleInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/TitleInput");
         _sceneIdInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/SceneIdInput");
-        _videoPathInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/VideoPathInput");
         _durationSpinBox = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/DurationSpinBox");
 
         _srtInputText = GetNodeOrNull<TextEdit>("ScrollContainer/CenterContainer/VBoxContainer/AiContainer/SrtInputText");
@@ -58,34 +69,155 @@ public partial class SceneCreatorScreen : BaseScreen
         _saveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox/SaveButton");
         _cancelButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox/CancelButton");
 
-        if (_titleInput is not null)
+        if (_openFolderButton is not null) _openFolderButton.Pressed += OnOpenFolderPressed;
+        if (_refreshMediaButton is not null) _refreshMediaButton.Pressed += ScanMediaFiles;
+        if (_mediaOption is not null) _mediaOption.ItemSelected += OnMediaFileSelected;
+
+        if (_titleInput is not null) _titleInput.TextChanged += OnTitleChanged;
+        if (_autoExtractButton is not null) _autoExtractButton.Pressed += OnAutoExtractPressed;
+        if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
+        if (_cancelButton is not null) _cancelButton.Pressed += OnCancelPressed;
+
+        EnsureCustomScenesDirectoryExists();
+        ScanMediaFiles();
+    }
+
+    private string GetCustomScenesDirectory()
+    {
+        var userPath = ProjectSettings.GlobalizePath("user://workshop_scenes");
+        return userPath;
+    }
+
+    private void EnsureCustomScenesDirectoryExists()
+    {
+        try
         {
-            _titleInput.TextChanged += OnTitleChanged;
+            var dir = GetCustomScenesDirectory();
+            if (!System.IO.Directory.Exists(dir))
+            {
+                System.IO.Directory.CreateDirectory(dir);
+            }
+        }
+        catch
+        {
+            // Ignore
+        }
+    }
+
+    private void OnOpenFolderPressed()
+    {
+        var dir = GetCustomScenesDirectory();
+        EnsureCustomScenesDirectoryExists();
+        OS.ShellOpen(dir);
+    }
+
+    private void ScanMediaFiles()
+    {
+        _discoveredMediaFiles.Clear();
+        if (_mediaOption is null) return;
+        _mediaOption.Clear();
+
+        var searchDirs = new List<string>
+        {
+            GetCustomScenesDirectory(),
+            ProjectSettings.GlobalizePath("res://scenes"),
+            ProjectSettings.GlobalizePath("res://Content/OfficialScenes")
+        };
+
+        var rootScenes = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.Environment.CurrentDirectory, "scenes"));
+        if (System.IO.Directory.Exists(rootScenes)) searchDirs.Add(rootScenes);
+
+        var validExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".ogv", ".mp4", ".webm", ".wav", ".ogg" };
+        var foundPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var dir in searchDirs)
+        {
+            if (!System.IO.Directory.Exists(dir)) continue;
+
+            try
+            {
+                var files = System.IO.Directory.GetFiles(dir, "*.*", System.IO.SearchOption.AllDirectories);
+                foreach (var file in files)
+                {
+                    var ext = System.IO.Path.GetExtension(file);
+                    if (validExts.Contains(ext))
+                    {
+                        var filename = System.IO.Path.GetFileName(file);
+                        if (!foundPaths.Contains(file))
+                        {
+                            foundPaths.Add(file);
+                            _discoveredMediaFiles.Add(file);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                GD.PrintErr($"[SceneCreator] Error scanning directory '{dir}': {ex.Message}");
+            }
         }
 
-        if (_autoExtractButton is not null)
+        if (_discoveredMediaFiles.Count == 0)
         {
-            _autoExtractButton.Pressed += OnAutoExtractPressed;
+            _mediaOption.AddItem("⚠️ No media files found. Click 'Open Folder' and drop .ogv, .mp4, or .wav files!", 0);
         }
-
-        if (_saveButton is not null)
+        else
         {
-            _saveButton.Pressed += OnSavePressed;
+            for (int i = 0; i < _discoveredMediaFiles.Count; i++)
+            {
+                var fullPath = _discoveredMediaFiles[i];
+                var fileName = System.IO.Path.GetFileName(fullPath);
+                var parentDir = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(fullPath) ?? "");
+                var ext = System.IO.Path.GetExtension(fullPath).ToLowerInvariant();
+                var icon = ext is ".wav" or ".ogg" ? "🎵" : "🎬";
+
+                _mediaOption.AddItem($"{icon} {fileName}  ({parentDir})", i);
+            }
+
+            _mediaOption.Select(0);
+            OnMediaFileSelected(0);
         }
+    }
 
-        if (_cancelButton is not null)
+    private void OnMediaFileSelected(long index)
+    {
+        if (index < 0 || index >= _discoveredMediaFiles.Count) return;
+
+        var selectedPath = _discoveredMediaFiles[(int)index];
+        var fileNameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(selectedPath);
+        var ext = System.IO.Path.GetExtension(selectedPath).ToLowerInvariant();
+
+        var cleanTitle = fileNameWithoutExt.Replace('_', ' ').Replace('-', ' ');
+        cleanTitle = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(cleanTitle);
+
+        if (_titleInput is not null) _titleInput.Text = cleanTitle;
+        if (_sceneIdInput is not null) _sceneIdInput.Text = ToKebabCase(fileNameWithoutExt);
+
+        if (ext is ".wav" or ".ogg")
         {
-            _cancelButton.Pressed += OnCancelPressed;
+            var dur = AudioWaveformLoader.GetAudioDurationSeconds(selectedPath);
+            if (dur > 0 && _durationSpinBox is not null)
+            {
+                _durationSpinBox.Value = Math.Round(dur, 1);
+            }
         }
     }
 
     private void OnTitleChanged(string newTitle)
     {
-        if (_sceneIdInput is not null && (string.IsNullOrWhiteSpace(_sceneIdInput.Text) || _sceneIdInput.Text == "my-custom-scene"))
+        if (_sceneIdInput is not null)
         {
-            var slug = newTitle.ToLowerInvariant().Replace(' ', '-').Replace(".", "");
-            _sceneIdInput.Text = slug;
+            _sceneIdInput.Text = ToKebabCase(newTitle);
         }
+    }
+
+    private static string ToKebabCase(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return "my-custom-scene";
+        var sanitized = Regex.Replace(input, @"[^a-zA-Z0-9\s-]", "");
+        sanitized = Regex.Replace(sanitized, @"\s+", "-").Trim('-').ToLowerInvariant();
+        sanitized = Regex.Replace(sanitized, @"-+", "-");
+        return string.IsNullOrEmpty(sanitized) ? "my-custom-scene" : sanitized;
     }
 
     private void OnAutoExtractPressed()
@@ -95,7 +227,7 @@ public partial class SceneCreatorScreen : BaseScreen
         {
             if (_aiStatusLabel is not null)
             {
-                _aiStatusLabel.Text = "⚠️ Lütfen yukarıdaki kutuya bir SRT altyazı veya zaman damgalı metin yapıştırın.";
+                _aiStatusLabel.Text = "⚠️ Please paste an SRT subtitle or timestamped script above.";
             }
             return;
         }
@@ -105,14 +237,10 @@ public partial class SceneCreatorScreen : BaseScreen
             var segments = LocalAiSceneExtractor.ParseSrtText(rawText);
             if (segments.Count == 0)
             {
-                if (_aiStatusLabel is not null)
-                {
-                    _aiStatusLabel.Text = "⚠️ Metinde geçerli zaman damgası bulunamadı. Örn: 00:00:01,000 --> 00:00:04,500";
-                }
+                if (_aiStatusLabel is not null) _aiStatusLabel.Text = "⚠️ No dialogue lines could be parsed from the text.";
                 return;
             }
 
-            // Populate detected fields
             if (segments.Count >= 1)
             {
                 if (_char1NameInput is not null) _char1NameInput.Text = segments[0].SpeakerDisplayName;
@@ -129,46 +257,37 @@ public partial class SceneCreatorScreen : BaseScreen
                 if (_slot2EndSpin is not null) _slot2EndSpin.Value = segments[1].EndMilliseconds / 1000.0;
             }
 
-            var maxEndSec = segments.Max(s => s.EndMilliseconds) / 1000.0 + 1.0;
-            if (_durationSpinBox is not null)
-            {
-                _durationSpinBox.Value = Math.Max(_durationSpinBox.Value, maxEndSec);
-            }
+            var maxEnd = segments.Max(s => s.EndMilliseconds) / 1000.0;
+            if (_durationSpinBox is not null) _durationSpinBox.Value = Math.Max(_durationSpinBox.Value, maxEnd + 1.0);
 
             if (_aiStatusLabel is not null)
             {
-                _aiStatusLabel.Text = $"✅ Yerel AI: {segments.Count} replik başarıyla ayrıştırıldı ve alanlara dolduruldu!";
+                _aiStatusLabel.Text = $"✅ Successfully parsed {segments.Count} dialogue lines from subtitles!";
             }
         }
         catch (Exception ex)
         {
             if (_aiStatusLabel is not null)
             {
-                _aiStatusLabel.Text = $"Ayrıştırma hatası: {ex.Message}";
+                _aiStatusLabel.Text = $"❌ AI Extraction failed: {ex.Message}";
             }
         }
     }
 
     private void OnSavePressed()
     {
-        if (_errorLabel is not null)
-        {
-            _errorLabel.Visible = false;
-        }
+        if (_errorLabel is not null) _errorLabel.Visible = false;
 
         var title = string.IsNullOrWhiteSpace(_titleInput?.Text) ? "Custom Scene" : _titleInput.Text.Trim();
-        var sceneId = string.IsNullOrWhiteSpace(_sceneIdInput?.Text)
-            ? title.ToLowerInvariant().Replace(' ', '-').Replace(".", "")
-            : _sceneIdInput.Text.Trim().ToLowerInvariant().Replace(' ', '-');
+        var sceneId = string.IsNullOrWhiteSpace(_sceneIdInput?.Text) ? ToKebabCase(title) : ToKebabCase(_sceneIdInput.Text);
 
-        var videoRelPath = string.IsNullOrWhiteSpace(_videoPathInput?.Text) ? "media/video.mp4" : _videoPathInput.Text.Trim();
         var durationSec = _durationSpinBox?.Value ?? 10.0;
         var durationMs = (long)(durationSec * 1000.0);
 
         var char1Name = string.IsNullOrWhiteSpace(_char1NameInput?.Text) ? "Character 1" : _char1NameInput.Text.Trim();
         var char2Name = string.IsNullOrWhiteSpace(_char2NameInput?.Text) ? "Character 2" : _char2NameInput.Text.Trim();
 
-        var prompt1 = string.IsNullOrWhiteSpace(_prompt1Input?.Text) ? "Say your line!" : _prompt1Input.Text.Trim();
+        var prompt1 = string.IsNullOrWhiteSpace(_prompt1Input?.Text) ? "Speak your line!" : _prompt1Input.Text.Trim();
         var slot1StartMs = (long)((_slot1StartSpin?.Value ?? 1.0) * 1000.0);
         var slot1EndMs = (long)((_slot1EndSpin?.Value ?? 4.0) * 1000.0);
 
@@ -184,25 +303,53 @@ public partial class SceneCreatorScreen : BaseScreen
                 new("char-2", char2Name, prompt2, slot2StartMs, slot2EndMs)
             };
 
-            var doc = AiSceneBuilder.BuildScene(title, sceneId, durationMs, videoRelPath, segments);
-
-            // 1. Serialize JSON
-            var json = ProjectJsonSerializer.SerializeScene(doc);
-
-            // 2. Write to user workshop folder
+            // Destination folders
             var targetFolder = ProjectSettings.GlobalizePath($"user://workshop_scenes/{sceneId}");
             var mediaFolder = System.IO.Path.Combine(targetFolder, "media");
-
             if (!System.IO.Directory.Exists(mediaFolder))
             {
                 System.IO.Directory.CreateDirectory(mediaFolder);
             }
 
+            string videoRelPath = "media/video.ogv";
+
+            // If a media file was selected, copy it to target folder media/
+            if (_mediaOption is not null && _discoveredMediaFiles.Count > 0)
+            {
+                var selectedIdx = _mediaOption.Selected;
+                if (selectedIdx >= 0 && selectedIdx < _discoveredMediaFiles.Count)
+                {
+                    var sourceMediaFile = _discoveredMediaFiles[selectedIdx];
+                    var mediaFileName = System.IO.Path.GetFileName(sourceMediaFile);
+                    var destMediaPath = System.IO.Path.Combine(mediaFolder, mediaFileName);
+
+                    if (!System.IO.File.Exists(destMediaPath) && System.IO.File.Exists(sourceMediaFile))
+                    {
+                        System.IO.File.Copy(sourceMediaFile, destMediaPath, true);
+                    }
+
+                    videoRelPath = $"media/{mediaFileName}";
+                }
+            }
+
+            var doc = AiSceneBuilder.BuildScene(title, sceneId, durationMs, videoRelPath, segments);
+            ProjectValidator.Validate(doc);
+
+            var json = ProjectJsonSerializer.SerializeScene(doc);
             var jsonFilePath = System.IO.Path.Combine(targetFolder, "scene.json");
             System.IO.File.WriteAllText(jsonFilePath, json);
 
-            // 3. Return to ScenePicker
-            Navigator?.NavigateTo(AppScreen.ScenePicker);
+            GD.Print($"[SceneCreator] Custom scene package created: {jsonFilePath}");
+
+            // Load new package into session coordinator
+            if (Coordinator is not null)
+            {
+                Coordinator.SelectedScenePackage = ScenePackageLoader.LoadPackageFromDirectory(targetFolder);
+                Coordinator.CurrentScene = Coordinator.SelectedScenePackage.Document;
+            }
+
+            // Immediately navigate to Scene Editor so user can customize slots on waveform
+            Navigator?.NavigateTo(AppScreen.SceneEditor);
         }
         catch (Exception ex)
         {
