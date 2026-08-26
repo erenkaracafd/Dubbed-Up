@@ -1,29 +1,37 @@
 # Project Status
 
-- **Milestone:** MVP, Local Round Integration, Interactive Audio Waveform Editor & AI Stem Separation Complete
+- **Milestone:** MVP, Local Round Integration, Interactive Audio Waveform Editor, AI Stem Separation, Selective Audio Ducking & Mic Latency Calibration Complete
 - **Active Branch:** `issue-8-local-round-integration`
 - **Completed Foundations & Subsystems:**
   - **Core Architecture & Engine Separation:**
     - `DubbedUp.Core` remains purely engine-agnostic and platform-independent (.NET 8/.NET 10).
     - `DubbedUp.Core.Tests` with 69 comprehensive unit and integration tests passing.
-  - **AI Stem Separation & Background Ambient Mixing:**
-    - Demucs 4-stem separation executed on official scene audio to isolate `vocals.wav` (isolated speech) and `background.wav` (ambient music, sound effects, foley).
-    - `SynchronizedScenePlayer.cs` mutes original video audio to `RecordSink` (-80dB) and plays `background.wav` on `Master` in lockstep with the video, allowing player dub takes to mix cleanly over original ambiance.
+  - **Automated Video Transcoding & AI Stem Separation Pipeline (`scripts/separate_stems.py` & `SceneCreatorScreen.cs`):**
+    - Universal Video Importer: Any imported video (`.mp4`, `.webm`, `.mov`, `.mkv`) is automatically transcoded via FFmpeg into Godot 4 native `video.ogv` (Theora/Vorbis).
+    - Demucs AI Stem Separation: Automatically isolates `vocals.wav` (speech dialogue) and `background.wav` (ambient music and sound effects) on scene creation.
+    - WAV extraction and exact audio duration detection automatically configure the scene package and `scene.json`.
+  - **Selective Audio Ducking & Studio-Grade Playback Composition (`SynchronizedScenePlayer.cs` & `VoiceTakeAudioPlayer.cs`):**
+    - **Outside Speech Boxes (Original Movie Audio):** Full original movie dialogue, actor voices, and sound effects play untouched at normal volume.
+    - **Inside Speech Boxes (Player Dub Take):** Original actor speech is dynamically silenced (-80dB), the clean ambient stem (`background.wav`) plays, and the player's voice recording overlays seamlessly on top.
+    - Smooth one-shot playback triggering without continuous frame seeking, eliminating all audio stuttering, clicks, and abrupt cut-offs (+0.4s natural decay window).
+  - **Microphone Audio Latency Compensation:**
+    - Automatic latency offset (-150ms) applied to take preview and synchronized playback to eliminate OS/audio driver mic lag and lock voices to lip movements.
+    - Live calibration slider in `SettingsScreen` (0ms to 400ms) with persistent configuration in `user://audio_settings.cfg`.
   - **Interactive Waveform & Speech Timeline Editor (`TimelineWaveformEditor.cs` & `SceneEditorScreen.cs`):**
-    - High-performance PCM waveform visualization extracting RMS energy envelopes (`AudioWaveformLoader.cs`).
+    - High-performance PCM waveform visualization extracting RMS energy envelopes from `vocals.wav` (`AudioWaveformLoader.cs`).
     - DAW-style interactive Godot control featuring dynamic time ruler marks, neon amplitude bars, synchronized playhead, and draggable/resizable speech selection boxes.
-    - Full box deletion support: box header `✕` icon, `Delete`/`Backspace` keyboard shortcuts, timeline delete button (`Delete Selected Speech Box`), and individual card delete buttons.
-    - Dynamic duration scaling: automatically detects full media duration, and dynamically resamples/scales the waveform when total duration is modified.
-    - Strict playback clamping: stops video and audio precisely at the configured scene duration during playback and review.
+    - Real-time coordinate synchronization between timeline drag/resize gestures and scene editor data cards.
+    - Full box deletion support (box `✕` icon, `Delete`/`Backspace` keys, timeline delete button, card delete buttons).
+    - Dynamic duration scaling with real-time waveform zoom and resampling.
+    - Dedicated "Save & Go to Scene Selection" button for immediate transition to the playable scenes picker.
   - **Custom Scene Creator & Media Folder Workflow (`SceneCreatorScreen.cs`):**
     - Dedicated custom scenes directory (`user://workshop_scenes` / `scenes/`).
     - One-click "Open Custom Scenes Folder" button (`OS.ShellOpen`) to drop `.ogv`, `.mp4`, `.webm`, `.wav` files.
     - Automatic media scanning and dropdown selection, auto-populating Title, ID, and Duration.
     - Offline subtitle and script extraction via `LocalAiSceneExtractor.cs` and `AiSceneBuilder.cs`.
-    - Direct "Save & Open in Editor" workflow for immediate visual speech timing tuning.
   - **Game Mode & Session Loop:**
-    - Solo Dubbing (1 player voices all roles), Co-op Dubbing (2 players voice distinct characters and watch synchronized playback), and Competitive Voting.
-    - Full take recording with real-time waveform visualization, rhythm matching score, take review, and full synchronized playback composition.
+    - Solo Dubbing, Co-op Dubbing, and Competitive Voting game modes.
+    - Real-time microphone level metering, waveform preview, timing sync score, take re-recording, and multi-track synchronized playback.
   - **Localization:**
     - 100% of game UI, screens, status toasts, countdowns, buttons, and settings are fully localized in clean English.
 - **Verification:**
