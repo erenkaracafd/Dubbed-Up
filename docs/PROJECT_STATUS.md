@@ -7,7 +7,7 @@
 ## Completed Foundations & Subsystems
 
 - **Core Architecture & Engine Separation**
-  - `DubbedUp.Core` remains engine-agnostic and platform-independent.
+  - `DubbedUp.Core` remains engine-agnostic and platform-independent (.NET 8 / .NET 10).
   - `DubbedUp.Core.Tests` has 69 unit/integration tests passing on the active branch.
 - **Godot Runtime & Local Session Loop**
   - Main menu and local-session navigation are implemented.
@@ -18,17 +18,26 @@
   - Microphone latency compensation is configurable from 0-400 ms and persisted in `user://audio_settings.cfg`.
 - **Interactive Waveform & Scene Editing**
   - PCM waveform visualization, draggable/resizable speech boxes, subtitle editing, deletion controls, dynamic duration scaling, and scene persistence are implemented.
-- **Custom Scene Import Pipeline**
-  - Imported `.mp4`, `.webm`, `.mov`, and `.mkv` media can be transcoded to Godot-native `.ogv` through FFmpeg.
+- **Custom Scene Import Pipeline & Transcoding**
+  - Imported `.mp4`, `.webm`, `.mov`, and `.mkv` media are automatically transcoded to Godot-native `.ogv` (Theora/Vorbis) and 16-bit PCM `.wav` on-the-fly via `MediaTranscoder.cs`.
+  - Safe ASCII normalization guarantees seamless processing even with Unicode, Turkish characters, emojis, or spaces in filenames.
   - Demucs stem separation produces dialogue/vocal and background stems for selective playback composition.
-  - Custom scene media scanning and save-to-scene-selection workflow are implemented.
+  - Custom scene media scanning, quick handoff to scene selection, and in-game scene deletion with a safety confirmation modal are implemented.
 - **Selective Audio Composition**
   - Original movie audio is preserved outside speech boxes.
   - During speech boxes, original dialogue is ducked while background audio and the player's dub take are mixed together.
 - **Localization**
-  - Current in-game UI text is English.
+  - Current in-game UI text is 100% English.
 - **Playtest Groundwork**
   - `docs/PLAYTEST_CHECKLIST.md` documents local/online playtest checks and feedback prompts.
+
+## Third-Party Media & Intellectual Property Policy
+
+> [!NOTE]
+> **Test Scenes Disclaimer:**
+> Any third-party video or audio clips (such as internet memes, film excerpts, or YouTube clips) used during local development and testing are strictly temporary test media (`user://workshop_scenes`) intended solely to validate the UGC importing, stem separation, and playback pipeline.
+> - No unlicensed or copyrighted media is bundled in the official game repository or shipping binaries.
+> - All official launch scenes will be 100% rights-cleared, original, or commercially licensed with documented provenance (tracked under Issue #5).
 
 ## Verification Reported on the Active Branch
 
