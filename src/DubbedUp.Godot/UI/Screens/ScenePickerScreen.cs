@@ -14,6 +14,13 @@ public partial class ScenePickerScreen : BaseScreen
     private Button? _createSceneButton;
     private Button? _backButton;
 
+    // Delete Confirmation Modal
+    private Control? _deleteConfirmModal;
+    private Label? _confirmMessageLabel;
+    private Button? _confirmDeleteButton;
+    private Button? _cancelDeleteButton;
+    private ScenePackage? _pendingDeletePackage;
+
     private readonly SteamWorkshopService _workshopService = new();
     private readonly List<ScenePackage> _availableScenes = [];
 
@@ -27,11 +34,20 @@ public partial class ScenePickerScreen : BaseScreen
         _createSceneButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/CreateSceneButton");
         _backButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/BackButton");
 
+        // Confirmation Modal References
+        _deleteConfirmModal = GetNodeOrNull<Control>("DeleteConfirmModal");
+        _confirmMessageLabel = GetNodeOrNull<Label>("DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ConfirmMessage");
+        _confirmDeleteButton = GetNodeOrNull<Button>("DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ConfirmButtonsHBox/ConfirmDeleteButton");
+        _cancelDeleteButton = GetNodeOrNull<Button>("DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ConfirmButtonsHBox/CancelDeleteButton");
+
         if (_openFolderButton is not null) _openFolderButton.Pressed += OnOpenFolderPressed;
         if (_refreshButton is not null) _refreshButton.Pressed += OnRefreshPressed;
         if (_workshopButton is not null) _workshopButton.Pressed += OnWorkshopPressed;
         if (_createSceneButton is not null) _createSceneButton.Pressed += OnCreateScenePressed;
         if (_backButton is not null) _backButton.Pressed += OnBackPressed;
+
+        if (_confirmDeleteButton is not null) _confirmDeleteButton.Pressed += OnConfirmDeletePressed;
+        if (_cancelDeleteButton is not null) _cancelDeleteButton.Pressed += OnCancelDeletePressed;
 
         LoadAvailableScenes();
         PopulateSceneList();
@@ -66,7 +82,7 @@ public partial class ScenePickerScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"🎬 Found {_availableScenes.Count} playable scenes. Select a scene to dub or edit:";
+            _statusLabel.Text = $"🎬 Found {_availableScenes.Count} playable scenes. Select a scene to dub, edit, or delete:";
         }
 
         foreach (var package in _availableScenes)
@@ -79,7 +95,7 @@ public partial class ScenePickerScreen : BaseScreen
     private Control CreateSceneCard(ScenePackage package)
     {
         var panel = new PanelContainer();
-        panel.CustomMinimumSize = new Vector2(620, 85);
+        panel.CustomMinimumSize = new Vector2(640, 85);
 
         var hbox = new HBoxContainer();
         hbox.AddThemeConstantOverride("separation", 16);
@@ -126,20 +142,85 @@ public partial class ScenePickerScreen : BaseScreen
         var editBtn = new Button
         {
             Text = "✏️ Edit",
-            CustomMinimumSize = new Vector2(90, 44),
+            CustomMinimumSize = new Vector2(85, 44),
         };
         editBtn.Pressed += () => OnEditScenePressed(package);
         btnContainer.AddChild(editBtn);
 
+        var deleteBtn = new Button
+        {
+            Text = "🗑️ Delete",
+            CustomMinimumSize = new Vector2(95, 44),
+        };
+        deleteBtn.AddThemeColorOverride("font_color", new Color(1.0f, 0.4f, 0.4f));
+        deleteBtn.Pressed += () => OnPromptDeleteScene(package);
+        btnContainer.AddChild(deleteBtn);
+
         var selectBtn = new Button
         {
             Text = "🎮 Select Scene",
-            CustomMinimumSize = new Vector2(140, 44),
+            CustomMinimumSize = new Vector2(135, 44),
         };
         selectBtn.Pressed += () => OnSceneSelected(package);
         btnContainer.AddChild(selectBtn);
 
         return panel;
+    }
+
+    private void OnPromptDeleteScene(ScenePackage package)
+    {
+        _pendingDeletePackage = package;
+
+        if (_confirmMessageLabel is not null)
+        {
+            _confirmMessageLabel.Text = $"Are you sure you want to permanently delete \"{package.Title}\"?\n\nThis will remove the scene folder, video, audio tracks, and all associated subtitles.";
+        }
+
+        if (_deleteConfirmModal is not null)
+        {
+            _deleteConfirmModal.Visible = true;
+        }
+    }
+
+    private void OnConfirmDeletePressed()
+    {
+        if (_pendingDeletePackage is not null)
+        {
+            var title = _pendingDeletePackage.Title;
+            var success = _workshopService.DeleteScene(_pendingDeletePackage);
+
+            if (success)
+            {
+                if (_statusLabel is not null)
+                {
+                    _statusLabel.Text = $"🗑️ Successfully deleted scene: \"{title}\"";
+                }
+                LoadAvailableScenes();
+                PopulateSceneList();
+            }
+            else
+            {
+                if (_statusLabel is not null)
+                {
+                    _statusLabel.Text = $"❌ Failed to delete scene: \"{title}\" (built-in or read-only package)";
+                }
+            }
+        }
+
+        if (_deleteConfirmModal is not null)
+        {
+            _deleteConfirmModal.Visible = false;
+        }
+        _pendingDeletePackage = null;
+    }
+
+    private void OnCancelDeletePressed()
+    {
+        if (_deleteConfirmModal is not null)
+        {
+            _deleteConfirmModal.Visible = false;
+        }
+        _pendingDeletePackage = null;
     }
 
     private void OnEditScenePressed(ScenePackage package)

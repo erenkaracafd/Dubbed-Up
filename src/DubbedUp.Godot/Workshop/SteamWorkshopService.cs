@@ -63,5 +63,13 @@ public sealed class SteamWorkshopService : IWorkshopSceneProvider
         var path = _localProvider.UserScenesDirectory;
         OS.ShellOpen(path);
     }
+
+    /// <summary>
+    /// Deletes a custom scene package from the disk and refreshes the scene list.
+    /// </summary>
+    public bool DeleteScene(ScenePackage package)
+    {
+        return _localProvider.DeleteScene(package);
+    }
 }
 

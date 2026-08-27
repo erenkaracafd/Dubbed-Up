@@ -93,4 +93,25 @@ public sealed class LocalWorkshopSceneProvider : IWorkshopSceneProvider
 
         GD.Print($"[SceneProvider] Total available scenes: {_cachedScenes.Count}");
     }
+
+    public bool DeleteScene(ScenePackage package)
+    {
+        if (string.IsNullOrWhiteSpace(package.PackageDirectory) || !System.IO.Directory.Exists(package.PackageDirectory))
+        {
+            return false;
+        }
+
+        try
+        {
+            System.IO.Directory.Delete(package.PackageDirectory, true);
+            GD.Print($"[SceneProvider] Successfully deleted scene package: '{package.Title}' at '{package.PackageDirectory}'");
+            Refresh();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[SceneProvider] Failed to delete scene package '{package.Title}': {ex.Message}");
+            return false;
+        }
+    }
 }
