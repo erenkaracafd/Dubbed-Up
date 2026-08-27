@@ -205,6 +205,17 @@ public partial class SceneEditorScreen : BaseScreen
             }
         }
 
+        // On-the-fly transcoding fallback if video is still null
+        if (_videoPlayer.Stream is null && !string.IsNullOrEmpty(folderPath))
+        {
+            var ogv = VideoPlayback.MediaTranscoder.EnsureTranscoded(folderPath);
+            if (ogv is not null && System.IO.File.Exists(ogv))
+            {
+                _videoPlayer.Stream = new VideoStreamTheora { File = ogv.Replace("\\", "/") };
+                GD.Print($"[SceneEditor] Auto-transcoded video and loaded: {ogv}");
+            }
+        }
+
         // Exhaustive audio waveform search
         string? wavPath = null;
         var candidates = new List<string>();

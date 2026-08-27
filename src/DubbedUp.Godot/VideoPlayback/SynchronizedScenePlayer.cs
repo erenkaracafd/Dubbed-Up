@@ -276,15 +276,16 @@ public partial class SynchronizedScenePlayer : Control
             }
         }
 
-        // 3. Try GlobalizePath fallback
-        var globalPath = ProjectSettings.GlobalizePath(relativePath);
-        if (!string.IsNullOrEmpty(globalPath) && System.IO.File.Exists(globalPath))
+        // 4. On-the-fly transcoding fallback
+        if (!string.IsNullOrEmpty(sceneFolderPath))
         {
-            var localized = ProjectSettings.LocalizePath(globalPath);
-            if (!string.IsNullOrEmpty(localized) && ResourceLoader.Exists(localized))
+            var ogv = MediaTranscoder.EnsureTranscoded(sceneFolderPath);
+            if (ogv is not null && System.IO.File.Exists(ogv))
             {
-                _videoPlayer.Stream = GD.Load<VideoStream>(localized);
-                GD.Print($"[VideoPlayer] Loaded via globalized/localized path: {localized}");
+                var theora = new VideoStreamTheora();
+                theora.File = ogv.Replace("\\", "/");
+                _videoPlayer.Stream = theora;
+                GD.Print($"[VideoPlayer] Auto-transcoded and loaded via VideoStreamTheora: {theora.File}");
                 return;
             }
         }

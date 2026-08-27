@@ -357,38 +357,36 @@ public partial class SceneCreatorScreen : BaseScreen
                 if (selectedIdx >= 0 && selectedIdx < _discoveredMediaFiles.Count)
                 {
                     var sourceMediaFile = _discoveredMediaFiles[selectedIdx];
-                    var mediaFileName = System.IO.Path.GetFileName(sourceMediaFile);
-                    var destMediaPath = System.IO.Path.Combine(mediaFolder, mediaFileName);
-
-                    if (!System.IO.File.Exists(destMediaPath) && System.IO.File.Exists(sourceMediaFile))
+                    // Safe ASCII destination path to prevent Unicode/emoji CLI errors
+                    var safeSourceMedia = System.IO.Path.Combine(mediaFolder, "source_input" + System.IO.Path.GetExtension(sourceMediaFile));
+                    try
                     {
-                        System.IO.File.Copy(sourceMediaFile, destMediaPath, true);
+                        System.IO.File.Copy(sourceMediaFile, safeSourceMedia, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        GD.PrintErr($"[SceneCreator] Failed to copy source media: {ex.Message}");
                     }
 
-                    videoRelPath = $"media/{mediaFileName}";
-
-                    // Execute AI stem separation to produce video.ogv, vocals.wav, and background.wav
+                    // Execute robust FFmpeg OGV & WAV transcoding
                     if (_aiStatusLabel is not null)
                     {
-                        _aiStatusLabel.Text = "🤖 Converting video to OGV & separating audio stems...";
+                        _aiStatusLabel.Text = "🤖 Transcoding video to Godot OGV & extracting audio...";
                     }
 
-                    RunStemSeparation(destMediaPath, mediaFolder);
+                    VideoPlayback.MediaTranscoder.EnsureTranscoded(targetFolder);
 
-                    var ogvDst = System.IO.Path.Combine(mediaFolder, "video.ogv");
-                    if (System.IO.File.Exists(ogvDst))
+                    // Also attempt AI Demucs stem separation if python is available
+                    try
                     {
-                        videoRelPath = "media/video.ogv";
+                        RunStemSeparation(safeSourceMedia, mediaFolder);
                     }
+                    catch { }
+
+                    videoRelPath = "media/video.ogv";
 
                     var vocalsDst = System.IO.Path.Combine(mediaFolder, "vocals.wav");
                     var audioDst = System.IO.Path.Combine(mediaFolder, "audio.wav");
-
-                    if (!System.IO.File.Exists(vocalsDst) && System.IO.Path.GetExtension(sourceMediaFile).Equals(".wav", StringComparison.OrdinalIgnoreCase))
-                    {
-                        System.IO.File.Copy(destMediaPath, vocalsDst, true);
-                        System.IO.File.Copy(destMediaPath, audioDst, true);
-                    }
 
                     // Detect exact duration if vocals WAV or audio WAV exists
                     var wavForDur = System.IO.File.Exists(vocalsDst) ? vocalsDst : (System.IO.File.Exists(audioDst) ? audioDst : null);
