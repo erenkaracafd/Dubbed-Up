@@ -215,6 +215,11 @@ public partial class SceneEditorScreen : BaseScreen
             }
         }
 
+        if (wavPath is null && !string.IsNullOrEmpty(folderPath))
+        {
+            wavPath = VideoPlayback.MediaTranscoder.EnsureAudioExtracted(folderPath);
+        }
+
         _currentWavPath = wavPath;
         if (wavPath is not null)
         {

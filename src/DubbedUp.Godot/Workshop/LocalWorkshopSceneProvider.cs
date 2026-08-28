@@ -96,22 +96,58 @@ public sealed class LocalWorkshopSceneProvider : IWorkshopSceneProvider
 
     public bool DeleteScene(ScenePackage package)
     {
-        if (string.IsNullOrWhiteSpace(package.PackageDirectory) || !System.IO.Directory.Exists(package.PackageDirectory))
+        if (string.IsNullOrWhiteSpace(package.PackageDirectory))
         {
             return false;
         }
 
+        var dir = package.PackageDirectory;
+        if (!System.IO.Directory.Exists(dir))
+        {
+            var userScenesPath = ProjectSettings.GlobalizePath($"user://workshop_scenes/{package.SceneId}");
+            if (System.IO.Directory.Exists(userScenesPath))
+            {
+                dir = userScenesPath;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         try
         {
-            System.IO.Directory.Delete(package.PackageDirectory, true);
-            GD.Print($"[SceneProvider] Successfully deleted scene package: '{package.Title}' at '{package.PackageDirectory}'");
+            // Remove readonly attributes from all files
+            var files = System.IO.Directory.GetFiles(dir, "*", System.IO.SearchOption.AllDirectories);
+            foreach (var file in files)
+            {
+                try { System.IO.File.SetAttributes(file, System.IO.FileAttributes.Normal); } catch { }
+            }
+
+            System.IO.Directory.Delete(dir, true);
+            GD.Print($"[SceneProvider] Successfully deleted scene package: '{package.Title}' at '{dir}'");
             Refresh();
             return true;
         }
         catch (Exception ex)
         {
             GD.PrintErr($"[SceneProvider] Failed to delete scene package '{package.Title}': {ex.Message}");
-            return false;
+            try
+            {
+                // Fallback delete files individually
+                foreach (var file in System.IO.Directory.GetFiles(dir, "*", System.IO.SearchOption.AllDirectories))
+                {
+                    try { System.IO.File.Delete(file); } catch { }
+                }
+                System.IO.Directory.Delete(dir, true);
+                Refresh();
+                return true;
+            }
+            catch (Exception ex2)
+            {
+                GD.PrintErr($"[SceneProvider] Fallback deletion also failed: {ex2.Message}");
+                return false;
+            }
         }
     }
 }

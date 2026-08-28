@@ -81,6 +81,108 @@ public static class MediaTranscoder
         return null;
     }
 
+    public static string? EnsureAudioExtracted(string packageDir)
+    {
+        if (string.IsNullOrWhiteSpace(packageDir) || !System.IO.Directory.Exists(packageDir))
+        {
+            return null;
+        }
+
+        var mediaDir = System.IO.Path.Combine(packageDir, "media");
+        if (!System.IO.Directory.Exists(mediaDir))
+        {
+            mediaDir = packageDir;
+        }
+
+        var audioWav = System.IO.Path.Combine(mediaDir, "audio.wav");
+        var vocalsWav = System.IO.Path.Combine(mediaDir, "vocals.wav");
+        var bgWav = System.IO.Path.Combine(mediaDir, "background.wav");
+
+        if (System.IO.File.Exists(audioWav) && new System.IO.FileInfo(audioWav).Length > 1000)
+        {
+            if (!System.IO.File.Exists(vocalsWav)) System.IO.File.Copy(audioWav, vocalsWav, true);
+            if (!System.IO.File.Exists(bgWav)) System.IO.File.Copy(audioWav, bgWav, true);
+            return audioWav;
+        }
+
+        if (System.IO.File.Exists(vocalsWav) && new System.IO.FileInfo(vocalsWav).Length > 1000)
+        {
+            if (!System.IO.File.Exists(audioWav)) System.IO.File.Copy(vocalsWav, audioWav, true);
+            if (!System.IO.File.Exists(bgWav)) System.IO.File.Copy(vocalsWav, bgWav, true);
+            return vocalsWav;
+        }
+
+        // Search for video to extract from
+        string? sourceFile = null;
+        var candidates = new List<string>
+        {
+            System.IO.Path.Combine(mediaDir, "video.ogv"),
+            System.IO.Path.Combine(mediaDir, "source_input.mp4"),
+            System.IO.Path.Combine(mediaDir, "source_input.webm"),
+            System.IO.Path.Combine(mediaDir, "source_input.mkv"),
+            System.IO.Path.Combine(mediaDir, "source_input.mov")
+        };
+
+        foreach (var c in candidates)
+        {
+            if (System.IO.File.Exists(c) && new System.IO.FileInfo(c).Length > 1000)
+            {
+                sourceFile = c;
+                break;
+            }
+        }
+
+        if (sourceFile is null)
+        {
+            try
+            {
+                var files = System.IO.Directory.GetFiles(packageDir, "*.*", System.IO.SearchOption.AllDirectories);
+                foreach (var f in files)
+                {
+                    var ext = System.IO.Path.GetExtension(f);
+                    if (VideoExtensions.Contains(ext) && System.IO.File.Exists(f))
+                    {
+                        sourceFile = f;
+                        break;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        if (sourceFile is not null && System.IO.File.Exists(sourceFile))
+        {
+            try
+            {
+                var psiWav = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = $"-y -i \"{sourceFile}\" -vn -acodec pcm_s16le -ar 44100 -ac 2 \"{audioWav}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                using var pWav = Process.Start(psiWav);
+                pWav?.WaitForExit(30000);
+
+                if (System.IO.File.Exists(audioWav) && new System.IO.FileInfo(audioWav).Length > 1000)
+                {
+                    if (!System.IO.File.Exists(vocalsWav)) System.IO.File.Copy(audioWav, vocalsWav, true);
+                    if (!System.IO.File.Exists(bgWav)) System.IO.File.Copy(audioWav, bgWav, true);
+                    GD.Print($"[MediaTranscoder] Successfully extracted audio.wav from '{sourceFile}'");
+                    return audioWav;
+                }
+            }
+            catch (Exception ex)
+            {
+                GD.PrintErr($"[MediaTranscoder] Failed to extract audio.wav: {ex.Message}");
+            }
+        }
+
+        return null;
+    }
+
     public static string? EnsureTranscoded(string packageDir)
     {
         if (string.IsNullOrWhiteSpace(packageDir) || !System.IO.Directory.Exists(packageDir))
@@ -93,6 +195,9 @@ public static class MediaTranscoder
         {
             mediaDir = packageDir;
         }
+
+        // Always guarantee audio WAVs are extracted
+        EnsureAudioExtracted(packageDir);
 
         var ogvTarget = System.IO.Path.Combine(mediaDir, "video.ogv");
         if (System.IO.File.Exists(ogvTarget) && new System.IO.FileInfo(ogvTarget).Length > 1000)
@@ -143,28 +248,7 @@ public static class MediaTranscoder
         }
 
         // 2. Extract audio.wav first (ultra-fast, takes 50ms)
-        var audioWav = System.IO.Path.Combine(mediaDir, "audio.wav");
-        if (!System.IO.File.Exists(audioWav))
-        {
-            try
-            {
-                var psiWav = new ProcessStartInfo
-                {
-                    FileName = "ffmpeg",
-                    Arguments = $"-y -i \"{safeInputPath}\" -vn -acodec pcm_s16le -ar 44100 -ac 2 \"{audioWav}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-                using var pWav = Process.Start(psiWav);
-                pWav?.WaitForExit(30000);
-            }
-            catch (Exception ex)
-            {
-                GD.PrintErr($"[MediaTranscoder] FFmpeg WAV extraction error: {ex.Message}");
-            }
-        }
+        EnsureAudioExtracted(packageDir);
 
         // 3. Fast Multithreaded Transcode to video.ogv with FFmpeg
         try
@@ -189,16 +273,6 @@ public static class MediaTranscoder
         catch (Exception ex)
         {
             GD.PrintErr($"[MediaTranscoder] FFmpeg OGV conversion error: {ex.Message}");
-        }
-
-        // 4. Ensure vocals.wav and background.wav exist
-        var vocalsWav = System.IO.Path.Combine(mediaDir, "vocals.wav");
-        var bgWav = System.IO.Path.Combine(mediaDir, "background.wav");
-
-        if (System.IO.File.Exists(audioWav))
-        {
-            if (!System.IO.File.Exists(vocalsWav)) System.IO.File.Copy(audioWav, vocalsWav, true);
-            if (!System.IO.File.Exists(bgWav)) System.IO.File.Copy(audioWav, bgWav, true);
         }
 
         return System.IO.File.Exists(ogvTarget) ? ogvTarget : null;
