@@ -192,8 +192,13 @@ public static class MediaTranscoder
             if (System.IO.File.Exists(audioWav) && new System.IO.FileInfo(audioWav).Length > 1000)
             {
                 if (!System.IO.File.Exists(vocalsWav)) System.IO.File.Copy(audioWav, vocalsWav, true);
-                if (!System.IO.File.Exists(bgWav)) System.IO.File.Copy(audioWav, bgWav, true);
-                GD.Print($"[MediaTranscoder] Successfully extracted audio.wav from '{sourceFile}'");
+                if (!System.IO.File.Exists(bgWav) || new System.IO.FileInfo(bgWav).Length == new System.IO.FileInfo(audioWav).Length)
+                {
+                    var bgArgs = $"-y -loglevel error -i \"audio.wav\" -af \"stereotools=mlev=0.015625:slev=1.3,highpass=f=60\" \"background.wav\"";
+                    RunProcess("ffmpeg", bgArgs, 30000, mediaDir);
+                    if (!System.IO.File.Exists(bgWav)) System.IO.File.Copy(audioWav, bgWav, true);
+                }
+                GD.Print($"[MediaTranscoder] Successfully extracted audio.wav and background.wav from '{sourceFile}'");
                 return audioWav;
             }
         }

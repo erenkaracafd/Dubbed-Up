@@ -453,12 +453,7 @@ public partial class SynchronizedScenePlayer : Control
         {
             if (_originalAudioPlayer is not null) _originalAudioPlayer.VolumeDb = -80.0f;
             if (_videoPlayer is not null) _videoPlayer.VolumeDb = -80.0f;
-
-            if (_backgroundAudioPlayer is not null)
-            {
-                // Only play background audio if it is a real instrumental stem without dialogue
-                _backgroundAudioPlayer.VolumeDb = _hasIsolatedBackgroundStem ? 0.0f : -80.0f;
-            }
+            if (_backgroundAudioPlayer is not null) _backgroundAudioPlayer.VolumeDb = 0.0f;
         }
         else
         {
