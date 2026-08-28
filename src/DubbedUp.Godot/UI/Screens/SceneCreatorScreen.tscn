@@ -40,37 +40,54 @@ text = "Import video or audio clips to create a custom playable dubbing scene."
 horizontal_alignment = 1
 
 [node name="FolderInfoContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(580, 0)
+custom_minimum_size = Vector2(720, 0)
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
 [node name="FolderHeaderLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 15
-text = "📁 Step 1: Drop Media Files into Custom Scenes Folder"
+theme_override_font_sizes/font_size = 16
+text = "📁 Step 1: Drop Raw Videos into Videos Folder (.mp4 / .webm / .mov)"
 
 [node name="FolderButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="OpenFolderButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox"]
-custom_minimum_size = Vector2(240, 38)
+custom_minimum_size = Vector2(240, 42)
 layout_mode = 2
-text = "📂 Open Custom Scenes Folder"
+text = "📂 Open Videos Folder"
 
 [node name="RefreshMediaButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox"]
-custom_minimum_size = Vector2(160, 38)
+custom_minimum_size = Vector2(180, 42)
 layout_mode = 2
-text = "🔄 Refresh File List"
+text = "🔄 Refresh Videos"
 
 [node name="SelectMediaLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
 layout_mode = 2
-text = "Select Detected Media File (.ogv / .mp4 / .wav):"
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 13
+text = "Click a video card below to select it:"
 
-[node name="MediaOption" type="OptionButton" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
-custom_minimum_size = Vector2(580, 40)
+[node name="NoVideosLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
+visible = false
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.75, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+text = "⚠️ No videos found in custom_videos folder. Click 'Open Videos Folder' and drop your video files (.mp4 / .webm / .mov / .mkv) there!"
+autowrap_mode = 2
+
+[node name="VideoCardsScroll" type="ScrollContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
+custom_minimum_size = Vector2(720, 220)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="VideoCardsGrid" type="HFlowContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/VideoCardsScroll"]
+custom_minimum_size = Vector2(700, 0)
+layout_mode = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
 
 [node name="AiContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(580, 0)

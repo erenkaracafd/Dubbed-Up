@@ -101,15 +101,38 @@ public partial class ScenePickerScreen : BaseScreen
         hbox.AddThemeConstantOverride("separation", 16);
         panel.AddChild(hbox);
 
-        var iconLabel = new Label
+        var aspect = new AspectRatioContainer
         {
-            Text = package.VideoFilePath is not null || package.Document.SourceMedia.Any(m => m.Role == SourceMediaRole.SceneVideo) ? "🎬" : "🎭",
-            CustomMinimumSize = new Vector2(50, 0),
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
+            Ratio = 16.0f / 9.0f,
+            CustomMinimumSize = new Vector2(106, 60),
+            StretchMode = AspectRatioContainer.StretchModeEnum.Fit,
         };
-        iconLabel.AddThemeFontSizeOverride("font_size", 32);
-        hbox.AddChild(iconLabel);
+        hbox.AddChild(aspect);
+
+        var thumb = VideoPlayback.VideoThumbnailHelper.GetOrExtractThumbnail(package.PackageDirectory);
+        if (thumb is not null)
+        {
+            var texRect = new TextureRect
+            {
+                Texture = thumb,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+                CustomMinimumSize = new Vector2(106, 60),
+            };
+            aspect.AddChild(texRect);
+        }
+        else
+        {
+            var iconLabel = new Label
+            {
+                Text = package.VideoFilePath is not null || package.Document.SourceMedia.Any(m => m.Role == SourceMediaRole.SceneVideo) ? "🎬" : "🎭",
+                CustomMinimumSize = new Vector2(50, 0),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            iconLabel.AddThemeFontSizeOverride("font_size", 32);
+            aspect.AddChild(iconLabel);
+        }
 
         var infoVbox = new VBoxContainer();
         infoVbox.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;

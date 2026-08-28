@@ -7,6 +7,7 @@ using DubbedUp.Core.Timeline;
 using DubbedUp.Godot.Ai;
 using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
+using DubbedUp.Godot.VideoPlayback;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -15,7 +16,8 @@ public partial class SceneCreatorScreen : BaseScreen
 {
     private Button? _openFolderButton;
     private Button? _refreshMediaButton;
-    private OptionButton? _mediaOption;
+    private Label? _noVideosLabel;
+    private HFlowContainer? _videoCardsGrid;
 
     private LineEdit? _titleInput;
     private LineEdit? _sceneIdInput;
@@ -39,12 +41,16 @@ public partial class SceneCreatorScreen : BaseScreen
     private Button? _cancelButton;
 
     private readonly List<string> _discoveredMediaFiles = [];
+    private readonly List<PanelContainer> _cardNodes = [];
+    private string? _selectedSourceMediaFile;
+    private PanelContainer? _selectedCardPanel;
 
     public override void _Ready()
     {
         _openFolderButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/OpenFolderButton");
         _refreshMediaButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/RefreshMediaButton");
-        _mediaOption = GetNodeOrNull<OptionButton>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/MediaOption");
+        _noVideosLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/NoVideosLabel");
+        _videoCardsGrid = GetNodeOrNull<HFlowContainer>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/VideoCardsScroll/VideoCardsGrid");
 
         _titleInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/TitleInput");
         _sceneIdInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/SceneIdInput");
@@ -71,28 +77,26 @@ public partial class SceneCreatorScreen : BaseScreen
 
         if (_openFolderButton is not null) _openFolderButton.Pressed += OnOpenFolderPressed;
         if (_refreshMediaButton is not null) _refreshMediaButton.Pressed += ScanMediaFiles;
-        if (_mediaOption is not null) _mediaOption.ItemSelected += OnMediaFileSelected;
 
         if (_titleInput is not null) _titleInput.TextChanged += OnTitleChanged;
         if (_autoExtractButton is not null) _autoExtractButton.Pressed += OnAutoExtractPressed;
         if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
         if (_cancelButton is not null) _cancelButton.Pressed += OnCancelPressed;
 
-        EnsureCustomScenesDirectoryExists();
+        EnsureCustomVideosDirectoryExists();
         ScanMediaFiles();
     }
 
-    private string GetCustomScenesDirectory()
+    private string GetCustomVideosDirectory()
     {
-        var userPath = ProjectSettings.GlobalizePath("user://workshop_scenes");
-        return userPath;
+        return ProjectSettings.GlobalizePath("user://custom_videos");
     }
 
-    private void EnsureCustomScenesDirectoryExists()
+    private void EnsureCustomVideosDirectoryExists()
     {
         try
         {
-            var dir = GetCustomScenesDirectory();
+            var dir = GetCustomVideosDirectory();
             if (!System.IO.Directory.Exists(dir))
             {
                 System.IO.Directory.CreateDirectory(dir);
@@ -106,28 +110,33 @@ public partial class SceneCreatorScreen : BaseScreen
 
     private void OnOpenFolderPressed()
     {
-        var dir = GetCustomScenesDirectory();
-        EnsureCustomScenesDirectoryExists();
+        var dir = GetCustomVideosDirectory();
+        EnsureCustomVideosDirectoryExists();
         OS.ShellOpen(dir);
     }
 
     private void ScanMediaFiles()
     {
         _discoveredMediaFiles.Clear();
-        if (_mediaOption is null) return;
-        _mediaOption.Clear();
+        _cardNodes.Clear();
+        _selectedCardPanel = null;
+        _selectedSourceMediaFile = null;
+
+        if (_videoCardsGrid is null) return;
+
+        foreach (var child in _videoCardsGrid.GetChildren())
+        {
+            child.QueueFree();
+        }
 
         var searchDirs = new List<string>
         {
-            GetCustomScenesDirectory(),
-            ProjectSettings.GlobalizePath("res://scenes"),
-            ProjectSettings.GlobalizePath("res://Content/OfficialScenes")
+            GetCustomVideosDirectory(),
+            System.IO.Path.GetFullPath(System.IO.Path.Combine(System.Environment.CurrentDirectory, "custom_videos")),
+            ProjectSettings.GlobalizePath("res://scenes")
         };
 
-        var rootScenes = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.Environment.CurrentDirectory, "scenes"));
-        if (System.IO.Directory.Exists(rootScenes)) searchDirs.Add(rootScenes);
-
-        var validExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".ogv", ".mp4", ".webm", ".wav", ".ogg" };
+        var validExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".mp4", ".webm", ".mov", ".mkv", ".ogv", ".avi" };
         var foundPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var dir in searchDirs)
@@ -136,18 +145,15 @@ public partial class SceneCreatorScreen : BaseScreen
 
             try
             {
-                var files = System.IO.Directory.GetFiles(dir, "*.*", System.IO.SearchOption.AllDirectories);
+                // Non-recursive scan of the clean videos folder
+                var files = System.IO.Directory.GetFiles(dir, "*.*", System.IO.SearchOption.TopDirectoryOnly);
                 foreach (var file in files)
                 {
                     var ext = System.IO.Path.GetExtension(file);
-                    if (validExts.Contains(ext))
+                    if (validExts.Contains(ext) && !foundPaths.Contains(file))
                     {
-                        var filename = System.IO.Path.GetFileName(file);
-                        if (!foundPaths.Contains(file))
-                        {
-                            foundPaths.Add(file);
-                            _discoveredMediaFiles.Add(file);
-                        }
+                        foundPaths.Add(file);
+                        _discoveredMediaFiles.Add(file);
                     }
                 }
             }
@@ -159,45 +165,176 @@ public partial class SceneCreatorScreen : BaseScreen
 
         if (_discoveredMediaFiles.Count == 0)
         {
-            _mediaOption.AddItem("⚠️ No media files found. Click 'Open Folder' and drop .ogv, .mp4, or .wav files!", 0);
+            if (_noVideosLabel is not null) _noVideosLabel.Visible = true;
+            return;
         }
-        else
+
+        if (_noVideosLabel is not null) _noVideosLabel.Visible = false;
+
+        for (int i = 0; i < _discoveredMediaFiles.Count; i++)
         {
-            for (int i = 0; i < _discoveredMediaFiles.Count; i++)
+            var filePath = _discoveredMediaFiles[i];
+            var card = CreateVideoCard(filePath);
+            _videoCardsGrid.AddChild(card);
+            _cardNodes.Add(card);
+
+            if (i == 0)
             {
-                var fullPath = _discoveredMediaFiles[i];
-                var fileName = System.IO.Path.GetFileName(fullPath);
-                var parentDir = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(fullPath) ?? "");
-                var ext = System.IO.Path.GetExtension(fullPath).ToLowerInvariant();
-                var icon = ext is ".wav" or ".ogg" ? "🎵" : "🎬";
-
-                _mediaOption.AddItem($"{icon} {fileName}  ({parentDir})", i);
+                SelectVideoCard(filePath, card);
             }
-
-            _mediaOption.Select(0);
-            OnMediaFileSelected(0);
         }
     }
 
-    private void OnMediaFileSelected(long index)
+    private PanelContainer CreateVideoCard(string videoPath)
     {
-        if (index < 0 || index >= _discoveredMediaFiles.Count) return;
+        var card = new PanelContainer();
+        card.CustomMinimumSize = new Vector2(215, 175);
+        card.MouseFilter = Control.MouseFilterEnum.Stop;
+        card.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
 
-        var selectedPath = _discoveredMediaFiles[(int)index];
-        var fileNameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(selectedPath);
-        var ext = System.IO.Path.GetExtension(selectedPath).ToLowerInvariant();
+        var defaultStyle = CreateCardStyleBox(false);
+        card.AddThemeStyleboxOverride("panel", defaultStyle);
 
+        var vbox = new VBoxContainer();
+        vbox.AddThemeConstantOverride("separation", 6);
+        card.AddChild(vbox);
+
+        // Aspect Ratio Thumbnail Container
+        var aspect = new AspectRatioContainer
+        {
+            Ratio = 16.0f / 9.0f,
+            CustomMinimumSize = new Vector2(200, 112),
+            StretchMode = AspectRatioContainer.StretchModeEnum.Fit,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+        };
+        vbox.AddChild(aspect);
+
+        var texRect = new TextureRect
+        {
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+            CustomMinimumSize = new Vector2(200, 112),
+        };
+
+        var thumb = VideoThumbnailHelper.GetOrExtractThumbnail(videoPath);
+        if (thumb is not null)
+        {
+            texRect.Texture = thumb;
+        }
+        else
+        {
+            texRect.Texture = null;
+        }
+        aspect.AddChild(texRect);
+
+        // Title Label
+        var fileNameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(videoPath);
+        var cleanTitle = fileNameWithoutExt.Replace('_', ' ').Replace('-', ' ');
+        cleanTitle = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(cleanTitle);
+
+        var titleLabel = new Label
+        {
+            Text = cleanTitle,
+            TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
+            HorizontalAlignment = HorizontalAlignment.Center,
+        };
+        titleLabel.AddThemeFontSizeOverride("font_size", 13);
+        titleLabel.AddThemeColorOverride("font_color", new Color(0.95f, 0.95f, 1.0f));
+        vbox.AddChild(titleLabel);
+
+        // Details HBox (Duration & File Size)
+        var detailsHBox = new HBoxContainer();
+        detailsHBox.Alignment = BoxContainer.AlignmentMode.Center;
+        detailsHBox.AddThemeConstantOverride("separation", 10);
+        vbox.AddChild(detailsHBox);
+
+        var durationSec = AudioWaveformLoader.GetAudioDurationSeconds(videoPath);
+        var durText = durationSec > 0 ? $"⏱ {durationSec:F1}s" : "🎬 Video";
+        var durLabel = new Label
+        {
+            Text = durText,
+        };
+        durLabel.AddThemeFontSizeOverride("font_size", 11);
+        durLabel.AddThemeColorOverride("font_color", new Color(0.3f, 0.9f, 1.0f));
+        detailsHBox.AddChild(durLabel);
+
+        try
+        {
+            var fileInfo = new System.IO.FileInfo(videoPath);
+            var sizeMb = fileInfo.Length / (1024.0 * 1024.0);
+            var sizeLabel = new Label
+            {
+                Text = $"📁 {sizeMb:F1} MB",
+            };
+            sizeLabel.AddThemeFontSizeOverride("font_size", 11);
+            sizeLabel.AddThemeColorOverride("font_color", new Color(0.7f, 0.75f, 0.85f));
+            detailsHBox.AddChild(sizeLabel);
+        }
+        catch
+        {
+            // Ignore file size errors
+        }
+
+        // Handle Click
+        card.GuiInput += (InputEvent @event) =>
+        {
+            if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+            {
+                SelectVideoCard(videoPath, card);
+            }
+        };
+
+        return card;
+    }
+
+    private void SelectVideoCard(string videoPath, PanelContainer card)
+    {
+        // Deselect previous
+        if (_selectedCardPanel is not null)
+        {
+            _selectedCardPanel.AddThemeStyleboxOverride("panel", CreateCardStyleBox(false));
+        }
+
+        _selectedCardPanel = card;
+        _selectedSourceMediaFile = videoPath;
+        _selectedCardPanel.AddThemeStyleboxOverride("panel", CreateCardStyleBox(true));
+
+        var fileNameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(videoPath);
         var cleanTitle = fileNameWithoutExt.Replace('_', ' ').Replace('-', ' ');
         cleanTitle = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(cleanTitle);
 
         if (_titleInput is not null) _titleInput.Text = cleanTitle;
         if (_sceneIdInput is not null) _sceneIdInput.Text = ToKebabCase(fileNameWithoutExt);
 
-        var dur = AudioWaveformLoader.GetAudioDurationSeconds(selectedPath);
+        var dur = AudioWaveformLoader.GetAudioDurationSeconds(videoPath);
         if (dur > 0 && _durationSpinBox is not null)
         {
             _durationSpinBox.Value = Math.Round(dur, 1);
         }
+
+        if (_errorLabel is not null) _errorLabel.Visible = false;
+    }
+
+    private static StyleBoxFlat CreateCardStyleBox(bool isSelected)
+    {
+        var sb = new StyleBoxFlat
+        {
+            BgColor = isSelected ? new Color(0.12f, 0.18f, 0.28f, 1.0f) : new Color(0.08f, 0.10f, 0.15f, 0.9f),
+            BorderColor = isSelected ? new Color(0.0f, 0.9f, 1.0f, 1.0f) : new Color(0.2f, 0.25f, 0.35f, 0.7f),
+            BorderWidthLeft = isSelected ? 3 : 1,
+            BorderWidthRight = isSelected ? 3 : 1,
+            BorderWidthTop = isSelected ? 3 : 1,
+            BorderWidthBottom = isSelected ? 3 : 1,
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 8,
+            ContentMarginRight = 8,
+            ContentMarginTop = 8,
+            ContentMarginBottom = 8,
+        };
+        return sb;
     }
 
     private void OnTitleChanged(string newTitle)
@@ -229,106 +366,98 @@ public partial class SceneCreatorScreen : BaseScreen
             return;
         }
 
-        try
-        {
-            var segments = LocalAiSceneExtractor.ParseSrtText(rawText);
-            if (segments.Count == 0)
-            {
-                if (_aiStatusLabel is not null) _aiStatusLabel.Text = "⚠️ No dialogue lines could be parsed from the text.";
-                return;
-            }
-
-            if (segments.Count >= 1)
-            {
-                if (_char1NameInput is not null) _char1NameInput.Text = segments[0].SpeakerDisplayName;
-                if (_prompt1Input is not null) _prompt1Input.Text = segments[0].Prompt;
-                if (_slot1StartSpin is not null) _slot1StartSpin.Value = segments[0].StartMilliseconds / 1000.0;
-                if (_slot1EndSpin is not null) _slot1EndSpin.Value = segments[0].EndMilliseconds / 1000.0;
-            }
-
-            if (segments.Count >= 2)
-            {
-                if (_char2NameInput is not null) _char2NameInput.Text = segments[1].SpeakerDisplayName;
-                if (_prompt2Input is not null) _prompt2Input.Text = segments[1].Prompt;
-                if (_slot2StartSpin is not null) _slot2StartSpin.Value = segments[1].StartMilliseconds / 1000.0;
-                if (_slot2EndSpin is not null) _slot2EndSpin.Value = segments[1].EndMilliseconds / 1000.0;
-            }
-
-            var maxEnd = segments.Max(s => s.EndMilliseconds) / 1000.0;
-            if (_durationSpinBox is not null) _durationSpinBox.Value = Math.Max(_durationSpinBox.Value, maxEnd + 1.0);
-
-            if (_aiStatusLabel is not null)
-            {
-                _aiStatusLabel.Text = $"✅ Successfully parsed {segments.Count} dialogue lines from subtitles!";
-            }
-        }
-        catch (Exception ex)
+        var detected = LocalAiSceneExtractor.ParseSrtText(rawText);
+        if (detected.Count == 0)
         {
             if (_aiStatusLabel is not null)
             {
-                _aiStatusLabel.Text = $"❌ AI Extraction failed: {ex.Message}";
+                _aiStatusLabel.Text = "❌ No timestamped dialogue found in the text. Check formatting.";
             }
+            return;
         }
-    }
 
-    private static bool RunStemSeparation(string mediaFilePath, string outputMediaFolder)
-    {
-        try
+        if (detected.Count > 0)
         {
-            var scriptPath = ProjectSettings.GlobalizePath("res://scripts/separate_stems.py");
-            if (!System.IO.File.Exists(scriptPath))
-            {
-                var repoScript = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.Environment.CurrentDirectory, "scripts", "separate_stems.py"));
-                if (System.IO.File.Exists(repoScript)) scriptPath = repoScript;
-            }
-
-            if (System.IO.File.Exists(scriptPath))
-            {
-                return VideoPlayback.MediaTranscoder.RunProcess("python", $"\"{scriptPath}\" \"{mediaFilePath}\" \"{outputMediaFolder}\"", 60000);
-            }
+            var first = detected[0];
+            if (_char1NameInput is not null && !string.IsNullOrWhiteSpace(first.SpeakerDisplayName))
+                _char1NameInput.Text = first.SpeakerDisplayName;
+            if (_prompt1Input is not null && !string.IsNullOrWhiteSpace(first.Prompt))
+                _prompt1Input.Text = first.Prompt;
+            if (_slot1StartSpin is not null) _slot1StartSpin.Value = first.StartMilliseconds / 1000.0;
+            if (_slot1EndSpin is not null) _slot1EndSpin.Value = first.EndMilliseconds / 1000.0;
         }
-        catch (Exception ex)
+
+        if (detected.Count > 1)
         {
-            GD.PrintErr($"[SceneCreator] Stem separation execution error: {ex.Message}");
+            var second = detected[1];
+            if (_char2NameInput is not null && !string.IsNullOrWhiteSpace(second.SpeakerDisplayName))
+                _char2NameInput.Text = second.SpeakerDisplayName;
+            if (_prompt2Input is not null && !string.IsNullOrWhiteSpace(second.Prompt))
+                _prompt2Input.Text = second.Prompt;
+            if (_slot2StartSpin is not null) _slot2StartSpin.Value = second.StartMilliseconds / 1000.0;
+            if (_slot2EndSpin is not null) _slot2EndSpin.Value = second.EndMilliseconds / 1000.0;
         }
 
-        return false;
+        var maxEndMs = detected.Max(d => d.EndMilliseconds);
+        if (_durationSpinBox is not null && maxEndMs > (long)(_durationSpinBox.Value * 1000.0))
+        {
+            _durationSpinBox.Value = (maxEndMs / 1000.0) + 1.0;
+        }
+
+        if (_aiStatusLabel is not null)
+        {
+            _aiStatusLabel.Text = $"✅ Extracted {detected.Count} speech lines into characters!";
+        }
     }
 
     private async void OnSavePressed()
     {
-        if (_errorLabel is not null) _errorLabel.Visible = false;
-
-        var title = string.IsNullOrWhiteSpace(_titleInput?.Text) ? "Custom Scene" : _titleInput.Text.Trim();
-        var sceneId = string.IsNullOrWhiteSpace(_sceneIdInput?.Text) ? ToKebabCase(title) : ToKebabCase(_sceneIdInput.Text);
-
+        var title = _titleInput?.Text?.Trim() ?? string.Empty;
+        var sceneId = _sceneIdInput?.Text?.Trim() ?? string.Empty;
         var durationSec = _durationSpinBox?.Value ?? 10.0;
         var durationMs = (long)(durationSec * 1000.0);
 
-        var char1Name = string.IsNullOrWhiteSpace(_char1NameInput?.Text) ? "Character 1" : _char1NameInput.Text.Trim();
-        var char2Name = string.IsNullOrWhiteSpace(_char2NameInput?.Text) ? "Character 2" : _char2NameInput.Text.Trim();
+        var char1Name = _char1NameInput?.Text?.Trim();
+        var char2Name = _char2NameInput?.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(char1Name)) char1Name = "Character 1";
+        if (string.IsNullOrWhiteSpace(char2Name)) char2Name = "Character 2";
 
-        var prompt1 = string.IsNullOrWhiteSpace(_prompt1Input?.Text) ? "Speak your line!" : _prompt1Input.Text.Trim();
+        var prompt1 = _prompt1Input?.Text?.Trim() ?? "Line 1 dialogue prompt";
         var slot1StartMs = (long)((_slot1StartSpin?.Value ?? 1.0) * 1000.0);
         var slot1EndMs = (long)((_slot1EndSpin?.Value ?? 4.0) * 1000.0);
 
-        var prompt2 = string.IsNullOrWhiteSpace(_prompt2Input?.Text) ? "Respond with emotion!" : _prompt2Input.Text.Trim();
-        var slot2StartMs = (long)((_slot2StartSpin?.Value ?? 4.5) * 1000.0);
-        var slot2EndMs = (long)((_slot2EndSpin?.Value ?? 8.5) * 1000.0);
+        var prompt2 = _prompt2Input?.Text?.Trim() ?? "Line 2 dialogue prompt";
+        var slot2StartMs = (long)((_slot2StartSpin?.Value ?? 5.0) * 1000.0);
+        var slot2EndMs = (long)((_slot2EndSpin?.Value ?? 8.0) * 1000.0);
 
-        var selectedMediaIndex = _mediaOption?.Selected ?? -1;
-        var hasDiscoveredMedia = _discoveredMediaFiles.Count > 0 && selectedMediaIndex >= 0 && selectedMediaIndex < _discoveredMediaFiles.Count;
-        var sourceMediaFile = hasDiscoveredMedia ? _discoveredMediaFiles[selectedMediaIndex] : null;
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            ShowError("Please enter a scene title.");
+            return;
+        }
 
-        // UI Feedback & prevent duplicate clicks
+        if (string.IsNullOrWhiteSpace(sceneId))
+        {
+            ShowError("Please enter a valid scene ID.");
+            return;
+        }
+
+        var sourceMediaFile = _selectedSourceMediaFile;
+        if (string.IsNullOrWhiteSpace(sourceMediaFile) || !System.IO.File.Exists(sourceMediaFile))
+        {
+            ShowError("Please select a video card from above before creating the scene.");
+            return;
+        }
+
+        // UI loading state
         if (_saveButton is not null)
         {
             _saveButton.Disabled = true;
-            _saveButton.Text = "⏳ Processing Video...";
+            _saveButton.Text = "⏳ Transcoding Video & Separating Stems...";
         }
         if (_aiStatusLabel is not null)
         {
-            _aiStatusLabel.Text = "⏳ Transcoding video & preparing audio waveform... Please wait.";
+            _aiStatusLabel.Text = "⏳ Transcoding video & separating vocals... Please wait.";
         }
 
         try
@@ -362,6 +491,13 @@ public partial class SceneCreatorScreen : BaseScreen
                     catch (Exception ex)
                     {
                         GD.PrintErr($"[SceneCreator] Failed to copy source media: {ex.Message}");
+                    }
+
+                    // Extract thumbnail into package folder as well
+                    var thumbFile = VideoThumbnailHelper.ExtractVideoThumbnailToFile(safeSourceMedia);
+                    if (thumbFile is not null && System.IO.File.Exists(thumbFile))
+                    {
+                        try { System.IO.File.Copy(thumbFile, System.IO.Path.Combine(targetFolder, "thumbnail.png"), true); } catch { }
                     }
 
                     // Execute fast multithreaded OGV & WAV transcoding
@@ -414,6 +550,15 @@ public partial class SceneCreatorScreen : BaseScreen
                 _saveButton.Disabled = false;
                 _saveButton.Text = "Save & Open in Editor";
             }
+        }
+    }
+
+    private void ShowError(string message)
+    {
+        if (_errorLabel is not null)
+        {
+            _errorLabel.Text = message;
+            _errorLabel.Visible = true;
         }
     }
 
