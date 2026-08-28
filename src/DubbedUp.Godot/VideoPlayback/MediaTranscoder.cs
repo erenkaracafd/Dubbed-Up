@@ -125,7 +125,7 @@ public static class MediaTranscoder
             return null;
         }
 
-        GD.Print($"[MediaTranscoder] Found source video: '{sourceVideoFile}'. Starting automatic OGV conversion...");
+        GD.Print($"[MediaTranscoder] Found source video: '{sourceVideoFile}'. Starting fast multithreaded OGV conversion...");
 
         // 1. Copy source file to a safe ASCII filename in media folder to avoid emoji/space CLI encoding issues
         var safeInputPath = System.IO.Path.Combine(mediaDir, "source_input" + System.IO.Path.GetExtension(sourceVideoFile));
@@ -142,32 +142,7 @@ public static class MediaTranscoder
             safeInputPath = sourceVideoFile;
         }
 
-        // 2. Transcode to video.ogv with FFmpeg
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "ffmpeg",
-                Arguments = $"-y -i \"{safeInputPath}\" -c:v libtheora -q:v 7 -c:a libvorbis -q:a 5 -pix_fmt yuv420p \"{ogvTarget}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            using var process = Process.Start(psi);
-            if (process is not null)
-            {
-                process.WaitForExit(180000); // 3 minutes timeout
-                GD.Print($"[MediaTranscoder] FFmpeg OGV conversion finished with exit code {process.ExitCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            GD.PrintErr($"[MediaTranscoder] FFmpeg OGV conversion error: {ex.Message}");
-        }
-
-        // 3. Extract audio.wav if missing
+        // 2. Extract audio.wav first (ultra-fast, takes 50ms)
         var audioWav = System.IO.Path.Combine(mediaDir, "audio.wav");
         if (!System.IO.File.Exists(audioWav))
         {
@@ -183,12 +158,37 @@ public static class MediaTranscoder
                     RedirectStandardError = true
                 };
                 using var pWav = Process.Start(psiWav);
-                pWav?.WaitForExit(60000);
+                pWav?.WaitForExit(30000);
             }
             catch (Exception ex)
             {
                 GD.PrintErr($"[MediaTranscoder] FFmpeg WAV extraction error: {ex.Message}");
             }
+        }
+
+        // 3. Fast Multithreaded Transcode to video.ogv with FFmpeg
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = $"-y -i \"{safeInputPath}\" -threads 0 -vf \"scale='min(1280,iw)':-2\" -c:v libtheora -q:v 6 -c:a libvorbis -q:a 4 -pix_fmt yuv420p \"{ogvTarget}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process is not null)
+            {
+                process.WaitForExit(180000);
+                GD.Print($"[MediaTranscoder] Fast FFmpeg OGV conversion finished with exit code {process.ExitCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[MediaTranscoder] FFmpeg OGV conversion error: {ex.Message}");
         }
 
         // 4. Ensure vocals.wav and background.wav exist

@@ -311,7 +311,7 @@ public partial class SceneCreatorScreen : BaseScreen
         return false;
     }
 
-    private void OnSavePressed()
+    private async void OnSavePressed()
     {
         if (_errorLabel is not null) _errorLabel.Visible = false;
 
@@ -332,6 +332,21 @@ public partial class SceneCreatorScreen : BaseScreen
         var slot2StartMs = (long)((_slot2StartSpin?.Value ?? 4.5) * 1000.0);
         var slot2EndMs = (long)((_slot2EndSpin?.Value ?? 8.5) * 1000.0);
 
+        var selectedMediaIndex = _mediaOption?.Selected ?? -1;
+        var hasDiscoveredMedia = _discoveredMediaFiles.Count > 0 && selectedMediaIndex >= 0 && selectedMediaIndex < _discoveredMediaFiles.Count;
+        var sourceMediaFile = hasDiscoveredMedia ? _discoveredMediaFiles[selectedMediaIndex] : null;
+
+        // UI Feedback & prevent duplicate clicks
+        if (_saveButton is not null)
+        {
+            _saveButton.Disabled = true;
+            _saveButton.Text = "⏳ Processing Video...";
+        }
+        if (_aiStatusLabel is not null)
+        {
+            _aiStatusLabel.Text = "⏳ Transcoding video & preparing audio waveform... Please wait.";
+        }
+
         try
         {
             var segments = new List<DetectedSpeechSegment>
@@ -350,14 +365,11 @@ public partial class SceneCreatorScreen : BaseScreen
 
             string videoRelPath = "media/video.ogv";
 
-            // If a media file was selected, copy it to target folder media/ and run stem separation
-            if (_mediaOption is not null && _discoveredMediaFiles.Count > 0)
+            // Run heavy file copying and transcoding in a background task
+            await System.Threading.Tasks.Task.Run(() =>
             {
-                var selectedIdx = _mediaOption.Selected;
-                if (selectedIdx >= 0 && selectedIdx < _discoveredMediaFiles.Count)
+                if (sourceMediaFile is not null && System.IO.File.Exists(sourceMediaFile))
                 {
-                    var sourceMediaFile = _discoveredMediaFiles[selectedIdx];
-                    // Safe ASCII destination path to prevent Unicode/emoji CLI errors
                     var safeSourceMedia = System.IO.Path.Combine(mediaFolder, "source_input" + System.IO.Path.GetExtension(sourceMediaFile));
                     try
                     {
@@ -368,22 +380,8 @@ public partial class SceneCreatorScreen : BaseScreen
                         GD.PrintErr($"[SceneCreator] Failed to copy source media: {ex.Message}");
                     }
 
-                    // Execute robust FFmpeg OGV & WAV transcoding
-                    if (_aiStatusLabel is not null)
-                    {
-                        _aiStatusLabel.Text = "🤖 Transcoding video to Godot OGV & extracting audio...";
-                    }
-
+                    // Execute fast multithreaded OGV & WAV transcoding
                     VideoPlayback.MediaTranscoder.EnsureTranscoded(targetFolder);
-
-                    // Also attempt AI Demucs stem separation if python is available
-                    try
-                    {
-                        RunStemSeparation(safeSourceMedia, mediaFolder);
-                    }
-                    catch { }
-
-                    videoRelPath = "media/video.ogv";
 
                     var vocalsDst = System.IO.Path.Combine(mediaFolder, "vocals.wav");
                     var audioDst = System.IO.Path.Combine(mediaFolder, "audio.wav");
@@ -399,16 +397,16 @@ public partial class SceneCreatorScreen : BaseScreen
                         }
                     }
                 }
-            }
 
-            var doc = AiSceneBuilder.BuildScene(title, sceneId, durationMs, videoRelPath, segments);
-            ProjectValidator.Validate(doc);
+                var doc = AiSceneBuilder.BuildScene(title, sceneId, durationMs, videoRelPath, segments);
+                ProjectValidator.Validate(doc);
 
-            var json = ProjectJsonSerializer.SerializeScene(doc);
-            var jsonFilePath = System.IO.Path.Combine(targetFolder, "scene.json");
-            System.IO.File.WriteAllText(jsonFilePath, json);
+                var json = ProjectJsonSerializer.SerializeScene(doc);
+                var jsonFilePath = System.IO.Path.Combine(targetFolder, "scene.json");
+                System.IO.File.WriteAllText(jsonFilePath, json);
 
-            GD.Print($"[SceneCreator] Custom scene package created: {jsonFilePath}");
+                GD.Print($"[SceneCreator] Custom scene package created: {jsonFilePath}");
+            });
 
             // Load new package into session coordinator
             if (Coordinator is not null)
@@ -426,6 +424,11 @@ public partial class SceneCreatorScreen : BaseScreen
             {
                 _errorLabel.Text = $"Creation failed: {ex.Message}";
                 _errorLabel.Visible = true;
+            }
+            if (_saveButton is not null)
+            {
+                _saveButton.Disabled = false;
+                _saveButton.Text = "Save & Open in Editor";
             }
         }
     }
