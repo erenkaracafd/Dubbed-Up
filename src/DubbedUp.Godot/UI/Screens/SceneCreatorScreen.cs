@@ -284,23 +284,7 @@ public partial class SceneCreatorScreen : BaseScreen
 
             if (System.IO.File.Exists(scriptPath))
             {
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "python",
-                    Arguments = $"\"{scriptPath}\" \"{mediaFilePath}\" \"{outputMediaFolder}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-
-                using var process = System.Diagnostics.Process.Start(psi);
-                if (process is not null)
-                {
-                    process.WaitForExit(120000); // 2 minutes max
-                    GD.Print($"[SceneCreator] Stem separation exit code: {process.ExitCode}");
-                    return process.ExitCode == 0;
-                }
+                return VideoPlayback.MediaTranscoder.RunProcess("python", $"\"{scriptPath}\" \"{mediaFilePath}\" \"{outputMediaFolder}\"", 60000);
             }
         }
         catch (Exception ex)

@@ -10,6 +10,39 @@ public static class MediaTranscoder
         ".mp4", ".mkv", ".webm", ".mov", ".avi", ".flv", ".wmv", ".m4v"
     };
 
+    public static bool RunProcess(string fileName, string arguments, int timeoutMs = 180000)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false
+            };
+
+            using var process = Process.Start(psi);
+            if (process is null) return false;
+
+            if (!process.WaitForExit(timeoutMs))
+            {
+                try { process.Kill(); } catch { }
+                GD.PrintErr($"[MediaTranscoder] Process '{fileName}' timed out after {timeoutMs}ms");
+                return false;
+            }
+
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[MediaTranscoder] Process execution error for '{fileName}': {ex.Message}");
+            return false;
+        }
+    }
+
     public static VideoStream? LoadVideoStream(string? packageDirectory, string? relativePath)
     {
         // 1. Direct res:// resource check
@@ -112,7 +145,7 @@ public static class MediaTranscoder
             return vocalsWav;
         }
 
-        // Search for video to extract from
+        // Search for any source video file to extract audio from
         string? sourceFile = null;
         var candidates = new List<string>
         {
@@ -152,31 +185,15 @@ public static class MediaTranscoder
 
         if (sourceFile is not null && System.IO.File.Exists(sourceFile))
         {
-            try
-            {
-                var psiWav = new ProcessStartInfo
-                {
-                    FileName = "ffmpeg",
-                    Arguments = $"-y -i \"{sourceFile}\" -vn -acodec pcm_s16le -ar 44100 -ac 2 \"{audioWav}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-                using var pWav = Process.Start(psiWav);
-                pWav?.WaitForExit(30000);
+            var args = $"-y -loglevel error -i \"{sourceFile}\" -vn -acodec pcm_s16le -ar 44100 -ac 2 \"{audioWav}\"";
+            RunProcess("ffmpeg", args, 30000);
 
-                if (System.IO.File.Exists(audioWav) && new System.IO.FileInfo(audioWav).Length > 1000)
-                {
-                    if (!System.IO.File.Exists(vocalsWav)) System.IO.File.Copy(audioWav, vocalsWav, true);
-                    if (!System.IO.File.Exists(bgWav)) System.IO.File.Copy(audioWav, bgWav, true);
-                    GD.Print($"[MediaTranscoder] Successfully extracted audio.wav from '{sourceFile}'");
-                    return audioWav;
-                }
-            }
-            catch (Exception ex)
+            if (System.IO.File.Exists(audioWav) && new System.IO.FileInfo(audioWav).Length > 1000)
             {
-                GD.PrintErr($"[MediaTranscoder] Failed to extract audio.wav: {ex.Message}");
+                if (!System.IO.File.Exists(vocalsWav)) System.IO.File.Copy(audioWav, vocalsWav, true);
+                if (!System.IO.File.Exists(bgWav)) System.IO.File.Copy(audioWav, bgWav, true);
+                GD.Print($"[MediaTranscoder] Successfully extracted audio.wav from '{sourceFile}'");
+                return audioWav;
             }
         }
 
@@ -251,29 +268,8 @@ public static class MediaTranscoder
         EnsureAudioExtracted(packageDir);
 
         // 3. Fast Multithreaded Transcode to video.ogv with FFmpeg
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "ffmpeg",
-                Arguments = $"-y -i \"{safeInputPath}\" -threads 0 -vf \"scale='min(1280,iw)':-2\" -c:v libtheora -q:v 6 -c:a libvorbis -q:a 4 -pix_fmt yuv420p \"{ogvTarget}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            using var process = Process.Start(psi);
-            if (process is not null)
-            {
-                process.WaitForExit(180000);
-                GD.Print($"[MediaTranscoder] Fast FFmpeg OGV conversion finished with exit code {process.ExitCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            GD.PrintErr($"[MediaTranscoder] FFmpeg OGV conversion error: {ex.Message}");
-        }
+        var args = $"-y -loglevel error -i \"{safeInputPath}\" -threads 0 -vf \"scale='min(1280,iw)':-2\" -c:v libtheora -q:v 6 -c:a libvorbis -q:a 4 -pix_fmt yuv420p \"{ogvTarget}\"";
+        RunProcess("ffmpeg", args, 180000);
 
         return System.IO.File.Exists(ogvTarget) ? ogvTarget : null;
     }
