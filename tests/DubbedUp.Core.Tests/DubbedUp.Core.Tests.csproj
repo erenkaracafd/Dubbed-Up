@@ -20,5 +20,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\DubbedUp.Core\DubbedUp.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\DubbedUp.Godot\Network\Protocol\**\*.cs" Link="Network\Protocol\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>
 
