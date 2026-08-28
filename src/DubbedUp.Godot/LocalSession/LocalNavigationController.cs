@@ -129,22 +129,39 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         {
             if (keyEvent.Keycode == Key.F11 || (keyEvent.AltPressed && keyEvent.Keycode == Key.Enter))
             {
-                ToggleFullscreen();
+                var isCurrentlyFullscreen = DisplayServer.WindowGetMode(0) is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen;
+                SetFullscreen(!isCurrentlyFullscreen, this);
                 GetViewport().SetInputAsHandled();
             }
         }
     }
 
-    public static void ToggleFullscreen()
+    public static void SetFullscreen(bool isFullscreen, Node? context = null)
     {
-        var currentMode = DisplayServer.WindowGetMode();
-        if (currentMode is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen)
+        try
         {
-            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+            var targetMode = isFullscreen ? DisplayServer.WindowMode.ExclusiveFullscreen : DisplayServer.WindowMode.Windowed;
+            DisplayServer.WindowSetMode(targetMode, 0);
+
+            if (context is not null)
+            {
+                var win = context.GetWindow();
+                if (win is not null)
+                {
+                    win.Mode = isFullscreen ? Window.ModeEnum.ExclusiveFullscreen : Window.ModeEnum.Windowed;
+                }
+            }
         }
-        else
+        catch (Exception ex)
         {
-            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
+            GD.PrintErr($"[LocalNavigationController] Error setting fullscreen mode: {ex.Message}");
         }
+    }
+
+    public static void ToggleFullscreen(Node? context = null)
+    {
+        var currentMode = DisplayServer.WindowGetMode(0);
+        var isFullscreen = currentMode is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen;
+        SetFullscreen(!isFullscreen, context);
     }
 }

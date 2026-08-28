@@ -46,3 +46,4 @@ All scenes listed below are **100% original, purpose-made, rights-cleared digita
 
 ## 🔒 Verification & Compliance
 Every scene package directory contains a validated `provenance.json` pointing directly to this document (`docs/OFFICIAL_CONTENT_PROVENANCE.md`) as immutable evidence of rights clearance.
+

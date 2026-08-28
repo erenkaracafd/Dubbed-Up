@@ -270,7 +270,7 @@ public partial class SettingsScreen : BaseScreen
 
     private void OnFullscreenToggled(bool isFullscreen)
     {
-        DisplayServer.WindowSetMode(isFullscreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed);
+        LocalNavigationController.SetFullscreen(isFullscreen, this);
     }
 
     private void LoadSettings()
