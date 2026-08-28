@@ -107,4 +107,29 @@ public partial class LocalNavigationController : Node, IScreenNavigator
 
         EmitSignal(SignalName.ScreenChanged, (int)screen);
     }
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+        {
+            if (keyEvent.Keycode == Key.F11 || (keyEvent.AltPressed && keyEvent.Keycode == Key.Enter))
+            {
+                ToggleFullscreen();
+                GetViewport().SetInputAsHandled();
+            }
+        }
+    }
+
+    public static void ToggleFullscreen()
+    {
+        var currentMode = DisplayServer.WindowGetMode();
+        if (currentMode is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen)
+        {
+            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+        }
+        else
+        {
+            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
+        }
+    }
 }
