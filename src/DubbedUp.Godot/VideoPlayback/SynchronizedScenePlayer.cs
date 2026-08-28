@@ -65,6 +65,8 @@ public partial class SynchronizedScenePlayer : Control
         AddChild(_originalAudioPlayer);
     }
 
+    private bool _hasIsolatedBackgroundStem = false;
+
     public void LoadScene(OfficialSceneDocument scene, DubProjectDocument? project, VoiceTakeStore? takeStore, string? sceneFolderPath = null)
     {
         ClearTakePlayers();
@@ -74,6 +76,7 @@ public partial class SynchronizedScenePlayer : Control
         _masterTimeSeconds = 0.0;
         _hasFinished = false;
         _sceneFolderPath = sceneFolderPath;
+        _hasIsolatedBackgroundStem = false;
 
         // Try to load video
         var videoAsset = scene.SourceMedia.FirstOrDefault(m => m.Role == SourceMediaRole.SceneVideo);
@@ -82,11 +85,11 @@ public partial class SynchronizedScenePlayer : Control
             TryLoadVideo(videoAsset.RelativePath, sceneFolderPath);
         }
 
-        // Try to load separated ambient background audio track (background.wav)
-        TryLoadBackgroundAudio(scene, sceneFolderPath);
-
         // Try to load original mixed audio track (audio.wav)
-        TryLoadOriginalAudio(scene, sceneFolderPath);
+        var origAudioPath = TryLoadOriginalAudio(scene, sceneFolderPath);
+
+        // Try to load separated ambient background audio track (background.wav)
+        TryLoadBackgroundAudio(scene, sceneFolderPath, origAudioPath);
 
         // Schedule take audio players
         foreach (var entry in scene.Timeline)
@@ -108,9 +111,9 @@ public partial class SynchronizedScenePlayer : Control
         }
     }
 
-    private void TryLoadOriginalAudio(OfficialSceneDocument scene, string? sceneFolderPath)
+    private string? TryLoadOriginalAudio(OfficialSceneDocument scene, string? sceneFolderPath)
     {
-        if (_originalAudioPlayer is null) return;
+        if (_originalAudioPlayer is null) return null;
         _originalAudioPlayer.Stream = null;
 
         string? resolvedPath = null;
@@ -151,9 +154,11 @@ public partial class SynchronizedScenePlayer : Control
                 GD.PrintErr($"[ScenePlayer] Failed to load original audio mix: {ex.Message}");
             }
         }
+
+        return resolvedPath;
     }
 
-    private void TryLoadBackgroundAudio(OfficialSceneDocument scene, string? sceneFolderPath)
+    private void TryLoadBackgroundAudio(OfficialSceneDocument scene, string? sceneFolderPath, string? origAudioPath)
     {
         if (_backgroundAudioPlayer is null) return;
         _backgroundAudioPlayer.Stream = null;
@@ -209,17 +214,29 @@ public partial class SynchronizedScenePlayer : Control
         {
             try
             {
+                var bgInfo = new System.IO.FileInfo(resolvedPath);
+                if (origAudioPath is not null && System.IO.File.Exists(origAudioPath))
+                {
+                    var origInfo = new System.IO.FileInfo(origAudioPath);
+                    // If background.wav differs in size from audio.wav, it is a genuine isolated stem without speech
+                    _hasIsolatedBackgroundStem = Math.Abs(bgInfo.Length - origInfo.Length) > 500;
+                }
+                else
+                {
+                    _hasIsolatedBackgroundStem = false;
+                }
+
                 var bytes = System.IO.File.ReadAllBytes(resolvedPath);
                 var wav = VoiceTakeAudioPlayer.ParseWavBytes(bytes);
                 if (wav is not null)
                 {
                     _backgroundAudioPlayer.Stream = wav;
-                    GD.Print($"[ScenePlayer] Loaded AI ambient background stem: '{resolvedPath}'");
+                    GD.Print($"[ScenePlayer] Loaded background stem (isIsolated={_hasIsolatedBackgroundStem}): '{resolvedPath}'");
                 }
             }
             catch (Exception ex)
             {
-                GD.PrintErr($"[ScenePlayer] Failed to load background audio stem: {ex.Message}");
+                GD.PrintErr($"[ScenePlayer] Failed to load background stem: {ex.Message}");
             }
         }
         else
@@ -265,6 +282,8 @@ public partial class SynchronizedScenePlayer : Control
             if (_backgroundAudioPlayer.StreamPaused) _backgroundAudioPlayer.StreamPaused = false;
             else if (!_backgroundAudioPlayer.Playing) _backgroundAudioPlayer.Play((float)_masterTimeSeconds);
         }
+
+        UpdateAudioDucking();
 
         foreach (var player in _takePlayers)
         {
@@ -359,6 +378,8 @@ public partial class SynchronizedScenePlayer : Control
             player.OnManualSeek(_masterTimeSeconds);
         }
 
+        UpdateAudioDucking();
+
         PlaybackProgress?.Invoke(_masterTimeSeconds, _durationSeconds);
     }
 
@@ -378,32 +399,7 @@ public partial class SynchronizedScenePlayer : Control
             _masterTimeSeconds += delta;
         }
 
-        // Dynamic Audio Mixing:
-        // Inside a dubbed speech box: Mute original dialogue, play clean ambient stem + player voice take
-        // Outside speech boxes: Play original video audio with original actor dialogue
-        bool isInsideDubbedSlot = _dubbedRanges.Any(r => _masterTimeSeconds >= (r.StartSec - 0.05) && _masterTimeSeconds <= (r.EndSec + 0.35));
-
-        if (isInsideDubbedSlot)
-        {
-            if (_originalAudioPlayer is not null) _originalAudioPlayer.VolumeDb = -80.0f;
-            if (_videoPlayer is not null) _videoPlayer.VolumeDb = -80.0f;
-            if (_backgroundAudioPlayer is not null) _backgroundAudioPlayer.VolumeDb = 0.0f;
-        }
-        else
-        {
-            if (_originalAudioPlayer is not null && _originalAudioPlayer.Stream is not null)
-            {
-                _originalAudioPlayer.VolumeDb = 0.0f;
-                if (_videoPlayer is not null) _videoPlayer.VolumeDb = -80.0f;
-            }
-            else if (_videoPlayer is not null)
-            {
-                _videoPlayer.Bus = "Master";
-                _videoPlayer.VolumeDb = 0.0f;
-            }
-
-            if (_backgroundAudioPlayer is not null) _backgroundAudioPlayer.VolumeDb = -80.0f;
-        }
+        UpdateAudioDucking();
 
         foreach (var player in _takePlayers)
         {
@@ -441,6 +437,43 @@ public partial class SynchronizedScenePlayer : Control
             }
 
             PlaybackFinished?.Invoke();
+        }
+    }
+
+    private void UpdateAudioDucking()
+    {
+        // Dynamic Audio Mixing:
+        // Inside a dubbed speech box: Mute original dialogue and original video completely.
+        // If an isolated instrumental background stem exists, play it. Otherwise, mute background stem too so original voice is 100% cut.
+        // Player's voice take is played cleanly over it.
+        // Outside speech boxes: Play original video audio with original actor dialogue.
+        bool isInsideDubbedSlot = _dubbedRanges.Any(r => _masterTimeSeconds >= (r.StartSec - 0.05) && _masterTimeSeconds <= (r.EndSec + 0.25));
+
+        if (isInsideDubbedSlot)
+        {
+            if (_originalAudioPlayer is not null) _originalAudioPlayer.VolumeDb = -80.0f;
+            if (_videoPlayer is not null) _videoPlayer.VolumeDb = -80.0f;
+
+            if (_backgroundAudioPlayer is not null)
+            {
+                // Only play background audio if it is a real instrumental stem without dialogue
+                _backgroundAudioPlayer.VolumeDb = _hasIsolatedBackgroundStem ? 0.0f : -80.0f;
+            }
+        }
+        else
+        {
+            if (_originalAudioPlayer is not null && _originalAudioPlayer.Stream is not null)
+            {
+                _originalAudioPlayer.VolumeDb = 0.0f;
+                if (_videoPlayer is not null) _videoPlayer.VolumeDb = -80.0f;
+            }
+            else if (_videoPlayer is not null)
+            {
+                _videoPlayer.Bus = "Master";
+                _videoPlayer.VolumeDb = 0.0f;
+            }
+
+            if (_backgroundAudioPlayer is not null) _backgroundAudioPlayer.VolumeDb = -80.0f;
         }
     }
 

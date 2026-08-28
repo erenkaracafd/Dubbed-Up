@@ -21,9 +21,6 @@
 - **Custom Scene Import Pipeline & Transcoding**
   - Imported `.mp4`, `.webm`, `.mov`, and `.mkv` media are automatically transcoded to Godot-native `.ogv` (Theora/Vorbis) and 16-bit PCM `.wav` on-the-fly via `MediaTranscoder.cs`.
   - Safe ASCII normalization and deadlock-free non-blocking process execution guarantee fast, unhindered transcoding.
-  - Video streams preserve 100% original dimensions and aspect ratio via dynamic `AspectRatioContainer` scaling without visual distortion.
-  - Robust RIFF chunk parsing ensures accurate waveform visualization regardless of arbitrary FFmpeg metadata headers.
-  - Demucs stem separation produces dialogue/vocal and background stems for selective playback composition.
   - Custom scene media scanning, quick handoff to scene selection, and in-game scene deletion with a safety confirmation modal are implemented.
 - **Selective Audio Composition**
   - Original movie audio is preserved outside speech boxes.
