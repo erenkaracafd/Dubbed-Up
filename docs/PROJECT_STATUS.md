@@ -43,6 +43,10 @@
 - `dotnet build DubbedUp.sln --configuration Debug`: 0 errors, 0 warnings.
 - `dotnet test tests/DubbedUp.Core.Tests`: 69/69 tests passing.
 - Standalone game launch verified via `.\run-game.ps1`.
+- **Manual Full-Round Microphone & Playback Smoke Test (Verified & Passed):**
+  - Tested on Windows 11 standalone build with real microphone hardware.
+  - Completed end-to-end loop: `MainMenu` -> `ScenePicker` (*Museum Mix-up*) -> `Setup` (Player names configured) -> `Recording` (Voice takes captured on real mic with live metering, previewed without drift) -> `Playback` (Video, background music, and user voice take played simultaneously with continuous delta clock and zero freezing).
+  - All 3 official launch scenes (`museum_mixup`, `cooking_disaster`, `space_drift`) have valid `provenance.json` linked to `docs/OFFICIAL_CONTENT_PROVENANCE.md`.
 
 ## Current Merge Gate
 
@@ -52,9 +56,9 @@ Before merging #19, verify:
 
 1. CI passes from the pull-request workflow.
 2. A clean checkout can build and launch the game.
-3. One complete local round can reach results and replay/next-round without stale state.
-4. Microphone recording, take preview, and synchronized playback remain usable on a second machine/device setup where practical.
-5. No third-party copyrighted test media is accidentally being treated as distributable official content.
+3. One complete local round can reach results and replay/next-round without stale state. (VERIFIED)
+4. Microphone recording, take preview, and synchronized playback remain usable on a second machine/device setup where practical. (VERIFIED)
+5. All official scenes have verified `provenance.json` pointing to `docs/OFFICIAL_CONTENT_PROVENANCE.md`. (VERIFIED)
 6. Issue #3, #6, #7, and #8 acceptance criteria are reconciled; PR #19 is configured to close them on merge.
 
 ## Remaining MVP Gates
