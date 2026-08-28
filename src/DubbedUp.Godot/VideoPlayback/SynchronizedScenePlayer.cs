@@ -29,6 +29,7 @@ public partial class SynchronizedScenePlayer : Control
     public double CurrentTimeSeconds => _masterTimeSeconds;
     public double TotalDurationSeconds => _durationSeconds;
     public bool IsPlaying => _isPlaying;
+    public Texture2D? GetVideoTexture() => _videoPlayer?.GetVideoTexture();
 
     public override void _Ready()
     {

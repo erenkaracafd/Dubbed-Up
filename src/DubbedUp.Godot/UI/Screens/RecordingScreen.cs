@@ -15,6 +15,7 @@ public partial class RecordingScreen : BaseScreen
     private Label? _syncScoreLabel;
     private Label? _errorLabel;
 
+    private AspectRatioContainer? _videoContainer;
     private VideoStreamPlayer? _videoPlayer;
     private WaveformVisualizer? _waveformVisualizer;
 
@@ -59,7 +60,8 @@ public partial class RecordingScreen : BaseScreen
         _syncScoreLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/SyncScoreLabel");
         _errorLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/ErrorLabel");
 
-        _videoPlayer = GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoPanel/VideoPlayer");
+        _videoContainer = GetNodeOrNull<AspectRatioContainer>("ScrollContainer/CenterContainer/VBoxContainer/VideoContainer");
+        _videoPlayer = GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoContainer/VideoPanel/VideoPlayer") ?? GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoPanel/VideoPlayer");
         _waveformVisualizer = GetNodeOrNull<WaveformVisualizer>("ScrollContainer/CenterContainer/VBoxContainer/WaveformVisualizer");
 
         _previewOriginalButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/StudioActions/PreviewOriginalButton");
@@ -127,6 +129,19 @@ public partial class RecordingScreen : BaseScreen
 
     public override void _Process(double delta)
     {
+        if (_videoPlayer is not null && _videoContainer is not null)
+        {
+            var tex = _videoPlayer.GetVideoTexture();
+            if (tex is not null && tex.GetHeight() > 0)
+            {
+                float r = (float)tex.GetWidth() / tex.GetHeight();
+                if (Math.Abs(_videoContainer.Ratio - r) > 0.01f)
+                {
+                    _videoContainer.Ratio = r;
+                }
+            }
+        }
+
         // 1. Countdown Logic
         if (_isCountingDown)
         {

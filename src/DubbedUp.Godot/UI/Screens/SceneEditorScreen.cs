@@ -14,6 +14,7 @@ public partial class SceneEditorScreen : BaseScreen
 {
     private LineEdit? _titleInput;
     private SpinBox? _durationInput;
+    private AspectRatioContainer? _videoContainer;
     private VideoStreamPlayer? _videoPlayer;
     private Button? _seekBackButton;
     private Button? _playPauseButton;
@@ -62,7 +63,8 @@ public partial class SceneEditorScreen : BaseScreen
     {
         _titleInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid/TitleInput");
         _durationInput = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid/DurationInput");
-        _videoPlayer = GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoPanel/VideoPlayer");
+        _videoContainer = GetNodeOrNull<AspectRatioContainer>("ScrollContainer/CenterContainer/VBoxContainer/VideoContainer");
+        _videoPlayer = GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoContainer/VideoPanel/VideoPlayer") ?? GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoPanel/VideoPlayer");
         _seekBackButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/SeekBackButton");
         _playPauseButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/PlayPauseButton");
         _seekForwardButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/SeekForwardButton");
@@ -493,6 +495,19 @@ public partial class SceneEditorScreen : BaseScreen
 
     public override void _Process(double delta)
     {
+        if (_videoPlayer is not null && _videoContainer is not null)
+        {
+            var tex = _videoPlayer.GetVideoTexture();
+            if (tex is not null && tex.GetHeight() > 0)
+            {
+                float r = (float)tex.GetWidth() / tex.GetHeight();
+                if (Math.Abs(_videoContainer.Ratio - r) > 0.01f)
+                {
+                    _videoContainer.Ratio = r;
+                }
+            }
+        }
+
         if (_videoPlayer is not null && _videoPlayer.Stream is not null && _videoPlayer.IsPlaying() && !_videoPlayer.Paused)
         {
             var pos = _videoPlayer.GetStreamPosition();

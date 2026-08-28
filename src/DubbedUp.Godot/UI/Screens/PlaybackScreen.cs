@@ -6,6 +6,7 @@ namespace DubbedUp.Godot.UI.Screens;
 
 public partial class PlaybackScreen : BaseScreen
 {
+    private AspectRatioContainer? _videoContainer;
     private SynchronizedScenePlayer? _scenePlayer;
     private ProgressBar? _progressBar;
     private Label? _timeLabel;
@@ -24,7 +25,8 @@ public partial class PlaybackScreen : BaseScreen
 
     public override void _Ready()
     {
-        _scenePlayer = GetNodeOrNull<SynchronizedScenePlayer>("CenterContainer/VBoxContainer/PlayerViewport/SynchronizedScenePlayer");
+        _videoContainer = GetNodeOrNull<AspectRatioContainer>("CenterContainer/VBoxContainer/VideoContainer");
+        _scenePlayer = GetNodeOrNull<SynchronizedScenePlayer>("CenterContainer/VBoxContainer/VideoContainer/PlayerViewport/SynchronizedScenePlayer") ?? GetNodeOrNull<SynchronizedScenePlayer>("CenterContainer/VBoxContainer/PlayerViewport/SynchronizedScenePlayer");
         _progressBar = GetNodeOrNull<ProgressBar>("CenterContainer/VBoxContainer/ProgressBar");
         _timeLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/TimeLabel");
         _statusLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/StatusLabel");
@@ -57,6 +59,22 @@ public partial class PlaybackScreen : BaseScreen
         if (Coordinator is not null)
         {
             StartPlaybackSession();
+        }
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_scenePlayer is not null && _videoContainer is not null)
+        {
+            var tex = _scenePlayer.GetVideoTexture();
+            if (tex is not null && tex.GetHeight() > 0)
+            {
+                float r = (float)tex.GetWidth() / tex.GetHeight();
+                if (Math.Abs(_videoContainer.Ratio - r) > 0.01f)
+                {
+                    _videoContainer.Ratio = r;
+                }
+            }
         }
     }
 
