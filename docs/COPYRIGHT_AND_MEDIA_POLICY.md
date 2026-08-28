@@ -69,3 +69,4 @@ Oyunla birlikte resmi olarak gelen (`Content/OfficialScenes`) sahneler için kur
    - Kullanıcıların kendi yükledikleri sahneler "Kullanıcı İçeriği" kapsamındadır. Oyun geliştiricileri kullanıcıların yerel bilgisayarlarında oynattıkları videolardan sorumlu tutulamaz.
 2. **Kaldırma Bildirimleri (Notice & Takedown):**
    - Steam Workshop üzerinde paylaşılan herhangi bir telifli içerik Steam DMCA prosedürlerine tabidir ve telif sahibinin bildirimiyle Steam tarafından kaldırılır.
+

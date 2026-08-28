@@ -7,25 +7,9 @@ Bu doküman, **Çok Oyunculu (Multiplayer) Karakter Seçimi, Seslendirme ve Senk
 ## 🎯 Temel Vizyon & Akış
 
 ```text
-[Steam / ENet Lobisi] ───> [Sahne Eşleşmesi] ───> [Canlı Karakter Seçimi & Kilitleme] ───> [Kişiselleştirilmiş Kayıt] ───> [Senkron Ortak İzleme]
- (Arkadaşını Davet Et)    (Yerel / Workshop)     (Karakterler Kilitlenir / Paylaşılır)     (Herkes Kendi Rolünü Söyler)    (Birlikte Canlı Sinema)
+[Steam / ENet Lobisi] ───> [Sahne Seçimi] ───> [Canlı Karakter Seçimi & Kilitleme] ───> [Kişiselleştirilmiş Kayıt] ───> [Senkron Ortak İzleme]
+ (Arkadaşını Davet Et)     (Host Sahne Açar)    (Karakterler Kilitlenir / Paylaşılır)     (Herkes Kendi Rolünü Söyler)    (Birlikte Canlı Sinema)
 ```
-
----
-
-## 🚫 0. Sıfır Medya Transferi & Sahne Eşleşmesi (Zero-Media Network Policy)
-
-> [!IMPORTANT]
-> **Telif Koruması Kuralı:**
-> Video (`.mp4`, `.ogv`) veya orijinal film sesleri (`audio.wav`, `background.wav`) **asla ağ üzerinden veya sunucularımız üzerinden aktarılmaz.** 
-> Yalnızca hafif metinsel **`scene.json` edit metaverisi** ve oyuncuların kendi mikrofon sesleri iletilir.
-
-1. **Aynı Sahneye Sahip Olma Zorunluluğu:**
-   - Host odaya bir sahne seçtiğinde (`SceneId` ve `WorkshopItemId` paylaşılır).
-   - Lobideki tüm oyuncuların yerel bilgisayarında (`user://workshop_scenes` veya Steam Workshop aboneliğiyle) aynı video dosyası bulunmalıdır.
-2. **Sahne Senkronizasyon Akışı:**
-   - Eğer istemcide sahne eksikse, oyun istemciyi doğrudan ilgili **Steam Workshop sayfasına** yönlendirir veya yerel sahne klasörüne eklemesini ister.
-   - Tüm oyuncularda sahne doğrulandığında karakter seçimine geçilir.
 
 ---
 
@@ -117,3 +101,4 @@ public sealed class CharacterClaimState
 3. **Aşama 3 (Seslerin Ağdan İletimi):** Kaydedilen repliklerin diğer oyuncuların bilgisayarına indirilmesi.
 4. **Aşama 4 (Steamworks Entegrasyonu):** Steam arkadaş daveti ve lobi katılımı.
 5. **Aşama 5 (Ortak İzleme):** Tüm oyuncuların seslerinin video eşliğinde birlikte canlı sinema gibi izlenmesi.
+
