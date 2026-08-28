@@ -41,9 +41,13 @@ If a task unexpectedly needs a shared hotspot or another workstream's owned area
 - Preserve the separation between source media, dub project data, session state, and player voice data.
 - Keep persisted formats engine-independent and explicitly versioned.
 - Use only official/commercially licensed scene media with provenance metadata.
-- Prefer new focused files over changes to hotspots such as `DubbedUp.sln`, `Directory.Build.props`, `project.godot`, CI, shared schemas, shared state-machine types, and composition roots.
 - Treat a shared contract used by another active branch as stable; coordinate material changes before editing it.
 - Do not introduce dependencies with prohibited or unclear licensing. Update `THIRD_PARTY_NOTICES.md` for every dependency.
+- **Preserve Audio Separation & Playback Invariants:**
+  - Inside speech boxes: original dialogue must be muted (-80 dB), background ambient music/effects must continue playing at full volume (0 dB), and player voice takes mixed cleanly over the music.
+  - Outside speech boxes: original video audio with actor dialogue must play at 100% volume (0 dB).
+  - Video aspect ratio must always be preserved dynamically using `AspectRatioContainer` without squeezing.
+  - Playback master clock must remain continuous and delta-based; never seek `VideoStreamPlayer.StreamPosition` frame-by-frame in `_Process` as it causes keyframe decoder freezes and stutters.
 - Make small coherent commits and push recoverable work regularly. Never force-push shared or reviewed branches.
 
 After every meaningful push or coherent implementation checkpoint, add an append-only work-log update to the active Issue. Include:

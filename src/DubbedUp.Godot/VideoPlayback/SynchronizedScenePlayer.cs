@@ -392,15 +392,6 @@ public partial class SynchronizedScenePlayer : Control
 
         _masterTimeSeconds += delta;
 
-        if (_videoPlayer is not null && _videoPlayer.Stream is not null && _videoPlayer.IsPlaying())
-        {
-            var vidPos = _videoPlayer.GetStreamPosition();
-            if (Math.Abs(vidPos - _masterTimeSeconds) > 0.35)
-            {
-                _videoPlayer.StreamPosition = _masterTimeSeconds;
-            }
-        }
-
         UpdateAudioDucking();
 
         foreach (var player in _takePlayers)
