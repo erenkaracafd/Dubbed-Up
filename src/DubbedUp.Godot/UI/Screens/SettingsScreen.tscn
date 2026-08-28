@@ -1,0 +1,166 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/Screens/SettingsScreen.cs" id="1_settings"]
+
+[node name="SettingsScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_settings")
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "⚙ Audio & Microphone Settings"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Configure playback volume and calibrate your microphone input level."
+horizontal_alignment = 1
+
+[node name="FormContainer" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="DisplayHeading" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🖥 Display Mode:"
+
+[node name="FullscreenCheck" type="CheckButton" parent="CenterContainer/VBoxContainer/FormContainer"]
+custom_minimum_size = Vector2(460, 38)
+layout_mode = 2
+text = "🖥 Fullscreen Mode (Tam Ekran)"
+
+[node name="SeparatorLine0" type="HSeparator" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+
+[node name="MasterVolLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🔊 Master Playback Volume:"
+
+[node name="MasterVolHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MasterVolumeSlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/MasterVolHBox"]
+custom_minimum_size = Vector2(380, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 100.0
+value = 100.0
+
+[node name="MasterVolumeValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/MasterVolHBox"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "100%"
+
+[node name="SpeakerTestButton" type="Button" parent="CenterContainer/VBoxContainer/FormContainer"]
+custom_minimum_size = Vector2(260, 36)
+layout_mode = 2
+text = "🔊 Test Speaker Output (Beep)"
+
+[node name="SeparatorLine1" type="HSeparator" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+
+[node name="MicDeviceLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🎙 Microphone Device:"
+
+[node name="MicDeviceOption" type="OptionButton" parent="CenterContainer/VBoxContainer/FormContainer"]
+custom_minimum_size = Vector2(460, 40)
+layout_mode = 2
+
+[node name="MicGainLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🎚 Microphone Input Gain:"
+
+[node name="MicGainHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MicGainSlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/MicGainHBox"]
+custom_minimum_size = Vector2(380, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 50.0
+max_value = 300.0
+value = 100.0
+
+[node name="MicGainValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/MicGainHBox"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "100%"
+
+[node name="MicLatencyLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "⏱ Mic Sync & Latency Offset (Shift Earlier):"
+
+[node name="MicLatencyHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MicLatencySlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox"]
+custom_minimum_size = Vector2(380, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 400.0
+step = 10.0
+value = 150.0
+
+[node name="MicLatencyValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "-150ms"
+
+[node name="MicTestButton" type="Button" parent="CenterContainer/VBoxContainer/FormContainer"]
+custom_minimum_size = Vector2(280, 40)
+layout_mode = 2
+text = "🎙 Test Microphone Level"
+
+[node name="TestMeterBar" type="ProgressBar" parent="CenterContainer/VBoxContainer/FormContainer"]
+visible = false
+custom_minimum_size = Vector2(500, 18)
+layout_mode = 2
+value = 50.0
+show_percentage = false
+
+[node name="ButtonsHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="SaveButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(200, 48)
+layout_mode = 2
+text = "💾 Save Settings"
+
+[node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "Back to Menu"

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "museum-mixup",
+  "title": "Museum Mix-up",
+  "sourceMedia": [
+    "media/scene.ogv",
+    "media/audio.wav",
+    "media/vocals.wav",
+    "media/background.wav"
+  ],
+  "creator": "Dubbed Up Production Team",
+  "licenseSpdx": "LicenseRef-DubbedUp-Commission",
+  "licenseEvidence": "docs/OFFICIAL_CONTENT_PROVENANCE.md",
+  "commercialUseApproved": true,
+  "approvedBy": "Dubbed Up Content & Compliance Lead",
+  "approvedOn": "2026-08-28"
+}

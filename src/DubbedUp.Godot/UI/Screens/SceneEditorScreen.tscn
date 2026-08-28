@@ -1,0 +1,176 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/Screens/SceneEditorScreen.cs" id="1_editor"]
+
+[node name="SceneEditorScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_editor")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(850, 0)
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(840, 0)
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "✏️ Scene & Speech Timeline Editor"
+horizontal_alignment = 1
+
+[node name="HeaderGrid" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="TitleNameLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
+layout_mode = 2
+text = "Scene Title:"
+
+[node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
+custom_minimum_size = Vector2(340, 36)
+layout_mode = 2
+placeholder_text = "Scene Title..."
+
+[node name="DurationLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
+layout_mode = 2
+text = "Total Duration (sec):"
+
+[node name="DurationInput" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+min_value = 1.0
+max_value = 600.0
+step = 0.5
+value = 22.0
+
+[node name="VideoContainer" type="AspectRatioContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(840, 360)
+layout_mode = 2
+ratio = 1.77778
+alignment_horizontal = 1
+alignment_vertical = 1
+
+[node name="VideoPanel" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoContainer"]
+layout_mode = 2
+
+[node name="VideoPlayer" type="VideoStreamPlayer" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoContainer/VideoPanel"]
+layout_mode = 2
+expand = true
+
+[node name="VideoControls" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="SeekBackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(100, 38)
+layout_mode = 2
+text = "⏪ -5s"
+
+[node name="PlayPauseButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(160, 38)
+layout_mode = 2
+text = "▶ Play"
+
+[node name="SeekForwardButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(100, 38)
+layout_mode = 2
+text = "⏩ +5s"
+
+[node name="StopButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+text = "⏹ Reset"
+
+[node name="VideoTimeLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "⏱ 00.0s / 22.0s"
+horizontal_alignment = 2
+
+[node name="TimeSlider" type="HSlider" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(820, 24)
+layout_mode = 2
+max_value = 22.0
+step = 0.1
+
+[node name="TimelineLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "📊 Audio Waveform & Speech Slots (Drag & resize boxes over the waveform):"
+
+[node name="TimelineContainer" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(820, 115)
+layout_mode = 2
+
+[node name="TimelineButtons" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
+custom_minimum_size = Vector2(360, 40)
+layout_mode = 2
+text = "➕ Add Speech Box at Current Time"
+
+[node name="DeleteBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
+custom_minimum_size = Vector2(260, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+text = "🗑️ Delete Selected Speech Box"
+
+[node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+theme_override_font_sizes/font_size = 16
+text = "🎭 Dialogue Lines & Subtitles:"
+
+[node name="SlotsContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 1, 0.5, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="ActionsContainer" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="SaveAndProceedButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "✅ Save & Go to Scene Selection"
+
+[node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
+custom_minimum_size = Vector2(180, 44)
+layout_mode = 2
+text = "💾 Save Changes"
+
+[node name="BackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
+custom_minimum_size = Vector2(160, 44)
+layout_mode = 2
+text = "🔙 Back"

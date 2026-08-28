@@ -1,0 +1,179 @@
+using System.Diagnostics;
+using Godot;
+
+namespace DubbedUp.Godot.VideoPlayback;
+
+/// <summary>
+/// Extracts and caches 16:9 video frame thumbnails at high speed using FFmpeg.
+/// </summary>
+public static class VideoThumbnailHelper
+{
+    private static readonly Dictionary<string, Texture2D> _memoryCache = [];
+
+    public static string GetThumbnailCacheDirectory()
+    {
+        var dir = ProjectSettings.GlobalizePath("user://thumbnails");
+        if (!System.IO.Directory.Exists(dir))
+        {
+            try { System.IO.Directory.CreateDirectory(dir); } catch { /* Ignore */ }
+        }
+        return dir;
+    }
+
+    /// <summary>
+    /// Returns a Texture2D for a given video file or cover image.
+    /// If no thumbnail exists, extracts a frame from the video at 1.0s.
+    /// </summary>
+    public static Texture2D? GetOrExtractThumbnail(string mediaPath)
+    {
+        if (string.IsNullOrWhiteSpace(mediaPath)) return null;
+
+        if (_memoryCache.TryGetValue(mediaPath, out var cached) && cached is not null)
+        {
+            return cached;
+        }
+
+        // If mediaPath is already an image file
+        var ext = System.IO.Path.GetExtension(mediaPath).ToLowerInvariant();
+        if (ext is ".png" or ".jpg" or ".jpeg" or ".webp")
+        {
+            if (System.IO.File.Exists(mediaPath))
+            {
+                var tex = LoadTextureFromFile(mediaPath);
+                if (tex is not null)
+                {
+                    _memoryCache[mediaPath] = tex;
+                    return tex;
+                }
+            }
+        }
+
+        // If it is a directory (scene package folder)
+        if (System.IO.Directory.Exists(mediaPath))
+        {
+            var possibleImages = new[]
+            {
+                System.IO.Path.Combine(mediaPath, "thumbnail.png"),
+                System.IO.Path.Combine(mediaPath, "cover.png"),
+                System.IO.Path.Combine(mediaPath, "cover.jpg"),
+                System.IO.Path.Combine(mediaPath, "media", "thumbnail.png"),
+            };
+
+            foreach (var img in possibleImages)
+            {
+                if (System.IO.File.Exists(img))
+                {
+                    var tex = LoadTextureFromFile(img);
+                    if (tex is not null)
+                    {
+                        _memoryCache[mediaPath] = tex;
+                        return tex;
+                    }
+                }
+            }
+
+            // Look for video inside directory
+            var possibleVideos = new[]
+            {
+                System.IO.Path.Combine(mediaPath, "media", "source_input.mp4"),
+                System.IO.Path.Combine(mediaPath, "media", "video.ogv"),
+                System.IO.Path.Combine(mediaPath, "media", "scene.ogv"),
+            };
+
+            foreach (var vid in possibleVideos)
+            {
+                if (System.IO.File.Exists(vid))
+                {
+                    mediaPath = vid;
+                    break;
+                }
+            }
+        }
+
+        if (!System.IO.File.Exists(mediaPath)) return null;
+
+        // Extract thumbnail using FFmpeg
+        var thumbPath = ExtractVideoThumbnailToFile(mediaPath);
+        if (thumbPath is not null && System.IO.File.Exists(thumbPath))
+        {
+            var tex = LoadTextureFromFile(thumbPath);
+            if (tex is not null)
+            {
+                _memoryCache[mediaPath] = tex;
+                return tex;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Invokes FFmpeg to capture a crisp 16:9 thumbnail frame at 1.0s into the video.
+    /// </summary>
+    public static string? ExtractVideoThumbnailToFile(string videoFilePath)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(videoFilePath)) return null;
+
+            var cacheDir = GetThumbnailCacheDirectory();
+            var fileName = System.IO.Path.GetFileNameWithoutExtension(videoFilePath);
+            var safeName = System.Text.RegularExpressions.Regex.Replace(fileName, @"[^a-zA-Z0-9_-]", "_");
+            var thumbOutPath = System.IO.Path.Combine(cacheDir, $"{safeName}_thumb.png");
+
+            if (System.IO.File.Exists(thumbOutPath))
+            {
+                var fileInfo = new System.IO.FileInfo(thumbOutPath);
+                if (fileInfo.Length > 100) return thumbOutPath;
+            }
+
+            var videoDir = System.IO.Path.GetDirectoryName(videoFilePath) ?? "";
+            var videoFileName = System.IO.Path.GetFileName(videoFilePath);
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = $"-y -loglevel error -ss 00:00:01 -i \"{videoFileName}\" -vframes 1 -vf \"scale=320:180:force_original_aspect_ratio=increase,crop=320:180\" \"{thumbOutPath}\"",
+                WorkingDirectory = videoDir,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+            };
+
+            using var proc = Process.Start(psi);
+            if (proc is null) return null;
+
+            proc.WaitForExit(4000);
+
+            if (System.IO.File.Exists(thumbOutPath))
+            {
+                return thumbOutPath;
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[VideoThumbnailHelper] Failed to extract thumbnail for '{videoFilePath}': {ex.Message}");
+        }
+
+        return null;
+    }
+
+    private static ImageTexture? LoadTextureFromFile(string imagePath)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(imagePath)) return null;
+
+            var image = Image.LoadFromFile(imagePath);
+            if (image is null || image.IsEmpty()) return null;
+
+            return ImageTexture.CreateFromImage(image);
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[VideoThumbnailHelper] Error loading image texture from '{imagePath}': {ex.Message}");
+            return null;
+        }
+    }
+}
+
