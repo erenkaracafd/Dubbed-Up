@@ -10,7 +10,7 @@ public static class MediaTranscoder
         ".mp4", ".mkv", ".webm", ".mov", ".avi", ".flv", ".wmv", ".m4v"
     };
 
-    public static bool RunProcess(string fileName, string arguments, int timeoutMs = 180000)
+    public static bool RunProcess(string fileName, string arguments, int timeoutMs = 180000, string? workingDir = null)
     {
         try
         {
@@ -18,6 +18,7 @@ public static class MediaTranscoder
             {
                 FileName = fileName,
                 Arguments = arguments,
+                WorkingDirectory = workingDir ?? string.Empty,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = false,
@@ -198,6 +199,78 @@ public static class MediaTranscoder
         }
 
         return null;
+    }
+
+    public static bool RunStemSeparation(string mediaDir)
+    {
+        if (string.IsNullOrWhiteSpace(mediaDir) || !System.IO.Directory.Exists(mediaDir))
+        {
+            return false;
+        }
+
+        var audioWav = System.IO.Path.Combine(mediaDir, "audio.wav");
+        if (!System.IO.File.Exists(audioWav))
+        {
+            EnsureAudioExtracted(mediaDir);
+        }
+
+        if (!System.IO.File.Exists(audioWav)) return false;
+
+        var finalBg = System.IO.Path.Combine(mediaDir, "background.wav");
+        var finalVocals = System.IO.Path.Combine(mediaDir, "vocals.wav");
+
+        // 1. Try AI Demucs stem separation
+        try
+        {
+            GD.Print($"[MediaTranscoder] Running AI Stem Separation (Demucs) in '{mediaDir}'...");
+            var ok = RunProcess("demucs", "-n htdemucs --two-stems=vocals \"audio.wav\"", 180000, mediaDir);
+            
+            var separatedDir = System.IO.Path.Combine(mediaDir, "separated", "htdemucs", "audio");
+            var noVocalsSrc = System.IO.Path.Combine(separatedDir, "no_vocals.wav");
+            var vocalsSrc = System.IO.Path.Combine(separatedDir, "vocals.wav");
+
+            if (System.IO.File.Exists(noVocalsSrc) && new System.IO.FileInfo(noVocalsSrc).Length > 1000)
+            {
+                System.IO.File.Copy(noVocalsSrc, finalBg, true);
+                GD.Print($"[MediaTranscoder] Successfully extracted clean background stem: {finalBg}");
+            }
+
+            if (System.IO.File.Exists(vocalsSrc) && new System.IO.FileInfo(vocalsSrc).Length > 1000)
+            {
+                System.IO.File.Copy(vocalsSrc, finalVocals, true);
+                GD.Print($"[MediaTranscoder] Successfully extracted clean vocals stem: {finalVocals}");
+            }
+
+            try
+            {
+                var sepRoot = System.IO.Path.Combine(mediaDir, "separated");
+                if (System.IO.Directory.Exists(sepRoot)) System.IO.Directory.Delete(sepRoot, true);
+            }
+            catch { }
+
+            if (System.IO.File.Exists(finalBg) && new System.IO.FileInfo(finalBg).Length != new System.IO.FileInfo(audioWav).Length)
+            {
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[MediaTranscoder] Demucs stem separation error: {ex.Message}");
+        }
+
+        // 2. Fast Fallback: FFmpeg Vocal Extraction (Center Channel Out-of-Phase Cancellation)
+        try
+        {
+            GD.Print("[MediaTranscoder] Running FFmpeg vocal attenuation filter fallback...");
+            var args = $"-y -loglevel error -i \"audio.wav\" -af \"pan=stereo|c0=c0-c1|c1=c1-c0\" \"background.wav\"";
+            RunProcess("ffmpeg", args, 30000, mediaDir);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[MediaTranscoder] FFmpeg vocal filter error: {ex.Message}");
+            return false;
+        }
     }
 
     public static string? EnsureTranscoded(string packageDir)

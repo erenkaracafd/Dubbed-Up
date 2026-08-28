@@ -367,6 +367,9 @@ public partial class SceneCreatorScreen : BaseScreen
                     // Execute fast multithreaded OGV & WAV transcoding
                     VideoPlayback.MediaTranscoder.EnsureTranscoded(targetFolder);
 
+                    // Execute AI stem separation (extract clean ambient background stem and speech vocals stem)
+                    VideoPlayback.MediaTranscoder.RunStemSeparation(mediaFolder);
+
                     var vocalsDst = System.IO.Path.Combine(mediaFolder, "vocals.wav");
                     var audioDst = System.IO.Path.Combine(mediaFolder, "audio.wav");
 
