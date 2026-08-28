@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "cooking-disaster",
+  "title": "Kitchen Night-Mayhem",
+  "sourceMedia": [
+    "media/scene.ogv",
+    "media/audio.wav",
+    "media/vocals.wav",
+    "media/background.wav"
+  ],
+  "creator": "Dubbed Up Production Team",
+  "licenseSpdx": "LicenseRef-DubbedUp-Commission",
+  "licenseEvidence": "Commissioned and owned original production asset for Dubbed Up game",
+  "commercialUseApproved": true,
+  "approvedBy": "Dubbed Up Content Reviewer",
+  "approvedOn": "2026-08-28"
+}
