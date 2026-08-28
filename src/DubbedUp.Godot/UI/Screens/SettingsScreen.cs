@@ -1,4 +1,5 @@
 using Godot;
+using DubbedUp.Godot.LocalSession;
 
 namespace DubbedUp.Godot.UI.Screens;
 

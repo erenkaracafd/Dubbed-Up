@@ -74,9 +74,11 @@ Required outcome:
 - add regression coverage where practical;
 - explicitly answer whether recording, watching, and voting is fun enough to continue.
 
-### #5 - Rights-cleared official scene
+## Completed Content Gate on the Active Branch
 
-The project still needs at least one purpose-made or commercially licensed official MVP scene with durable rights/provenance evidence. Development/test clips must not be treated as distributable content unless their rights are documented.
+### #5 - Rights-cleared official scenes
+
+Three purpose-made official scenes are included with durable rights/provenance evidence in `docs/OFFICIAL_CONTENT_PROVENANCE.md` and per-scene `provenance.json` files. Issue #5 is configured to close with PR #19.
 
 ## Post-MVP Backlog
 
