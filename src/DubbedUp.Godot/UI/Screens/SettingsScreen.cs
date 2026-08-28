@@ -1,3 +1,4 @@
+using DubbedUp.Godot.LocalSession;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
