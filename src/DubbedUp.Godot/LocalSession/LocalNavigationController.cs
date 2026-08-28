@@ -140,17 +140,8 @@ public partial class LocalNavigationController : Node, IScreenNavigator
     {
         try
         {
-            var targetMode = isFullscreen ? DisplayServer.WindowMode.ExclusiveFullscreen : DisplayServer.WindowMode.Windowed;
-            DisplayServer.WindowSetMode(targetMode, 0);
-
-            if (context is not null)
-            {
-                var win = context.GetWindow();
-                if (win is not null)
-                {
-                    win.Mode = isFullscreen ? Window.ModeEnum.ExclusiveFullscreen : Window.ModeEnum.Windowed;
-                }
-            }
+            var targetMode = isFullscreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed;
+            DisplayServer.WindowSetMode(targetMode);
         }
         catch (Exception ex)
         {

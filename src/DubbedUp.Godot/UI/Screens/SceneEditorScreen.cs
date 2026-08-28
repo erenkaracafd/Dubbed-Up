@@ -38,6 +38,7 @@ public partial class SceneEditorScreen : BaseScreen
     private bool _isSliderDragging = false;
     private bool _isPlaying = false;
     private double _totalDuration = 22.0;
+    private double _editorPlayhead = 0.0;
 
     private float[]? _currentWaveform;
     private string? _currentWavPath;
@@ -116,7 +117,11 @@ public partial class SceneEditorScreen : BaseScreen
             };
             _timeSlider.ValueChanged += val =>
             {
-                if (_isSliderDragging) SeekTo(val);
+                if (_isSliderDragging)
+                {
+                    if (_videoTimeLabel is not null) _videoTimeLabel.Text = $"⏱ {val:F1}s / {_totalDuration:F1}s";
+                    _timelineEditor?.SetPlayhead(val);
+                }
             };
         }
 
@@ -383,6 +388,12 @@ public partial class SceneEditorScreen : BaseScreen
     {
         if (_videoPlayer is null || _videoPlayer.Stream is null) return;
 
+        // If at or near the end, restart from beginning
+        if (_videoPlayer.GetStreamPosition() >= _totalDuration - 0.1)
+        {
+            SeekTo(0.0);
+        }
+
         _isPreviewingSlot = false;
         _isPlaying = true;
         _videoPlayer.Paused = false;
@@ -418,6 +429,7 @@ public partial class SceneEditorScreen : BaseScreen
     private void SeekTo(double targetSec)
     {
         var clamped = Math.Clamp(targetSec, 0.0, _totalDuration);
+        _editorPlayhead = clamped;
         if (_videoPlayer is not null && _videoPlayer.Stream is not null)
         {
             _videoPlayer.StreamPosition = clamped;
@@ -508,10 +520,16 @@ public partial class SceneEditorScreen : BaseScreen
             }
         }
 
-        if (_videoPlayer is not null && _videoPlayer.Stream is not null && _videoPlayer.IsPlaying() && !_videoPlayer.Paused)
+        if (_isPlaying && _videoPlayer is not null && !_videoPlayer.Paused)
         {
-            var pos = _videoPlayer.GetStreamPosition();
-            _isPlaying = true;
+            _editorPlayhead += delta;
+            var streamPos = _videoPlayer.GetStreamPosition();
+            if (streamPos > 0.05 && Math.Abs(streamPos - _editorPlayhead) < 0.75)
+            {
+                _editorPlayhead = streamPos;
+            }
+
+            var pos = Math.Clamp(_editorPlayhead, 0.0, _totalDuration);
 
             if (_timeSlider is not null && !_isSliderDragging)
             {
@@ -531,11 +549,16 @@ public partial class SceneEditorScreen : BaseScreen
                 _isPreviewingSlot = false;
             }
 
-            if (pos >= _totalDuration)
+            if (pos >= _totalDuration - 0.05)
             {
                 PauseVideo();
                 SeekTo(0.0);
             }
+        }
+        else if (_isPlaying && (_videoPlayer is null || !_videoPlayer.IsPlaying() || _videoPlayer.Paused))
+        {
+            _isPlaying = false;
+            if (_playPauseButton is not null) _playPauseButton.Text = "▶ Play";
         }
     }
 

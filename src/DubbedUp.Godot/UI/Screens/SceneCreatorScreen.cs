@@ -309,6 +309,7 @@ public partial class SceneCreatorScreen : BaseScreen
         var dur = AudioWaveformLoader.GetAudioDurationSeconds(videoPath);
         if (dur > 0 && _durationSpinBox is not null)
         {
+            _durationSpinBox.MaxValue = Math.Max(1800.0, Math.Ceiling(dur) + 10.0);
             _durationSpinBox.Value = Math.Round(dur, 1);
         }
 
@@ -500,8 +501,8 @@ public partial class SceneCreatorScreen : BaseScreen
                         try { System.IO.File.Copy(thumbFile, System.IO.Path.Combine(targetFolder, "thumbnail.png"), true); } catch { }
                     }
 
-                    // Execute fast multithreaded OGV & WAV transcoding
-                    VideoPlayback.MediaTranscoder.EnsureTranscoded(targetFolder);
+                    // Execute fast multithreaded OGV & WAV transcoding with dense keyframes
+                    VideoPlayback.MediaTranscoder.EnsureTranscoded(targetFolder, force: true);
 
                     var vocalsDst = System.IO.Path.Combine(mediaFolder, "vocals.wav");
                     var audioDst = System.IO.Path.Combine(mediaFolder, "audio.wav");

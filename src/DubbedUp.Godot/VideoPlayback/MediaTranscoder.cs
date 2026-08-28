@@ -278,7 +278,7 @@ public static class MediaTranscoder
         }
     }
 
-    public static string? EnsureTranscoded(string packageDir)
+    public static string? EnsureTranscoded(string packageDir, bool force = false)
     {
         if (string.IsNullOrWhiteSpace(packageDir) || !System.IO.Directory.Exists(packageDir))
         {
@@ -295,9 +295,14 @@ public static class MediaTranscoder
         EnsureAudioExtracted(packageDir);
 
         var ogvTarget = System.IO.Path.Combine(mediaDir, "video.ogv");
-        if (System.IO.File.Exists(ogvTarget) && new System.IO.FileInfo(ogvTarget).Length > 1000)
+        if (!force && System.IO.File.Exists(ogvTarget) && new System.IO.FileInfo(ogvTarget).Length > 1000)
         {
             return ogvTarget;
+        }
+
+        if (force && System.IO.File.Exists(ogvTarget))
+        {
+            try { System.IO.File.Delete(ogvTarget); } catch { }
         }
 
         // Search for any source video file
@@ -345,8 +350,8 @@ public static class MediaTranscoder
         // 2. Extract audio.wav first (ultra-fast, takes 50ms)
         EnsureAudioExtracted(packageDir);
 
-        // 3. Fast Multithreaded Transcode to video.ogv with FFmpeg with original dimensions
-        var args = $"-y -loglevel error -i \"{safeInputPath}\" -threads 0 -c:v libtheora -q:v 7 -c:a libvorbis -q:a 5 -pix_fmt yuv420p \"{ogvTarget}\"";
+        // 3. Fast Multithreaded Transcode to video.ogv with FFmpeg preserving full resolution and dense keyframes
+        var args = $"-y -loglevel error -i \"{safeInputPath}\" -map 0:v:0 -map 0:a:0? -threads 0 -c:v libtheora -q:v 5 -g 24 -keyint_min 24 -c:a libvorbis -q:a 4 -ar 44100 -ac 2 -pix_fmt yuv420p \"{ogvTarget}\"";
         RunProcess("ffmpeg", args, 180000);
 
         return System.IO.File.Exists(ogvTarget) ? ogvTarget : null;
