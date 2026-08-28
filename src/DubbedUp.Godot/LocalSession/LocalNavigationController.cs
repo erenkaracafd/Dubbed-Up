@@ -43,6 +43,21 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         // Initialize microphone service early so it's ready when Recording/Settings screens open
         Microphone.GodotLiveMicrophoneService.Instance.Initialize(screenContainer);
 
+        // Apply saved display settings
+        try
+        {
+            var config = new ConfigFile();
+            if (config.Load("user://audio_settings.cfg") == Error.Ok)
+            {
+                var isFullscreen = (bool)config.GetValue("Display", "Fullscreen", false);
+                if (isFullscreen)
+                {
+                    DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
+                }
+            }
+        }
+        catch { /* Ignore */ }
+
         NavigateTo(AppScreen.MainMenu);
     }
 

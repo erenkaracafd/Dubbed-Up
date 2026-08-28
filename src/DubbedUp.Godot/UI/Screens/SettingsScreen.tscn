@@ -41,6 +41,19 @@ custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 theme_override_constants/separation = 10
 
+[node name="DisplayHeading" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🖥 Display Mode:"
+
+[node name="FullscreenCheck" type="CheckButton" parent="CenterContainer/VBoxContainer/FormContainer"]
+custom_minimum_size = Vector2(460, 38)
+layout_mode = 2
+text = "🖥 Fullscreen Mode (Tam Ekran)"
+
+[node name="SeparatorLine0" type="HSeparator" parent="CenterContainer/VBoxContainer/FormContainer"]
+layout_mode = 2
+
 [node name="MasterVolLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14

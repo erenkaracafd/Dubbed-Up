@@ -4,6 +4,7 @@ namespace DubbedUp.Godot.UI.Screens;
 
 public partial class SettingsScreen : BaseScreen
 {
+    private CheckButton? _fullscreenCheck;
     private HSlider? _masterVolumeSlider;
     private Label? _masterVolumeValueLabel;
     private HSlider? _micGainSlider;
@@ -25,8 +26,14 @@ public partial class SettingsScreen : BaseScreen
 
     public override void _Ready()
     {
+        _fullscreenCheck = GetNodeOrNull<CheckButton>("CenterContainer/VBoxContainer/FormContainer/FullscreenCheck");
         _masterVolumeSlider = GetNodeOrNull<HSlider>("CenterContainer/VBoxContainer/FormContainer/MasterVolHBox/MasterVolumeSlider");
         _masterVolumeValueLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/MasterVolHBox/MasterVolumeValueLabel");
+
+        if (_fullscreenCheck is not null)
+        {
+            _fullscreenCheck.Toggled += OnFullscreenToggled;
+        }
 
         _micGainSlider = GetNodeOrNull<HSlider>("CenterContainer/VBoxContainer/FormContainer/MicGainHBox/MicGainSlider");
         _micGainValueLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/MicGainHBox/MicGainValueLabel");
@@ -261,12 +268,24 @@ public partial class SettingsScreen : BaseScreen
         }
     }
 
+    private void OnFullscreenToggled(bool isFullscreen)
+    {
+        DisplayServer.WindowSetMode(isFullscreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed);
+    }
+
     private void LoadSettings()
     {
         var config = new ConfigFile();
         var err = config.Load("user://audio_settings.cfg");
+
+        var currentMode = DisplayServer.WindowGetMode();
+        var isFullscreenNow = currentMode is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen;
+
         if (err == Error.Ok)
         {
+            var isFullscreenSaved = (bool)config.GetValue("Display", "Fullscreen", isFullscreenNow);
+            if (_fullscreenCheck is not null) _fullscreenCheck.ButtonPressed = isFullscreenSaved;
+
             var masterVol = (double)config.GetValue("Audio", "MasterVolume", 100.0);
             var micGain = (double)config.GetValue("Audio", "MicGain", 100.0);
             var micLatency = (double)config.GetValue("Audio", "MicLatencyMs", 150.0);
@@ -293,6 +312,7 @@ public partial class SettingsScreen : BaseScreen
         }
         else
         {
+            if (_fullscreenCheck is not null) _fullscreenCheck.ButtonPressed = isFullscreenNow;
             if (_masterVolumeSlider is not null) _masterVolumeSlider.Value = 100.0;
             if (_micGainSlider is not null) _micGainSlider.Value = 100.0;
             if (_micLatencySlider is not null) _micLatencySlider.Value = 150.0;
@@ -303,6 +323,9 @@ public partial class SettingsScreen : BaseScreen
     private void OnSavePressed()
     {
         var config = new ConfigFile();
+        config.Load("user://audio_settings.cfg");
+
+        var isFullscreen = _fullscreenCheck?.ButtonPressed ?? false;
         var masterVol = _masterVolumeSlider?.Value ?? 100.0;
         var micGain = _micGainSlider?.Value ?? 100.0;
         var micLatency = _micLatencySlider?.Value ?? 150.0;
@@ -310,6 +333,7 @@ public partial class SettingsScreen : BaseScreen
             ? _micDeviceOption.GetItemText(_micDeviceOption.Selected)
             : "Default";
 
+        config.SetValue("Display", "Fullscreen", isFullscreen);
         config.SetValue("Audio", "MasterVolume", masterVol);
         config.SetValue("Audio", "MicGain", micGain);
         config.SetValue("Audio", "MicLatencyMs", micLatency);
