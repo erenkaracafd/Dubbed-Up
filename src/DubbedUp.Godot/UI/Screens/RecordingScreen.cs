@@ -38,6 +38,7 @@ public partial class RecordingScreen : BaseScreen
 
     private double _countdownTimer = 0.0;
     private double _recordingDuration = 0.0;
+    private double _previewOriginalDuration = 0.0;
     private double _previewTakeDuration = 0.0;
     private double _slotStartSec = 0.0;
     private double _slotEndSec = 4.0;
@@ -190,16 +191,16 @@ public partial class RecordingScreen : BaseScreen
         }
 
         // 3. Previewing Original Clip (WITH original sound)
-        if (_isPreviewingOriginal && _videoPlayer is not null && _videoPlayer.IsPlaying())
+        if (_isPreviewingOriginal)
         {
-            var currentPos = _videoPlayer.GetStreamPosition();
-            var relativePos = currentPos - _slotStartSec;
-            _waveformVisualizer?.SetPlayhead(relativePos, false);
+            _previewOriginalDuration += delta;
+            _waveformVisualizer?.SetPlayhead(_previewOriginalDuration, false);
 
-            if (currentPos >= _slotEndSec)
+            if (_previewOriginalDuration >= _maxSlotDuration)
             {
-                _videoPlayer.Stop();
+                if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
                 _isPreviewingOriginal = false;
+                _previewOriginalDuration = 0.0;
                 _waveformVisualizer?.SetPlayhead(0, false);
                 if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Listen to Original Reference";
             }
@@ -369,6 +370,7 @@ public partial class RecordingScreen : BaseScreen
         _videoPlayer.Bus = "Master";
         _videoPlayer.VolumeDb = 0.0f;
         _isPreviewingOriginal = true;
+        _previewOriginalDuration = 0.0;
         _videoPlayer.Play();
         _videoPlayer.StreamPosition = _slotStartSec;
 
@@ -540,7 +542,7 @@ public partial class RecordingScreen : BaseScreen
                 if (wav is not null)
                 {
                     _previewPlayer.Stream = wav;
-                    _previewPlayer.Play((float)Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds);
+                    _previewPlayer.Play(0.0f);
 
                     // Start synchronized MUTED video playback
                     if (_videoPlayer is null || _videoPlayer.Stream is null) LoadSceneVideo();
