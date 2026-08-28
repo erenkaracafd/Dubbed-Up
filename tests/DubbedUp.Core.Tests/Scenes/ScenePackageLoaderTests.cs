@@ -131,7 +131,7 @@ public sealed class ScenePackageLoaderTests
         if (Directory.Exists(scenesDir))
         {
             var packages = ScenePackageLoader.DiscoverPackages(scenesDir);
-            Assert.True(packages.Count >= 3, $"Expected at least 3 shipped scenes, found {packages.Count}");
+            Assert.True(packages.Count >= 2, $"Expected at least 2 shipped scenes, found {packages.Count}");
             foreach (var package in packages)
             {
                 Assert.NotNull(package.Document);

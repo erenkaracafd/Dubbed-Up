@@ -10,6 +10,77 @@ public static class MediaTranscoder
         ".mp4", ".mkv", ".webm", ".mov", ".avi", ".flv", ".wmv", ".m4v"
     };
 
+    public static VideoStream? LoadVideoStream(string? packageDirectory, string? relativePath)
+    {
+        // 1. Direct res:// resource check
+        if (!string.IsNullOrEmpty(relativePath) && relativePath.StartsWith("res://") && ResourceLoader.Exists(relativePath))
+        {
+            var res = GD.Load<VideoStream>(relativePath);
+            if (res is not null) return res;
+        }
+
+        // 2. Look for existing .ogv or auto-transcode package directory
+        string? ogvPath = null;
+        if (!string.IsNullOrEmpty(packageDirectory) && System.IO.Directory.Exists(packageDirectory))
+        {
+            var candidates = new List<string>
+            {
+                System.IO.Path.Combine(packageDirectory, "media", "video.ogv"),
+                System.IO.Path.Combine(packageDirectory, "video.ogv")
+            };
+
+            if (!string.IsNullOrEmpty(relativePath) && relativePath.EndsWith(".ogv", StringComparison.OrdinalIgnoreCase))
+            {
+                candidates.Insert(0, System.IO.Path.Combine(packageDirectory, relativePath));
+            }
+
+            foreach (var cand in candidates)
+            {
+                if (System.IO.File.Exists(cand) && new System.IO.FileInfo(cand).Length > 1000)
+                {
+                    ogvPath = cand;
+                    break;
+                }
+            }
+
+            // If .ogv is not yet generated, execute automatic transcoding
+            if (ogvPath is null)
+            {
+                ogvPath = EnsureTranscoded(packageDirectory);
+            }
+        }
+
+        // 3. Fallback to official scenes / globalized path check
+        if (ogvPath is null && !string.IsNullOrEmpty(relativePath))
+        {
+            var glob = ProjectSettings.GlobalizePath(relativePath);
+            if (System.IO.File.Exists(glob) && glob.EndsWith(".ogv", StringComparison.OrdinalIgnoreCase))
+            {
+                ogvPath = glob;
+            }
+        }
+
+        if (ogvPath is not null && System.IO.File.Exists(ogvPath))
+        {
+            var localized = ProjectSettings.LocalizePath(ogvPath);
+            if (!string.IsNullOrEmpty(localized) && ResourceLoader.Exists(localized))
+            {
+                var loaded = GD.Load<VideoStream>(localized);
+                if (loaded is not null) return loaded;
+            }
+
+            var theora = new VideoStreamTheora
+            {
+                File = !string.IsNullOrEmpty(localized) ? localized : ogvPath.Replace("\\", "/")
+            };
+            GD.Print($"[MediaTranscoder] Successfully created VideoStreamTheora for: {theora.File}");
+            return theora;
+        }
+
+        GD.PrintErr($"[MediaTranscoder] Failed to load any valid .ogv VideoStream for package: '{packageDirectory}', relative: '{relativePath}'");
+        return null;
+    }
+
     public static string? EnsureTranscoded(string packageDir)
     {
         if (string.IsNullOrWhiteSpace(packageDir) || !System.IO.Directory.Exists(packageDir))
@@ -133,4 +204,3 @@ public static class MediaTranscoder
         return System.IO.File.Exists(ogvTarget) ? ogvTarget : null;
     }
 }
-

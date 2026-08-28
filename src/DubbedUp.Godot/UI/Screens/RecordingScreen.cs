@@ -111,55 +111,13 @@ public partial class RecordingScreen : BaseScreen
         var relPath = videoAsset?.RelativePath ?? "media/speed_homeless.ogv";
 
         var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
-        string? resolvedFilePath = null;
-
-        // 1. Direct package folder check
-        if (!string.IsNullOrEmpty(folderPath))
+        _videoPlayer.Stream = VideoPlayback.MediaTranscoder.LoadVideoStream(folderPath, relPath);
+        if (_videoPlayer.Stream is not null)
         {
-            var ogvCandidate = System.IO.Path.Combine(folderPath, "media", "video.ogv");
-            var ogvCandidate2 = System.IO.Path.Combine(folderPath, "video.ogv");
-            var candidate = System.IO.Path.Combine(folderPath, relPath);
-
-            if (System.IO.File.Exists(ogvCandidate)) resolvedFilePath = ogvCandidate;
-            else if (System.IO.File.Exists(ogvCandidate2)) resolvedFilePath = ogvCandidate2;
-            else if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
-        }
-
-        // 2. Official scenes folder check
-        if (resolvedFilePath is null)
-        {
-            var sceneId = Coordinator.CurrentScene.SceneId;
-            var ogvCandidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/video.ogv");
-            var candidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/{relPath}");
-            if (System.IO.File.Exists(ogvCandidate)) resolvedFilePath = ogvCandidate;
-            else if (System.IO.File.Exists(candidate)) resolvedFilePath = candidate;
-        }
-
-        // 3. Fallback to direct res:// path
-        if (resolvedFilePath is null)
-        {
-            var glob = ProjectSettings.GlobalizePath(relPath);
-            if (System.IO.File.Exists(glob)) resolvedFilePath = glob;
-            else if (System.IO.File.Exists(relPath)) resolvedFilePath = relPath;
-        }
-
-        if (resolvedFilePath is not null)
-        {
-            try
-            {
-                var localized = ProjectSettings.LocalizePath(resolvedFilePath);
-                var stream = new VideoStreamTheora();
-                stream.File = !string.IsNullOrEmpty(localized) ? localized : resolvedFilePath.Replace("\\", "/");
-                _videoPlayer.Stream = stream;
-                _videoPlayer.Expand = true;
-                _videoPlayer.Bus = "RecordSink"; // Default muted so no unprompted audio leaks
-                _videoPlayer.VolumeDb = -80.0f;
-                GD.Print($"[RecordingScreen] Video loaded successfully: '{stream.File}'");
-            }
-            catch (Exception ex)
-            {
-                GD.PrintErr($"[RecordingScreen] Failed to load video: {ex.Message}");
-            }
+            _videoPlayer.Expand = true;
+            _videoPlayer.Bus = "RecordSink";
+            _videoPlayer.VolumeDb = -80.0f;
+            GD.Print($"[RecordingScreen] Video loaded successfully.");
         }
         else
         {

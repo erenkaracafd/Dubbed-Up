@@ -230,67 +230,7 @@ public partial class SynchronizedScenePlayer : Control
     private void TryLoadVideo(string relativePath, string? sceneFolderPath)
     {
         if (_videoPlayer is null) return;
-
-        // 1. Try res:// path directly
-        if (ResourceLoader.Exists(relativePath))
-        {
-            _videoPlayer.Stream = GD.Load<VideoStream>(relativePath);
-            GD.Print($"[VideoPlayer] Loaded via res://: {relativePath}");
-            return;
-        }
-
-        // 2. Try absolute path from scene folder
-        if (!string.IsNullOrEmpty(sceneFolderPath))
-        {
-            var candidates = new List<string>();
-            if (!string.IsNullOrEmpty(relativePath)) candidates.Add(System.IO.Path.Combine(sceneFolderPath, relativePath));
-            candidates.Add(System.IO.Path.Combine(sceneFolderPath, "media", "video.ogv"));
-            candidates.Add(System.IO.Path.Combine(sceneFolderPath, "video.ogv"));
-
-            foreach (var cand in candidates)
-            {
-                var absolutePath = System.IO.Path.GetFullPath(cand);
-                if (System.IO.File.Exists(absolutePath))
-                {
-                    try
-                    {
-                        var resPath = ProjectSettings.LocalizePath(absolutePath);
-                        if (!string.IsNullOrEmpty(resPath) && ResourceLoader.Exists(resPath))
-                        {
-                            _videoPlayer.Stream = GD.Load<VideoStream>(resPath);
-                            GD.Print($"[VideoPlayer] Loaded via localized path: {resPath}");
-                            return;
-                        }
-
-                        var theora = new VideoStreamTheora();
-                        theora.File = !string.IsNullOrEmpty(resPath) ? resPath : absolutePath.Replace("\\", "/");
-                        _videoPlayer.Stream = theora;
-                        GD.Print($"[VideoPlayer] Loaded via VideoStreamTheora: {theora.File}");
-                        return;
-                    }
-                    catch (Exception ex)
-                    {
-                        GD.PrintErr($"[VideoPlayer] Failed to load external video '{absolutePath}': {ex.Message}");
-                    }
-                }
-            }
-        }
-
-        // 4. On-the-fly transcoding fallback
-        if (!string.IsNullOrEmpty(sceneFolderPath))
-        {
-            var ogv = MediaTranscoder.EnsureTranscoded(sceneFolderPath);
-            if (ogv is not null && System.IO.File.Exists(ogv))
-            {
-                var theora = new VideoStreamTheora();
-                theora.File = ogv.Replace("\\", "/");
-                _videoPlayer.Stream = theora;
-                GD.Print($"[VideoPlayer] Auto-transcoded and loaded via VideoStreamTheora: {theora.File}");
-                return;
-            }
-        }
-
-        GD.PrintErr($"[VideoPlayer] Video stream not found: {relativePath}");
+        _videoPlayer.Stream = MediaTranscoder.LoadVideoStream(sceneFolderPath, relativePath);
     }
 
     public void SetDuration(double durationSeconds)

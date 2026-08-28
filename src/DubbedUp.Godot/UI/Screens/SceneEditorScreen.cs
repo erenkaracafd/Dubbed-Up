@@ -173,48 +173,7 @@ public partial class SceneEditorScreen : BaseScreen
         var videoAsset = doc.SourceMedia.FirstOrDefault(m => m.Role == SourceMediaRole.SceneVideo);
         var relPath = videoAsset?.RelativePath;
 
-        var videoCandidates = new List<string>();
-        if (!string.IsNullOrEmpty(folderPath))
-        {
-            if (!string.IsNullOrEmpty(relPath)) videoCandidates.Add(System.IO.Path.Combine(folderPath, relPath));
-            videoCandidates.Add(System.IO.Path.Combine(folderPath, "media", "video.ogv"));
-            videoCandidates.Add(System.IO.Path.Combine(folderPath, "video.ogv"));
-        }
-        if (!string.IsNullOrEmpty(relPath))
-        {
-            videoCandidates.Add(ProjectSettings.GlobalizePath(relPath));
-            videoCandidates.Add(relPath);
-        }
-
-        foreach (var cand in videoCandidates)
-        {
-            if (System.IO.File.Exists(cand))
-            {
-                var resPath = ProjectSettings.LocalizePath(cand);
-                if (!string.IsNullOrEmpty(resPath) && ResourceLoader.Exists(resPath))
-                {
-                    _videoPlayer.Stream = GD.Load<VideoStream>(resPath);
-                    break;
-                }
-                else
-                {
-                    var theora = new VideoStreamTheora { File = !string.IsNullOrEmpty(resPath) ? resPath : cand.Replace("\\", "/") };
-                    _videoPlayer.Stream = theora;
-                    break;
-                }
-            }
-        }
-
-        // On-the-fly transcoding fallback if video is still null
-        if (_videoPlayer.Stream is null && !string.IsNullOrEmpty(folderPath))
-        {
-            var ogv = VideoPlayback.MediaTranscoder.EnsureTranscoded(folderPath);
-            if (ogv is not null && System.IO.File.Exists(ogv))
-            {
-                _videoPlayer.Stream = new VideoStreamTheora { File = ogv.Replace("\\", "/") };
-                GD.Print($"[SceneEditor] Auto-transcoded video and loaded: {ogv}");
-            }
-        }
+        _videoPlayer.Stream = VideoPlayback.MediaTranscoder.LoadVideoStream(folderPath, relPath);
 
         // Exhaustive audio waveform search
         string? wavPath = null;
