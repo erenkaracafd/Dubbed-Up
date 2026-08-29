@@ -22,6 +22,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\DubbedUp.Godot\Network\Protocol\**\*.cs" Link="Network\Protocol\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\DubbedUp.Godot\Network\VoiceTransport\VoiceTakeTransferManifest.cs" Link="Network\VoiceTransport\VoiceTakeTransferManifest.cs" />
+    <Compile Include="..\..\src\DubbedUp.Godot\Network\VoiceTransport\VoiceTakeChunk.cs" Link="Network\VoiceTransport\VoiceTakeChunk.cs" />
+    <Compile Include="..\..\src\DubbedUp.Godot\Network\VoiceTransport\VoiceTakeAssemblySession.cs" Link="Network\VoiceTransport\VoiceTakeAssemblySession.cs" />
   </ItemGroup>
 </Project>
 
