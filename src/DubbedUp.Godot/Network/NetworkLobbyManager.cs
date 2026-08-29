@@ -1,5 +1,6 @@
 using Godot;
 using DubbedUp.Godot.Steam;
+using DubbedUp.Godot.Network.VoiceTransport;
 
 namespace DubbedUp.Godot.Network;
 
@@ -24,10 +25,14 @@ public partial class NetworkLobbyManager : Node
     public delegate void AudioTakeReceivedEventHandler(string voiceSlotId, string senderPlayerId, byte[] audioData);
 
     [Signal]
+    public delegate void VoiceTakeTransferProgressEventHandler(string transferId, float progressFraction);
+
+    [Signal]
     public delegate void SteamStateChangedEventHandler(bool isAvailable, string statusMessage);
 
     private readonly Dictionary<long, NetworkPlayerInfo> _players = [];
     private readonly SteamLobbyService _steamLobby = new();
+    private readonly VoiceTakeTransportManager _voiceTransport = new();
     private ENetMultiplayerPeer? _peer;
     private string _localPlayerName = "Host";
 
@@ -55,6 +60,10 @@ public partial class NetworkLobbyManager : Node
         Multiplayer.ConnectionFailed += OnConnectionFailed;
         Multiplayer.ServerDisconnected += OnServerDisconnected;
 
+        AddChild(_voiceTransport);
+        _voiceTransport.TransferCompleted += OnVoiceTakeTransferCompleted;
+        _voiceTransport.TransferProgress += OnVoiceTakeTransferProgress;
+
         _steamLobby.AvailabilityChanged += OnSteamAvailabilityChanged;
         _steamLobby.LobbyChanged += OnSteamLobbyChanged;
         _steamLobby.LobbyJoinRequested += OnSteamLobbyJoinRequested;
@@ -68,6 +77,9 @@ public partial class NetworkLobbyManager : Node
 
     public override void _ExitTree()
     {
+        _voiceTransport.TransferCompleted -= OnVoiceTakeTransferCompleted;
+        _voiceTransport.TransferProgress -= OnVoiceTakeTransferProgress;
+
         _steamLobby.AvailabilityChanged -= OnSteamAvailabilityChanged;
         _steamLobby.LobbyChanged -= OnSteamLobbyChanged;
         _steamLobby.LobbyJoinRequested -= OnSteamLobbyJoinRequested;
@@ -160,6 +172,7 @@ public partial class NetworkLobbyManager : Node
             Multiplayer.MultiplayerPeer = null;
         }
 
+        _voiceTransport.Reset();
         _players.Clear();
         EmitSignal(SignalName.ConnectionStateChanged, false, "Disconnected from lobby.");
         EmitSignal(SignalName.PlayerListUpdated);
@@ -187,9 +200,9 @@ public partial class NetworkLobbyManager : Node
         Rpc(nameof(RpcStartGame), sceneId);
     }
 
-    public void BroadcastAudioTake(string voiceSlotId, byte[] audioData)
+    public void BroadcastAudioTake(string voiceSlotId, byte[] audioData, float durationSeconds = 0f)
     {
-        Rpc(nameof(RpcReceiveAudioTake), voiceSlotId, _localPlayerName, audioData);
+        _voiceTransport.SendVoiceTake(voiceSlotId, _localPlayerName, audioData, durationSeconds);
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
@@ -257,10 +270,14 @@ public partial class NetworkLobbyManager : Node
         EmitSignal(SignalName.GameStarted, sceneId);
     }
 
-    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
-    private void RpcReceiveAudioTake(string voiceSlotId, string senderName, byte[] audioData)
+    private void OnVoiceTakeTransferCompleted(string transferId, string voiceSlotId, long senderPeerId, string senderName, byte[] audioData)
     {
         EmitSignal(SignalName.AudioTakeReceived, voiceSlotId, senderName, audioData);
+    }
+
+    private void OnVoiceTakeTransferProgress(string transferId, float progressFraction)
+    {
+        EmitSignal(SignalName.VoiceTakeTransferProgress, transferId, progressFraction);
     }
 
     private void OnPeerConnected(long id)
