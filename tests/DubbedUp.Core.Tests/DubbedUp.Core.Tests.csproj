@@ -25,6 +25,9 @@
     <Compile Include="..\..\src\DubbedUp.Godot\Network\VoiceTransport\VoiceTakeTransferManifest.cs" Link="Network\VoiceTransport\VoiceTakeTransferManifest.cs" />
     <Compile Include="..\..\src\DubbedUp.Godot\Network\VoiceTransport\VoiceTakeChunk.cs" Link="Network\VoiceTransport\VoiceTakeChunk.cs" />
     <Compile Include="..\..\src\DubbedUp.Godot\Network\VoiceTransport\VoiceTakeAssemblySession.cs" Link="Network\VoiceTransport\VoiceTakeAssemblySession.cs" />
+    <Compile Include="..\..\src\DubbedUp.Godot\Network\Sync\NetworkClockSynchronizer.cs" Link="Network\Sync\NetworkClockSynchronizer.cs" />
+    <Compile Include="..\..\src\DubbedUp.Godot\Network\Sync\ScheduledPlaybackCommand.cs" Link="Network\Sync\ScheduledPlaybackCommand.cs" />
+    <Compile Include="..\..\src\DubbedUp.Godot\Network\Sync\PlaybackReadyBarrier.cs" Link="Network\Sync\PlaybackReadyBarrier.cs" />
   </ItemGroup>
 </Project>
 
