@@ -1,6 +1,7 @@
 using Godot;
 using DubbedUp.Godot.Steam;
 using DubbedUp.Godot.Network.VoiceTransport;
+using DubbedUp.Godot.Network.Sync;
 
 namespace DubbedUp.Godot.Network;
 
@@ -28,11 +29,21 @@ public partial class NetworkLobbyManager : Node
     public delegate void VoiceTakeTransferProgressEventHandler(string transferId, float progressFraction);
 
     [Signal]
+    public delegate void PlaybackScheduledEventHandler(string sceneId, string idempotencyToken, float delaySeconds);
+
+    [Signal]
+    public delegate void PlaybackStartTriggeredEventHandler(string sceneId, string idempotencyToken);
+
+    [Signal]
+    public delegate void PlaybackSyncFailedEventHandler(string reason);
+
+    [Signal]
     public delegate void SteamStateChangedEventHandler(bool isAvailable, string statusMessage);
 
     private readonly Dictionary<long, NetworkPlayerInfo> _players = [];
     private readonly SteamLobbyService _steamLobby = new();
     private readonly VoiceTakeTransportManager _voiceTransport = new();
+    private readonly PlaybackSyncCoordinator _syncCoordinator = new();
     private ENetMultiplayerPeer? _peer;
     private string _localPlayerName = "Host";
 
@@ -64,6 +75,11 @@ public partial class NetworkLobbyManager : Node
         _voiceTransport.TransferCompleted += OnVoiceTakeTransferCompleted;
         _voiceTransport.TransferProgress += OnVoiceTakeTransferProgress;
 
+        AddChild(_syncCoordinator);
+        _syncCoordinator.PlaybackScheduled += OnPlaybackScheduled;
+        _syncCoordinator.PlaybackStartTriggered += OnPlaybackStartTriggered;
+        _syncCoordinator.PlaybackSyncFailed += OnPlaybackSyncFailed;
+
         _steamLobby.AvailabilityChanged += OnSteamAvailabilityChanged;
         _steamLobby.LobbyChanged += OnSteamLobbyChanged;
         _steamLobby.LobbyJoinRequested += OnSteamLobbyJoinRequested;
@@ -79,6 +95,10 @@ public partial class NetworkLobbyManager : Node
     {
         _voiceTransport.TransferCompleted -= OnVoiceTakeTransferCompleted;
         _voiceTransport.TransferProgress -= OnVoiceTakeTransferProgress;
+
+        _syncCoordinator.PlaybackScheduled -= OnPlaybackScheduled;
+        _syncCoordinator.PlaybackStartTriggered -= OnPlaybackStartTriggered;
+        _syncCoordinator.PlaybackSyncFailed -= OnPlaybackSyncFailed;
 
         _steamLobby.AvailabilityChanged -= OnSteamAvailabilityChanged;
         _steamLobby.LobbyChanged -= OnSteamLobbyChanged;
@@ -173,6 +193,7 @@ public partial class NetworkLobbyManager : Node
         }
 
         _voiceTransport.Reset();
+        _syncCoordinator.Reset();
         _players.Clear();
         EmitSignal(SignalName.ConnectionStateChanged, false, "Disconnected from lobby.");
         EmitSignal(SignalName.PlayerListUpdated);
@@ -204,6 +225,15 @@ public partial class NetworkLobbyManager : Node
     {
         _voiceTransport.SendVoiceTake(voiceSlotId, _localPlayerName, audioData, durationSeconds);
     }
+
+    public void StartClockSync() => _syncCoordinator.StartClockSync();
+
+    public void ReportSceneReady(string sceneId) => _syncCoordinator.ReportSceneReady(sceneId);
+
+    public void ReportTakesReady() => _syncCoordinator.ReportTakesReady();
+
+    public bool HostSchedulePlayback(string sceneId, int roundNumber = 1, string sessionId = "") =>
+        _syncCoordinator.HostSchedulePlayback(sceneId, roundNumber, sessionId);
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
     private void RegisterPlayer(long peerId, string name)
@@ -280,14 +310,31 @@ public partial class NetworkLobbyManager : Node
         EmitSignal(SignalName.VoiceTakeTransferProgress, transferId, progressFraction);
     }
 
+    private void OnPlaybackScheduled(string sceneId, string idempotencyToken, float delaySeconds)
+    {
+        EmitSignal(SignalName.PlaybackScheduled, sceneId, idempotencyToken, delaySeconds);
+    }
+
+    private void OnPlaybackStartTriggered(string sceneId, string idempotencyToken)
+    {
+        EmitSignal(SignalName.PlaybackStartTriggered, sceneId, idempotencyToken);
+    }
+
+    private void OnPlaybackSyncFailed(string reason)
+    {
+        EmitSignal(SignalName.PlaybackSyncFailed, reason);
+    }
+
     private void OnPeerConnected(long id)
     {
         GD.Print($"Multiplayer peer connected: {id}");
+        _syncCoordinator.ReadyBarrier.RegisterPeer(id);
     }
 
     private void OnPeerDisconnected(long id)
     {
         GD.Print($"Multiplayer peer disconnected: {id}");
+        _syncCoordinator.ReadyBarrier.UnregisterPeer(id);
         _players.Remove(id);
         EmitSignal(SignalName.PlayerListUpdated);
     }
