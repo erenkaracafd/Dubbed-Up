@@ -1,6 +1,5 @@
 using DubbedUp.Godot.LocalSession;
 using Godot;
-using DubbedUp.Godot.LocalSession;
 
 namespace DubbedUp.Godot.UI.Screens;
 
