@@ -1,4 +1,7 @@
 using Godot;
+using DubbedUp.Godot.Steam;
+using DubbedUp.Godot.Network.VoiceTransport;
+using DubbedUp.Godot.Network.Sync;
 
 namespace DubbedUp.Godot.Network;
 
@@ -22,7 +25,25 @@ public partial class NetworkLobbyManager : Node
     [Signal]
     public delegate void AudioTakeReceivedEventHandler(string voiceSlotId, string senderPlayerId, byte[] audioData);
 
+    [Signal]
+    public delegate void VoiceTakeTransferProgressEventHandler(string transferId, float progressFraction);
+
+    [Signal]
+    public delegate void PlaybackScheduledEventHandler(string sceneId, string idempotencyToken, float delaySeconds);
+
+    [Signal]
+    public delegate void PlaybackStartTriggeredEventHandler(string sceneId, string idempotencyToken);
+
+    [Signal]
+    public delegate void PlaybackSyncFailedEventHandler(string reason);
+
+    [Signal]
+    public delegate void SteamStateChangedEventHandler(bool isAvailable, string statusMessage);
+
     private readonly Dictionary<long, NetworkPlayerInfo> _players = [];
+    private readonly SteamLobbyService _steamLobby = new();
+    private readonly VoiceTakeTransportManager _voiceTransport = new();
+    private readonly PlaybackSyncCoordinator _syncCoordinator = new();
     private ENetMultiplayerPeer? _peer;
     private string _localPlayerName = "Host";
 
@@ -34,6 +55,14 @@ public partial class NetworkLobbyManager : Node
 
     public long LocalPeerId => Multiplayer.GetUniqueId();
 
+    public bool IsSteamAvailable => _steamLobby.IsAvailable;
+
+    public ulong CurrentSteamLobbyId => _steamLobby.CurrentLobbyId;
+
+    public IReadOnlyList<SteamLobbyMember> SteamLobbyMembers => _steamLobby.Members;
+
+    public event Action<ulong, IReadOnlyList<SteamLobbyMember>>? SteamLobbyChanged;
+
     public override void _Ready()
     {
         Multiplayer.PeerConnected += OnPeerConnected;
@@ -41,6 +70,65 @@ public partial class NetworkLobbyManager : Node
         Multiplayer.ConnectedToServer += OnConnectedToServer;
         Multiplayer.ConnectionFailed += OnConnectionFailed;
         Multiplayer.ServerDisconnected += OnServerDisconnected;
+
+        AddChild(_voiceTransport);
+        _voiceTransport.TransferCompleted += OnVoiceTakeTransferCompleted;
+        _voiceTransport.TransferProgress += OnVoiceTakeTransferProgress;
+
+        AddChild(_syncCoordinator);
+        _syncCoordinator.PlaybackScheduled += OnPlaybackScheduled;
+        _syncCoordinator.PlaybackStartTriggered += OnPlaybackStartTriggered;
+        _syncCoordinator.PlaybackSyncFailed += OnPlaybackSyncFailed;
+
+        _steamLobby.AvailabilityChanged += OnSteamAvailabilityChanged;
+        _steamLobby.LobbyChanged += OnSteamLobbyChanged;
+        _steamLobby.LobbyJoinRequested += OnSteamLobbyJoinRequested;
+        _steamLobby.Initialize();
+    }
+
+    public override void _Process(double delta)
+    {
+        _steamLobby.RunCallbacks();
+    }
+
+    public override void _ExitTree()
+    {
+        _voiceTransport.TransferCompleted -= OnVoiceTakeTransferCompleted;
+        _voiceTransport.TransferProgress -= OnVoiceTakeTransferProgress;
+
+        _syncCoordinator.PlaybackScheduled -= OnPlaybackScheduled;
+        _syncCoordinator.PlaybackStartTriggered -= OnPlaybackStartTriggered;
+        _syncCoordinator.PlaybackSyncFailed -= OnPlaybackSyncFailed;
+
+        _steamLobby.AvailabilityChanged -= OnSteamAvailabilityChanged;
+        _steamLobby.LobbyChanged -= OnSteamLobbyChanged;
+        _steamLobby.LobbyJoinRequested -= OnSteamLobbyJoinRequested;
+        _steamLobby.Dispose();
+    }
+
+    public bool HostSteamLobby(int maxPlayers = 8)
+    {
+        return _steamLobby.CreateLobby(maxPlayers);
+    }
+
+    public bool JoinSteamLobby(ulong lobbyId)
+    {
+        return _steamLobby.JoinLobby(lobbyId);
+    }
+
+    public void LeaveSteamLobby()
+    {
+        _steamLobby.LeaveLobby();
+    }
+
+    public bool OpenSteamInviteOverlay()
+    {
+        return _steamLobby.OpenInviteOverlay();
+    }
+
+    public bool SetSteamLobbyMetadata(string key, string value)
+    {
+        return _steamLobby.SetMetadata(key, value);
     }
 
     public Error HostGame(int port = DefaultPort, string playerName = "Host")
@@ -104,6 +192,8 @@ public partial class NetworkLobbyManager : Node
             Multiplayer.MultiplayerPeer = null;
         }
 
+        _voiceTransport.Reset();
+        _syncCoordinator.Reset();
         _players.Clear();
         EmitSignal(SignalName.ConnectionStateChanged, false, "Disconnected from lobby.");
         EmitSignal(SignalName.PlayerListUpdated);
@@ -131,10 +221,19 @@ public partial class NetworkLobbyManager : Node
         Rpc(nameof(RpcStartGame), sceneId);
     }
 
-    public void BroadcastAudioTake(string voiceSlotId, byte[] audioData)
+    public void BroadcastAudioTake(string voiceSlotId, byte[] audioData, float durationSeconds = 0f)
     {
-        Rpc(nameof(RpcReceiveAudioTake), voiceSlotId, _localPlayerName, audioData);
+        _voiceTransport.SendVoiceTake(voiceSlotId, _localPlayerName, audioData, durationSeconds);
     }
+
+    public void StartClockSync() => _syncCoordinator.StartClockSync();
+
+    public void ReportSceneReady(string sceneId) => _syncCoordinator.ReportSceneReady(sceneId);
+
+    public void ReportTakesReady() => _syncCoordinator.ReportTakesReady();
+
+    public bool HostSchedulePlayback(string sceneId, int roundNumber = 1, string sessionId = "") =>
+        _syncCoordinator.HostSchedulePlayback(sceneId, roundNumber, sessionId);
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
     private void RegisterPlayer(long peerId, string name)
@@ -201,20 +300,41 @@ public partial class NetworkLobbyManager : Node
         EmitSignal(SignalName.GameStarted, sceneId);
     }
 
-    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
-    private void RpcReceiveAudioTake(string voiceSlotId, string senderName, byte[] audioData)
+    private void OnVoiceTakeTransferCompleted(string transferId, string voiceSlotId, long senderPeerId, string senderName, byte[] audioData)
     {
         EmitSignal(SignalName.AudioTakeReceived, voiceSlotId, senderName, audioData);
+    }
+
+    private void OnVoiceTakeTransferProgress(string transferId, float progressFraction)
+    {
+        EmitSignal(SignalName.VoiceTakeTransferProgress, transferId, progressFraction);
+    }
+
+    private void OnPlaybackScheduled(string sceneId, string idempotencyToken, float delaySeconds)
+    {
+        EmitSignal(SignalName.PlaybackScheduled, sceneId, idempotencyToken, delaySeconds);
+    }
+
+    private void OnPlaybackStartTriggered(string sceneId, string idempotencyToken)
+    {
+        EmitSignal(SignalName.PlaybackStartTriggered, sceneId, idempotencyToken);
+    }
+
+    private void OnPlaybackSyncFailed(string reason)
+    {
+        EmitSignal(SignalName.PlaybackSyncFailed, reason);
     }
 
     private void OnPeerConnected(long id)
     {
         GD.Print($"Multiplayer peer connected: {id}");
+        _syncCoordinator.ReadyBarrier.RegisterPeer(id);
     }
 
     private void OnPeerDisconnected(long id)
     {
         GD.Print($"Multiplayer peer disconnected: {id}");
+        _syncCoordinator.ReadyBarrier.UnregisterPeer(id);
         _players.Remove(id);
         EmitSignal(SignalName.PlayerListUpdated);
     }
@@ -238,6 +358,24 @@ public partial class NetworkLobbyManager : Node
         GD.Print("Server disconnected.");
         LeaveGame();
         EmitSignal(SignalName.ConnectionStateChanged, false, "Host closed the lobby.");
+    }
+
+    private void OnSteamAvailabilityChanged(bool isAvailable, string message)
+    {
+        EmitSignal(SignalName.SteamStateChanged, isAvailable, message);
+    }
+
+    private void OnSteamLobbyChanged(ulong lobbyId, IReadOnlyList<SteamLobbyMember> members)
+    {
+        SteamLobbyChanged?.Invoke(lobbyId, members);
+    }
+
+    private void OnSteamLobbyJoinRequested(ulong lobbyId)
+    {
+        if (!_steamLobby.JoinLobby(lobbyId))
+        {
+            EmitSignal(SignalName.SteamStateChanged, true, $"Could not join requested Steam lobby {lobbyId}.");
+        }
     }
 }
 
