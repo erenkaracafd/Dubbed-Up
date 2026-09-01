@@ -345,8 +345,8 @@ public static class MediaTranscoder
         // 2. Extract audio.wav first (ultra-fast, takes 50ms)
         EnsureAudioExtracted(packageDir);
 
-        // 3. Fast Multithreaded Transcode to video.ogv with FFmpeg with original dimensions
-        var args = $"-y -loglevel error -i \"{safeInputPath}\" -threads 0 -c:v libtheora -q:v 7 -c:a libvorbis -q:a 5 -pix_fmt yuv420p \"{ogvTarget}\"";
+        // 3. Fast Multithreaded Transcode to video.ogv with FFmpeg (1080p capped at 30fps with 0.5s GOP for smooth playback)
+        var args = $"-y -loglevel error -i \"{safeInputPath}\" -threads 0 -vf \"scale='min(1920,iw)':-2\" -r 30 -g 15 -c:v libtheora -q:v 6 -c:a libvorbis -q:a 5 -pix_fmt yuv420p \"{ogvTarget}\"";
         RunProcess("ffmpeg", args, 180000);
 
         return System.IO.File.Exists(ogvTarget) ? ogvTarget : null;

@@ -262,6 +262,7 @@ public partial class ScenePickerScreen : BaseScreen
         if (Coordinator is not null)
         {
             Coordinator.SelectedScenePackage = package;
+            Coordinator.CurrentScene = package.Document;
         }
 
         Navigator?.NavigateTo(AppScreen.Setup);

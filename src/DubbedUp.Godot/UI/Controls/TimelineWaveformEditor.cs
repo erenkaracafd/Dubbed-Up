@@ -43,11 +43,26 @@ public partial class TimelineWaveformEditor : Control
 
     private static readonly Color[] PresetColors =
     [
-        new Color(1.0f, 0.70f, 0.25f, 0.42f),  // Amber
-        new Color(0.25f, 0.85f, 1.0f, 0.42f),  // Cyan
-        new Color(0.50f, 1.0f, 0.45f, 0.42f),  // Green
-        new Color(1.0f, 0.45f, 0.75f, 0.42f),  // Pink
-        new Color(0.85f, 0.55f, 1.0f, 0.42f),  // Purple
+        new Color(1.0f, 0.70f, 0.25f, 0.45f),  // Amber
+        new Color(0.25f, 0.85f, 1.0f, 0.45f),  // Cyan
+        new Color(0.50f, 1.0f, 0.45f, 0.45f),  // Lime Green
+        new Color(1.0f, 0.45f, 0.75f, 0.45f),  // Hot Pink
+        new Color(0.85f, 0.55f, 1.0f, 0.45f),  // Purple
+        new Color(1.0f, 0.35f, 0.35f, 0.45f),  // Coral Red
+        new Color(0.35f, 0.65f, 1.0f, 0.45f),  // Sky Blue
+        new Color(1.0f, 0.90f, 0.30f, 0.45f),  // Yellow Gold
+        new Color(0.30f, 1.0f, 0.85f, 0.45f),  // Turquoise
+        new Color(0.95f, 0.50f, 0.90f, 0.45f),  // Magenta
+        new Color(0.60f, 0.80f, 0.20f, 0.45f),  // Olive
+        new Color(1.0f, 0.60f, 0.40f, 0.45f),  // Peach
+        new Color(0.40f, 0.90f, 0.60f, 0.45f),  // Mint
+        new Color(0.70f, 0.70f, 1.0f, 0.45f),  // Lavender
+        new Color(0.90f, 0.40f, 0.50f, 0.45f),  // Rose
+        new Color(0.40f, 1.0f, 0.40f, 0.45f),  // Emerald
+        new Color(1.0f, 0.80f, 0.50f, 0.45f),  // Sunset Orange
+        new Color(0.50f, 0.75f, 0.95f, 0.45f),  // Ice Blue
+        new Color(0.80f, 0.95f, 0.40f, 0.45f),  // Chartreuse
+        new Color(0.95f, 0.65f, 0.80f, 0.45f),  // Bubblegum
     ];
 
     public override void _Ready()

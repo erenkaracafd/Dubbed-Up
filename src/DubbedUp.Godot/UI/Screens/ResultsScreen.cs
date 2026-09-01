@@ -1,5 +1,6 @@
 using DubbedUp.Core.Scoring;
 using DubbedUp.Core.Voting;
+using DubbedUp.Godot.VideoPlayback;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -138,49 +139,58 @@ public partial class ResultsScreen : BaseScreen
         Navigator?.NavigateTo(AppScreen.Playback);
     }
 
-    private void OnExportPressed()
+    private async void OnExportPressed()
     {
-        if (Coordinator is null)
+        if (Coordinator?.CurrentScene is null)
         {
+            ShowError("No active scene to export.");
             return;
         }
 
+        if (_exportButton is not null)
+        {
+            _exportButton.Disabled = true;
+            _exportButton.Text = "⏳ Rendering MP4...";
+        }
+
+        SetStandings("🎬 Rendering & mixing dubbed MP4 video with FFmpeg...");
+
         try
         {
-            var exportFolder = ProjectSettings.GlobalizePath($"user://exports/dub_{DateTime.Now:yyyyMMdd_HHmmss}");
-            if (!System.IO.Directory.Exists(exportFolder))
-            {
-                System.IO.Directory.CreateDirectory(exportFolder);
-            }
-
-            var summaryLines = new List<string>
-            {
-                $"Dubbed Up Session Export",
-                $"Date: {DateTime.Now}",
-                $"Scene: {Coordinator.CurrentScene?.Title ?? "Unknown"}",
-                $"Players: {string.Join(", ", Coordinator.CurrentSession?.Players.Select(p => p.DisplayName) ?? [])}",
-                $"----------------------------------------",
-            };
-
-            foreach (var take in Coordinator.TakeStore.GetAllTakes())
-            {
-                summaryLines.Add($"Take: {take.TakeId} | Slot: {take.VoiceSlotId} | Player: {take.PlayerId} | Duration: {take.DurationMilliseconds}ms");
-                var sourcePath = ProjectSettings.GlobalizePath(take.AudioRelativePath);
-                if (System.IO.File.Exists(sourcePath))
+            var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
+            var exportedFile = await VideoDubExporter.ExportDubbedVideoAsync(
+                Coordinator.CurrentScene,
+                folderPath,
+                Coordinator.TakeStore,
+                status =>
                 {
-                    var destPath = System.IO.Path.Combine(exportFolder, $"{take.VoiceSlotId}_{take.PlayerId}.wav");
-                    System.IO.File.Copy(sourcePath, destPath, overwrite: true);
-                }
+                    SetStandings(status);
+                });
+
+            if (_exportButton is not null)
+            {
+                _exportButton.Disabled = false;
+                _exportButton.Text = "🎬 Export Dubbed Video (.mp4)";
             }
 
-            System.IO.File.WriteAllLines(System.IO.Path.Combine(exportFolder, "summary.txt"), summaryLines);
-            OS.ShellOpen(exportFolder);
-
-            SetStandings($"✅ Exported to: {exportFolder}");
+            if (!string.IsNullOrEmpty(exportedFile) && System.IO.File.Exists(exportedFile))
+            {
+                SetStandings($"✅ Video exported: {System.IO.Path.GetFileName(exportedFile)}");
+                OS.ShellOpen(System.IO.Path.GetDirectoryName(exportedFile) ?? exportedFile);
+            }
+            else
+            {
+                ShowError("Export failed. Please check if FFmpeg is installed.");
+            }
         }
         catch (Exception ex)
         {
             ShowError($"Export failed: {ex.Message}");
+            if (_exportButton is not null)
+            {
+                _exportButton.Disabled = false;
+                _exportButton.Text = "🎬 Export Dubbed Video (.mp4)";
+            }
         }
     }
 

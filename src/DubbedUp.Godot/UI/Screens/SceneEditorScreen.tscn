@@ -126,18 +126,24 @@ layout_mode = 2
 [node name="TimelineButtons" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 alignment = 1
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
+
+[node name="AutoDetectButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
+custom_minimum_size = Vector2(250, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.9, 1, 1)
+text = "✨ Auto-Detect Speech (VAD)"
 
 [node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
-custom_minimum_size = Vector2(360, 40)
-layout_mode = 2
-text = "➕ Add Speech Box at Current Time"
-
-[node name="DeleteBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(260, 40)
 layout_mode = 2
+text = "➕ Add Speech Box"
+
+[node name="DeleteBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
+custom_minimum_size = Vector2(200, 40)
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
-text = "🗑️ Delete Selected Speech Box"
+text = "🗑️ Delete Selected"
 
 [node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2

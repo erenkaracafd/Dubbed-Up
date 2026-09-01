@@ -23,6 +23,7 @@ public partial class RecordingScreen : BaseScreen
     private Button? _recordButton;
     private Button? _previewTakeButton;
     private Button? _reRecordButton;
+    private Button? _prevSlotButton;
     private Button? _nextSlotButton;
     private Button? _proceedButton;
     private Button? _cancelButton;
@@ -31,13 +32,18 @@ public partial class RecordingScreen : BaseScreen
     private AudioStreamPlayer? _previewPlayer;
 
     private int _currentSlotIndex = 0;
-    private bool _isRecordingLocal = false;
+    private bool _isRecordingActive = false;
+    private bool _isMicCapturing = false;
     private bool _isCountingDown = false;
     private bool _isPreviewingOriginal = false;
     private bool _isPreviewingTake = false;
 
     private double _countdownTimer = 0.0;
-    private double _recordingDuration = 0.0;
+    private double _settingLeadInSeconds = 3.0;
+    private double _settingCountdownSeconds = 0.0;
+    private double _recordingElapsed = 0.0;
+    private double _leadInSec = 3.0;
+    private double _leadInStartSec = 0.0;
     private double _previewOriginalDuration = 0.0;
     private double _previewTakeDuration = 0.0;
     private double _slotStartSec = 0.0;
@@ -48,8 +54,37 @@ public partial class RecordingScreen : BaseScreen
     public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
     {
         base.Initialize(navigator, coordinator);
+        LoadGameplaySettings();
         LoadSceneVideo();
         UpdateUiState();
+    }
+
+    private void LoadGameplaySettings()
+    {
+        try
+        {
+            var config = new ConfigFile();
+            if (config.Load("user://audio_settings.cfg") == Error.Ok)
+            {
+                var leadInVariant = config.GetValue("Gameplay", "LeadInSeconds", 3.0);
+                var countdownVariant = config.GetValue("Gameplay", "CountdownSeconds", 0.0);
+
+                _settingLeadInSeconds = Convert.ToDouble(leadInVariant.Obj ?? 3.0);
+                _settingCountdownSeconds = Convert.ToDouble(countdownVariant.Obj ?? 0.0);
+                GD.Print($"[RecordingScreen] Loaded gameplay settings: LeadIn={_settingLeadInSeconds:F1}s, Countdown={_settingCountdownSeconds:F0}s");
+            }
+            else
+            {
+                _settingLeadInSeconds = 3.0;
+                _settingCountdownSeconds = 0.0;
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[RecordingScreen] Error loading gameplay settings: {ex.Message}");
+            _settingLeadInSeconds = 3.0;
+            _settingCountdownSeconds = 0.0;
+        }
     }
 
     public override void _Ready()
@@ -69,6 +104,7 @@ public partial class RecordingScreen : BaseScreen
         _recordButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/StudioActions/RecordButton");
         _previewTakeButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/PreviewTakeButton");
         _reRecordButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/ReRecordButton");
+        _prevSlotButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/PrevSlotButton");
         _nextSlotButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/NextSlotButton");
         _proceedButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ProceedButton");
         _cancelButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/CancelButton");
@@ -89,6 +125,7 @@ public partial class RecordingScreen : BaseScreen
         if (_recordButton is not null) _recordButton.Pressed += OnRecordButtonPressed;
         if (_previewTakeButton is not null) _previewTakeButton.Pressed += OnPreviewTakePressed;
         if (_reRecordButton is not null) _reRecordButton.Pressed += OnReRecordPressed;
+        if (_prevSlotButton is not null) _prevSlotButton.Pressed += OnPrevSlotPressed;
         if (_nextSlotButton is not null) _nextSlotButton.Pressed += OnNextSlotPressed;
         if (_proceedButton is not null) _proceedButton.Pressed += OnProceedPressed;
         if (_cancelButton is not null) _cancelButton.Pressed += OnCancelPressed;
@@ -143,66 +180,99 @@ public partial class RecordingScreen : BaseScreen
             }
         }
 
-        // 1. Countdown Logic
+        // 1. Countdown Logic (if enabled in settings)
         if (_isCountingDown)
         {
             _countdownTimer -= delta;
             if (_countdownLabel is not null)
             {
                 var count = (int)Math.Ceiling(_countdownTimer);
-                _countdownLabel.Text = count > 0 ? $"🎙 Recording in: {count}..." : "🔴 SPEAK NOW!";
+                _countdownLabel.Text = count > 0 ? $"🎙️ COUNTDOWN: {count}" : "🎬 STARTING!";
+                _countdownLabel.Visible = true;
             }
 
             if (_countdownTimer <= 0.0)
             {
                 _isCountingDown = false;
-                if (_countdownLabel is not null) _countdownLabel.Visible = false;
                 StartLiveRecording();
             }
             return;
         }
 
-        // 2. Live Recording & Waveform Draw
-        if (_isRecordingLocal)
+        // 2. Pre-Roll + Live Recording Logic
+        if (_isRecordingActive)
         {
-            _recordingDuration += delta;
+            _recordingElapsed += delta;
+            _waveformVisualizer?.SetPlayhead(_recordingElapsed, true);
 
-            var peak = Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel();
-            _waveformVisualizer?.AddLiveVoiceSample(_recordingDuration, peak);
-
-            // Keep video playing in sync with recording (STRICTLY MUTED)
-            if (_videoPlayer is not null && _videoPlayer.Stream is not null)
+            // Stage 1: Pre-roll lead-in (dimmed area with original video sound)
+            if (_recordingElapsed < _leadInSec)
             {
-                if (!_videoPlayer.IsPlaying())
+                var remaining = _leadInSec - _recordingElapsed;
+                if (_countdownLabel is not null)
                 {
-                    _videoPlayer.Bus = "RecordSink";
-                    _videoPlayer.VolumeDb = -80.0f;
-                    _videoPlayer.Play();
-                    _videoPlayer.StreamPosition = _slotStartSec + _recordingDuration;
+                    _countdownLabel.Text = remaining > 0.2 ? $"⏳ PRE-ROLL LEAD-IN: {remaining:F1}s" : "🔴 SPEAK NOW!";
+                    _countdownLabel.Visible = true;
+                }
+                if (_statusLabel is not null)
+                {
+                    _statusLabel.Text = $"🎬 Video playing ({_leadInSec:F1}s lead-in)... Get ready to speak in {remaining:F1}s!";
                 }
             }
-
-            // Auto-stop when max slot duration + 0.5s grace is exceeded
-            if (_recordingDuration >= _maxSlotDuration + 0.5)
+            // Stage 2: Speech Box (Live Microphone Capture with original sound muted)
+            else
             {
-                StopLiveRecording();
+                if (!_isMicCapturing && Coordinator?.CurrentScene is not null)
+                {
+                    _isMicCapturing = true;
+                    var currentSlot = Coordinator.CurrentScene.VoiceSlots[_currentSlotIndex];
+                    Coordinator.StartRecording(currentSlot.VoiceSlotId);
+
+                    // Mute original video audio inside speech box
+                    if (_videoPlayer is not null)
+                    {
+                        _videoPlayer.Bus = "RecordSink";
+                        _videoPlayer.VolumeDb = -80.0f;
+                    }
+
+                    if (_countdownLabel is not null)
+                    {
+                        _countdownLabel.Text = "🔴 RECORDING LIVE — SPEAK NOW!";
+                        _countdownLabel.Visible = true;
+                    }
+                    if (_statusLabel is not null)
+                    {
+                        _statusLabel.Text = "🔴 RECORDING LIVE — Speak your line!";
+                    }
+                }
+
+                // Sample user microphone peak level
+                var peak = Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel();
+                _waveformVisualizer?.AddLiveVoiceSample(_recordingElapsed, peak);
+
+                // Auto-stop when speech box ends
+                if (_recordingElapsed >= _leadInSec + _maxSlotDuration + 0.25)
+                {
+                    StopLiveRecording();
+                }
             }
             return;
         }
 
-        // 3. Previewing Original Clip (WITH original sound)
+        // 3. Previewing Original Clip (WITH original sound + 3s pre-roll)
         if (_isPreviewingOriginal)
         {
             _previewOriginalDuration += delta;
             _waveformVisualizer?.SetPlayhead(_previewOriginalDuration, false);
 
-            if (_previewOriginalDuration >= _maxSlotDuration)
+            if (_previewOriginalDuration >= _leadInSec + _maxSlotDuration)
             {
                 if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
                 _isPreviewingOriginal = false;
                 _previewOriginalDuration = 0.0;
                 _waveformVisualizer?.SetPlayhead(0, false);
                 if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Listen to Original Reference";
+                if (_statusLabel is not null) _statusLabel.Text = "Ready. Press 'Listen to Original' or 'Start Recording'.";
             }
             return;
         }
@@ -211,7 +281,7 @@ public partial class RecordingScreen : BaseScreen
         if (_isPreviewingTake)
         {
             _previewTakeDuration += delta;
-            _waveformVisualizer?.SetPlayhead(_previewTakeDuration, false);
+            _waveformVisualizer?.SetPlayhead(_leadInSec + _previewTakeDuration, false);
 
             if (_previewTakeDuration >= _maxSlotDuration + 0.4 || (_previewPlayer is not null && !_previewPlayer.Playing && _previewTakeDuration > 0.3))
             {
@@ -285,13 +355,27 @@ public partial class RecordingScreen : BaseScreen
         _currentTakeId = latestTake?.TakeId;
 
         // Button visibility
+        LoadGameplaySettings();
         if (_previewOriginalButton is not null) _previewOriginalButton.Visible = true;
         if (_recordButton is not null)
         {
-            _recordButton.Text = isRecorded ? "🎙️ Re-Record (Overwrite)" : "🎙️ Start Recording (3-2-1)";
+            if (isRecorded)
+            {
+                _recordButton.Text = "🎙️ Re-Record (Overwrite)";
+            }
+            else
+            {
+                _recordButton.Text = _settingCountdownSeconds > 0
+                    ? $"🎙️ Start Recording ({_settingCountdownSeconds:F0}s Countdown)"
+                    : "🎙️ Start Recording";
+            }
         }
         if (_previewTakeButton is not null) _previewTakeButton.Visible = isRecorded;
         if (_reRecordButton is not null) _reRecordButton.Visible = isRecorded;
+        if (_prevSlotButton is not null)
+        {
+            _prevSlotButton.Visible = _currentSlotIndex > 0;
+        }
         if (_nextSlotButton is not null)
         {
             _nextSlotButton.Visible = isRecorded && _currentSlotIndex < voiceSlots.Count - 1;
@@ -312,35 +396,119 @@ public partial class RecordingScreen : BaseScreen
         }
     }
 
+    private string? FindVocalsWavPath()
+    {
+        var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
+        var sceneId = Coordinator?.CurrentScene?.SceneId;
+
+        var vocalCandidates = new List<string>();
+
+        // 1. Direct package directory
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            vocalCandidates.Add(System.IO.Path.Combine(folderPath, "media", "vocals.wav"));
+            vocalCandidates.Add(System.IO.Path.Combine(folderPath, "vocals.wav"));
+        }
+
+        // 2. Workshop scenes folder (user://workshop_scenes) & official/scenes paths
+        if (!string.IsNullOrEmpty(sceneId))
+        {
+            var idUnderscore = sceneId.Replace("-", "_");
+            var idHyphen = sceneId.Replace("_", "-");
+
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"user://workshop_scenes/{sceneId}/media/vocals.wav"));
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"user://workshop_scenes/{sceneId}/vocals.wav"));
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"user://workshop_scenes/{idUnderscore}/media/vocals.wav"));
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"user://workshop_scenes/{idHyphen}/media/vocals.wav"));
+
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/vocals.wav"));
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{idUnderscore}/media/vocals.wav"));
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{idHyphen}/media/vocals.wav"));
+
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"res://scenes/{sceneId}/media/vocals.wav"));
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"res://scenes/{idUnderscore}/media/vocals.wav"));
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"user://scenes/{sceneId}/media/vocals.wav"));
+            vocalCandidates.Add(ProjectSettings.GlobalizePath($"user://scenes/{sceneId}/vocals.wav"));
+        }
+
+        // Search for vocals.wav first (EXCLUSIVELY prioritized isolated vocal track)
+        foreach (var candidate in vocalCandidates)
+        {
+            if (System.IO.File.Exists(candidate) || global::Godot.FileAccess.FileExists(candidate))
+            {
+                GD.Print($"[RecordingScreen] Found isolated vocal track for waveform: '{candidate}'");
+                return candidate;
+            }
+        }
+
+        // Deep search in user://workshop_scenes/ if sceneId matches any directory
+        if (!string.IsNullOrEmpty(sceneId))
+        {
+            try
+            {
+                var workshopDir = ProjectSettings.GlobalizePath("user://workshop_scenes");
+                if (System.IO.Directory.Exists(workshopDir))
+                {
+                    foreach (var dir in System.IO.Directory.GetDirectories(workshopDir))
+                    {
+                        var dirName = System.IO.Path.GetFileName(dir);
+                        if (dirName.Equals(sceneId, StringComparison.OrdinalIgnoreCase) ||
+                            dirName.StartsWith(sceneId, StringComparison.OrdinalIgnoreCase) ||
+                            sceneId.StartsWith(dirName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var v1 = System.IO.Path.Combine(dir, "media", "vocals.wav");
+                            var v2 = System.IO.Path.Combine(dir, "vocals.wav");
+                            if (System.IO.File.Exists(v1)) return v1;
+                            if (System.IO.File.Exists(v2)) return v2;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                GD.PrintErr($"[RecordingScreen] Error during deep vocals search: {ex.Message}");
+            }
+        }
+
+        // Fallback: full audio.wav only if vocals.wav does not exist anywhere
+        var audioCandidates = new List<string>();
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            audioCandidates.Add(System.IO.Path.Combine(folderPath, "media", "audio.wav"));
+            audioCandidates.Add(System.IO.Path.Combine(folderPath, "audio.wav"));
+        }
+        if (!string.IsNullOrEmpty(sceneId))
+        {
+            audioCandidates.Add(ProjectSettings.GlobalizePath($"user://workshop_scenes/{sceneId}/media/audio.wav"));
+            audioCandidates.Add(ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/audio.wav"));
+            audioCandidates.Add(ProjectSettings.GlobalizePath($"res://scenes/{sceneId}/media/audio.wav"));
+        }
+        foreach (var candidate in audioCandidates)
+        {
+            if (System.IO.File.Exists(candidate) || global::Godot.FileAccess.FileExists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
     private void LoadWaveformForCurrentSlot()
     {
         float[]? realWaveform = null;
-        var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
-        string? wavPath = null;
+        string? wavPath = FindVocalsWavPath();
 
-        if (!string.IsNullOrEmpty(folderPath))
-        {
-            var vocalsCandidate = System.IO.Path.Combine(folderPath, "media", "vocals.wav");
-            var audioCandidate = System.IO.Path.Combine(folderPath, "media", "audio.wav");
-            if (System.IO.File.Exists(vocalsCandidate)) wavPath = vocalsCandidate;
-            else if (System.IO.File.Exists(audioCandidate)) wavPath = audioCandidate;
-        }
-
-        if (wavPath is null && Coordinator?.CurrentScene is not null)
-        {
-            var sceneId = Coordinator.CurrentScene.SceneId;
-            var vocalsCandidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/vocals.wav");
-            var audioCandidate = ProjectSettings.GlobalizePath($"res://Content/OfficialScenes/{sceneId}/media/audio.wav");
-            if (System.IO.File.Exists(vocalsCandidate)) wavPath = vocalsCandidate;
-            else if (System.IO.File.Exists(audioCandidate)) wavPath = audioCandidate;
-        }
+        LoadGameplaySettings();
+        _leadInSec = Math.Min(_settingLeadInSeconds, _slotStartSec);
+        _leadInStartSec = _slotStartSec - _leadInSec;
 
         if (wavPath is not null)
         {
-            realWaveform = AudioPlayback.AudioWaveformLoader.ExtractWaveformSegment(wavPath, _slotStartSec, _slotEndSec);
+            realWaveform = AudioPlayback.AudioWaveformLoader.ExtractWaveformSegment(wavPath, _leadInStartSec, _slotEndSec, 150);
         }
 
-        _waveformVisualizer?.Reset(_maxSlotDuration, realWaveform);
+        _waveformVisualizer?.Reset(_leadInSec, _maxSlotDuration, realWaveform);
     }
 
     private void OnPreviewOriginalPressed()
@@ -366,16 +534,19 @@ public partial class RecordingScreen : BaseScreen
             return;
         }
 
-        // Preview original: UNMUTE video and send to Master bus so original voice is audible
+        // Preview original with configurable context lead-in so player hears the scene build up
+        LoadWaveformForCurrentSlot();
+        _waveformVisualizer?.SetPlayhead(0.0, false);
+
         _videoPlayer.Bus = "Master";
         _videoPlayer.VolumeDb = 0.0f;
         _isPreviewingOriginal = true;
         _previewOriginalDuration = 0.0;
         _videoPlayer.Play();
-        _videoPlayer.StreamPosition = _slotStartSec;
+        _videoPlayer.StreamPosition = _leadInStartSec;
 
         if (_previewOriginalButton is not null) _previewOriginalButton.Text = "⏹ Stop Playing";
-        if (_statusLabel is not null) _statusLabel.Text = "🎧 Playing original reference clip...";
+        if (_statusLabel is not null) _statusLabel.Text = $"🎧 Playing clip with {_leadInSec:F1}s context lead-in ({_leadInStartSec:F1}s → {_slotEndSec:F1}s)...";
     }
 
     private void OnRecordButtonPressed()
@@ -387,25 +558,33 @@ public partial class RecordingScreen : BaseScreen
         {
             _isCountingDown = false;
             if (_countdownLabel is not null) _countdownLabel.Visible = false;
-            if (_recordButton is not null) _recordButton.Text = "🎙️ Start Recording (3-2-1)";
+            UpdateUiState();
             return;
         }
 
-        if (!_isRecordingLocal)
+        if (_isRecordingActive)
+        {
+            StopLiveRecording();
+            return;
+        }
+
+        LoadGameplaySettings();
+
+        if (_settingCountdownSeconds > 0.0)
         {
             _isCountingDown = true;
-            _countdownTimer = 2.0; // 2 seconds countdown
+            _countdownTimer = _settingCountdownSeconds;
             if (_countdownLabel is not null)
             {
-                _countdownLabel.Text = "🎙 Get Ready... 2";
+                _countdownLabel.Text = $"🎙️ COUNTDOWN: {(int)Math.Ceiling(_countdownTimer)}";
                 _countdownLabel.Visible = true;
             }
             if (_recordButton is not null) _recordButton.Text = "Cancel";
-            if (_statusLabel is not null) _statusLabel.Text = "Countdown started... Focus on character lip movements!";
+            if (_statusLabel is not null) _statusLabel.Text = $"Countdown ({_settingCountdownSeconds:F0}s) started... Get ready!";
         }
         else
         {
-            StopLiveRecording();
+            StartLiveRecording();
         }
     }
 
@@ -413,19 +592,19 @@ public partial class RecordingScreen : BaseScreen
     {
         if (Coordinator?.CurrentScene is null) return;
 
-        var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
-        var currentSlot = voiceSlots[_currentSlotIndex];
-
         try
         {
-            Coordinator.StartRecording(currentSlot.VoiceSlotId);
-            _isRecordingLocal = true;
-            _recordingDuration = 0.0;
+            LoadGameplaySettings();
+            _isRecordingActive = true;
+            _isMicCapturing = false;
+            _recordingElapsed = 0.0;
+            _leadInSec = Math.Min(_settingLeadInSeconds, _slotStartSec);
+            _leadInStartSec = _slotStartSec - _leadInSec;
 
             LoadWaveformForCurrentSlot();
             _waveformVisualizer?.SetPlayhead(0.0, true);
 
-            // Start video playback from slot start STRICTLY MUTED to RecordSink so original voice NEVER plays
+            // Start video playback from lead-in with sound so player hears the cue
             if (_videoPlayer is null || _videoPlayer.Stream is null)
             {
                 LoadSceneVideo();
@@ -433,14 +612,24 @@ public partial class RecordingScreen : BaseScreen
 
             if (_videoPlayer is not null && _videoPlayer.Stream is not null)
             {
-                _videoPlayer.Bus = "RecordSink"; // Route to muted sink
-                _videoPlayer.VolumeDb = -80.0f; // MUTE original video audio completely
+                _videoPlayer.Bus = "Master";
+                _videoPlayer.VolumeDb = 0.0f;
                 _videoPlayer.Play();
-                _videoPlayer.StreamPosition = _slotStartSec;
+                _videoPlayer.StreamPosition = _leadInStartSec;
             }
 
-            if (_recordButton is not null) _recordButton.Text = "⏹ Stop Recording";
-            if (_statusLabel is not null) _statusLabel.Text = "🔴 RECORDING LIVE — Speak your line!";
+            if (_recordButton is not null) _recordButton.Text = "⏹ Cancel Recording";
+            if (_countdownLabel is not null)
+            {
+                _countdownLabel.Text = _leadInSec > 0 ? $"⏳ PRE-ROLL LEAD-IN: {_leadInSec:F1}s" : "🔴 RECORDING LIVE — SPEAK NOW!";
+                _countdownLabel.Visible = true;
+            }
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = _leadInSec > 0
+                    ? $"🎬 Video starting ({_leadInSec:F1}s lead-in)... Focus on actor timing!"
+                    : "🔴 RECORDING LIVE — Speak your line!";
+            }
         }
         catch (Exception ex)
         {
@@ -450,13 +639,21 @@ public partial class RecordingScreen : BaseScreen
 
     private void StopLiveRecording()
     {
-        if (!_isRecordingLocal || Coordinator is null || Coordinator.CurrentScene is null) return;
+        if (!_isRecordingActive || Coordinator is null || Coordinator.CurrentScene is null) return;
 
         try
         {
-            var take = Coordinator.StopRecording();
-            _isRecordingLocal = false;
-            _currentTakeId = take.TakeId;
+            _isRecordingActive = false;
+            VoiceTake? take = null;
+
+            if (_isMicCapturing)
+            {
+                take = Coordinator.StopRecording();
+                _isMicCapturing = false;
+                _currentTakeId = take.TakeId;
+            }
+
+            if (_countdownLabel is not null) _countdownLabel.Visible = false;
 
             // Stop video
             if (_videoPlayer is not null && _videoPlayer.IsPlaying())
@@ -466,14 +663,14 @@ public partial class RecordingScreen : BaseScreen
 
             // Calculate sync score
             var matchPercent = _waveformVisualizer?.CalculateSyncMatchPercentage() ?? 90.0f;
-            if (_syncScoreLabel is not null)
+            if (_syncScoreLabel is not null && take is not null)
             {
                 _syncScoreLabel.Text = $"⭐ Timing & Rhythm Match: {matchPercent:F0}%";
                 _syncScoreLabel.Visible = true;
             }
 
             // Broadcast take if in lobby
-            if (_lobbyManager is not null && _lobbyManager.IsConnectedToLobby && !string.IsNullOrEmpty(take.AudioRelativePath))
+            if (take is not null && _lobbyManager is not null && _lobbyManager.IsConnectedToLobby && !string.IsNullOrEmpty(take.AudioRelativePath))
             {
                 try
                 {
@@ -496,7 +693,8 @@ public partial class RecordingScreen : BaseScreen
         }
         catch (Exception ex)
         {
-            _isRecordingLocal = false;
+            _isRecordingActive = false;
+            _isMicCapturing = false;
             ShowError($"Failed to stop recording: {ex.Message}");
         }
     }
@@ -579,6 +777,20 @@ public partial class RecordingScreen : BaseScreen
         if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
 
         OnRecordButtonPressed();
+    }
+
+    private void OnPrevSlotPressed()
+    {
+        if (_isPreviewingTake) StopTakePreview();
+        if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
+        if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
+
+        if (_currentSlotIndex > 0)
+        {
+            _currentSlotIndex--;
+            if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
+            UpdateUiState();
+        }
     }
 
     private void OnNextSlotPressed()

@@ -69,7 +69,7 @@ public partial class SetupScreen : BaseScreen
         if (_sceneTitleLabel is not null)
         {
             _sceneTitleLabel.Text = selectedScene is not null
-                ? $"🎬 {selectedScene.Title}  ({selectedScene.DurationMilliseconds / 1000.0:F1}s)"
+                ? $"🎬 {selectedScene.Title}  ({selectedScene.DurationMilliseconds / 1000.0:F1}s  |  {selectedScene.Document.VoiceSlots.Count} Dialogue Lines)"
                 : "🎬 Scene: Default (Museum Mix-up)";
         }
 
