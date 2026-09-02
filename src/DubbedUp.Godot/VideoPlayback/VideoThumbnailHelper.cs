@@ -149,7 +149,7 @@ public static class VideoThumbnailHelper
             // Capture at 2.0 seconds into video to avoid black opening frames
             var psi = new ProcessStartInfo
             {
-                FileName = "ffmpeg",
+                FileName = ExternalToolLocator.ResolveFfmpeg(),
                 Arguments = $"-y -loglevel error -ss 00:00:02 -i \"{videoFileName}\" -vframes 1 -vf \"scale=320:180:force_original_aspect_ratio=increase,crop=320:180\" \"{thumbOutPath}\"",
                 WorkingDirectory = videoDir,
                 UseShellExecute = false,

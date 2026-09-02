@@ -22,6 +22,7 @@ Thumbs.db
 # Local runtime data
 local-data/
 recordings/
+.tools/
 *.tmp.wav
 *.tmp.ogg
 
