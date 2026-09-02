@@ -12,21 +12,26 @@ public partial class WaveformVisualizer : Control
 
     private float[] _referenceSamples = new float[SampleResolution];
     private float[] _liveSamples = new float[SampleResolution];
+    private double _leadInSeconds = 0.0;
+    private double _slotDurationSeconds = 4.0;
     private double _durationSeconds = 4.0;
     private double _playheadSeconds = 0.0;
     private bool _isRecording = false;
 
     [Export]
-    public Color ReferenceColor { get; set; } = new Color(0.2f, 0.6f, 0.9f, 0.45f);
+    public Color ReferenceColor { get; set; } = new Color(0.3f, 0.85f, 1.0f, 0.95f);
 
     [Export]
-    public Color LiveVoiceColor { get; set; } = new Color(0.2f, 1.0f, 0.5f, 0.95f);
+    public Color ReferenceDimColor { get; set; } = new Color(0.3f, 0.5f, 0.7f, 0.25f);
 
     [Export]
-    public Color PlayheadColor { get; set; } = new Color(1.0f, 0.9f, 0.2f, 1.0f);
+    public Color LiveVoiceColor { get; set; } = new Color(0.2f, 1.0f, 0.5f, 0.98f);
 
     [Export]
-    public Color BackgroundColor { get; set; } = new Color(0.08f, 0.10f, 0.14f, 0.9f);
+    public Color PlayheadColor { get; set; } = new Color(1.0f, 0.95f, 0.2f, 1.0f);
+
+    [Export]
+    public Color BackgroundColor { get; set; } = new Color(0.06f, 0.08f, 0.12f, 0.95f);
 
     public override void _Ready()
     {
@@ -36,7 +41,14 @@ public partial class WaveformVisualizer : Control
 
     public void Reset(double durationSeconds, float[]? customReference = null)
     {
-        _durationSeconds = Math.Max(0.5, durationSeconds);
+        Reset(0.0, durationSeconds, customReference);
+    }
+
+    public void Reset(double leadInSeconds, double slotDurationSeconds, float[]? customReference = null)
+    {
+        _leadInSeconds = Math.Max(0.0, leadInSeconds);
+        _slotDurationSeconds = Math.Max(0.5, slotDurationSeconds);
+        _durationSeconds = _leadInSeconds + _slotDurationSeconds;
         _playheadSeconds = 0.0;
         _isRecording = false;
         Array.Clear(_liveSamples, 0, _liveSamples.Length);
@@ -80,7 +92,9 @@ public partial class WaveformVisualizer : Control
         float totalDiff = 0.0f;
         int activeBins = 0;
 
-        for (int i = 0; i < SampleResolution; i++)
+        int startBin = _durationSeconds > 0 ? (int)((_leadInSeconds / _durationSeconds) * SampleResolution) : 0;
+
+        for (int i = startBin; i < SampleResolution; i++)
         {
             var refVal = _referenceSamples[i];
             var liveVal = _liveSamples[i];
@@ -107,8 +121,34 @@ public partial class WaveformVisualizer : Control
         var midY = height / 2.0f;
 
         // 1. Draw rounded background box
-        DrawRect(rect, BackgroundColor, true, -1.0f);
-        DrawRect(rect, new Color(0.25f, 0.35f, 0.5f, 0.6f), false, 1.5f);
+        DrawRect(rect, BackgroundColor, true);
+
+        var leadInRatio = _durationSeconds > 0 ? (float)(_leadInSeconds / _durationSeconds) : 0.0f;
+        var leadInWidth = leadInRatio * width;
+        var speechWidth = width - leadInWidth;
+
+        if (_leadInSeconds > 0)
+        {
+            // Dimmed Pre-Roll background
+            var preRollRect = new Rect2(0, 0, leadInWidth, height);
+            DrawRect(preRollRect, new Color(0.03f, 0.04f, 0.06f, 0.9f), true);
+
+            // Highlighted Speech Box background
+            var speechRect = new Rect2(leadInWidth, 0, speechWidth, height);
+            DrawRect(speechRect, new Color(0.08f, 0.16f, 0.28f, 0.85f), true);
+            DrawRect(speechRect, new Color(0.25f, 0.75f, 1.0f, 0.8f), false, 2.0f);
+
+            // Vertical dividing line at start of speech box
+            DrawLine(new Vector2(leadInWidth, 0), new Vector2(leadInWidth, height), new Color(1.0f, 0.35f, 0.35f, 0.95f), 2.5f);
+
+            // Zone Labels
+            DrawString(ThemeDB.FallbackFont, new Vector2(6, 16), "⏳ 3s Hazırlık (Akış)", HorizontalAlignment.Left, -1, 10, new Color(0.5f, 0.6f, 0.7f, 0.7f));
+            DrawString(ThemeDB.FallbackFont, new Vector2(leadInWidth + 8, 16), "🎙️ KAYIT ALANI (Senin Replik)", HorizontalAlignment.Left, -1, 11, new Color(0.3f, 1.0f, 0.6f, 0.95f));
+        }
+        else
+        {
+            DrawRect(rect, new Color(0.25f, 0.35f, 0.5f, 0.6f), false, 1.5f);
+        }
 
         // 2. Draw subtle horizontal center line and time ticks
         DrawLine(new Vector2(0, midY), new Vector2(width, midY), new Color(0.3f, 0.4f, 0.5f, 0.3f), 1.0f);
@@ -119,26 +159,29 @@ public partial class WaveformVisualizer : Control
             var x = (float)(s / _durationSeconds * width);
             if (x < width)
             {
-                DrawLine(new Vector2(x, 0), new Vector2(x, height), new Color(0.3f, 0.4f, 0.5f, 0.25f), 1.0f);
-                DrawString(ThemeDB.FallbackFont, new Vector2(x + 4, height - 6), $"{s}s", HorizontalAlignment.Left, -1, 10, new Color(0.6f, 0.7f, 0.8f, 0.6f));
+                DrawLine(new Vector2(x, 0), new Vector2(x, height), new Color(0.3f, 0.4f, 0.5f, 0.2f), 1.0f);
             }
         }
 
-        // 3. Draw Reference Waveform (Target Voice in Cyan/Blue)
+        // 3. Draw Reference Waveform (Dimmed during pre-roll, Vibrant cyan inside speech box)
         var binWidth = width / SampleResolution;
+        int leadInBin = (int)(leadInRatio * SampleResolution);
+
         for (int i = 0; i < SampleResolution; i++)
         {
             var amp = _referenceSamples[i];
             if (amp > 0.02f)
             {
-                var barHeight = amp * (height * 0.42f);
+                var isPreRoll = i < leadInBin;
+                var col = isPreRoll ? ReferenceDimColor : ReferenceColor;
+                var barHeight = amp * (height * (isPreRoll ? 0.35f : 0.42f));
                 var x = i * binWidth;
-                DrawRect(new Rect2(x, midY - barHeight, Math.Max(1.5f, binWidth - 0.5f), barHeight * 2), ReferenceColor);
+                DrawRect(new Rect2(x, midY - barHeight, Math.Max(1.5f, binWidth - 0.5f), barHeight * 2), col);
             }
         }
 
-        // 4. Draw Live Player Voice Waveform (Neon Green/Yellow)
-        for (int i = 0; i < SampleResolution; i++)
+        // 4. Draw Live Player Voice Waveform (Neon Green/Yellow inside speech box)
+        for (int i = leadInBin; i < SampleResolution; i++)
         {
             var amp = _liveSamples[i];
             if (amp > 0.02f)
@@ -153,23 +196,20 @@ public partial class WaveformVisualizer : Control
         var playheadX = (float)(_playheadSeconds / _durationSeconds * width);
         playheadX = Math.Clamp(playheadX, 0.0f, width);
 
-        DrawLine(new Vector2(playheadX, 0), new Vector2(playheadX, height), PlayheadColor, 2.5f);
+        var currentPlayheadColor = (_leadInSeconds > 0 && _playheadSeconds < _leadInSeconds)
+            ? new Color(0.6f, 0.8f, 1.0f, 0.85f)
+            : PlayheadColor;
 
-        // Playhead triangle cursor at top and bottom
+        DrawLine(new Vector2(playheadX, 0), new Vector2(playheadX, height), currentPlayheadColor, 2.5f);
+
+        // Playhead triangle cursor at top
         var topTriangle = new Vector2[]
         {
             new(playheadX - 6, 0),
             new(playheadX + 6, 0),
             new(playheadX, 8)
         };
-        DrawColoredPolygon(topTriangle, PlayheadColor);
-
-        // 6. Draw Match / Target Label
-        DrawString(ThemeDB.FallbackFont, new Vector2(8, 16), "🎯 Orijinal Ses Eğrisi", HorizontalAlignment.Left, -1, 11, new Color(0.4f, 0.8f, 1.0f, 0.8f));
-        if (_isRecording || _playheadSeconds > 0)
-        {
-            DrawString(ThemeDB.FallbackFont, new Vector2(8, 30), "🎙️ Senin Ses Dalgası", HorizontalAlignment.Left, -1, 11, new Color(0.3f, 1.0f, 0.5f, 0.9f));
-        }
+        DrawColoredPolygon(topTriangle, currentPlayheadColor);
     }
 
     private void GenerateSyntheticReferenceWave()

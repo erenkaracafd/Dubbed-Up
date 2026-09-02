@@ -133,6 +133,12 @@ custom_minimum_size = Vector2(150, 38)
 layout_mode = 2
 text = "🔄 Re-Record"
 
+[node name="PrevSlotButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ReviewActions"]
+visible = false
+custom_minimum_size = Vector2(140, 38)
+layout_mode = 2
+text = "← Previous Line"
+
 [node name="NextSlotButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(180, 38)

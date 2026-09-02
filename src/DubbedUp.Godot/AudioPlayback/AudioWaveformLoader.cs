@@ -178,28 +178,40 @@ public static class AudioWaveformLoader
                 if (info.BitsPerSample == 16)
                 {
                     short left = BitConverter.ToInt16(bytes, frameOffset);
-                    short right = info.Channels > 1 ? BitConverter.ToInt16(bytes, frameOffset + 2) : left;
+                    short right = info.Channels > 1 && frameOffset + 2 < bytes.Length ? BitConverter.ToInt16(bytes, frameOffset + 2) : left;
                     sampleVal = ((left + right) / 2.0f) / 32768.0f;
+                }
+                else if (info.BitsPerSample == 24)
+                {
+                    int left = (bytes[frameOffset] | (bytes[frameOffset + 1] << 8) | (bytes[frameOffset + 2] << 16));
+                    if ((left & 0x800000) != 0) left |= unchecked((int)0xFF000000);
+                    int right = left;
+                    if (info.Channels > 1 && frameOffset + 5 < bytes.Length)
+                    {
+                        right = (bytes[frameOffset + 3] | (bytes[frameOffset + 4] << 8) | (bytes[frameOffset + 5] << 16));
+                        if ((right & 0x800000) != 0) right |= unchecked((int)0xFF000000);
+                    }
+                    sampleVal = ((left + right) / 2.0f) / 8388608.0f;
                 }
                 else if (info.BitsPerSample == 32)
                 {
                     if (info.AudioFormat == 3) // Float
                     {
                         float left = BitConverter.ToSingle(bytes, frameOffset);
-                        float right = info.Channels > 1 ? BitConverter.ToSingle(bytes, frameOffset + 4) : left;
+                        float right = info.Channels > 1 && frameOffset + 4 < bytes.Length ? BitConverter.ToSingle(bytes, frameOffset + 4) : left;
                         sampleVal = (left + right) / 2.0f;
                     }
                     else // 32-bit int
                     {
                         int left = BitConverter.ToInt32(bytes, frameOffset);
-                        int right = info.Channels > 1 ? BitConverter.ToInt32(bytes, frameOffset + 4) : left;
+                        int right = info.Channels > 1 && frameOffset + 4 < bytes.Length ? BitConverter.ToInt32(bytes, frameOffset + 4) : left;
                         sampleVal = ((left >> 16) + (right >> 16)) / 65536.0f;
                     }
                 }
                 else if (info.BitsPerSample == 8)
                 {
                     byte left = bytes[frameOffset];
-                    byte right = info.Channels > 1 ? bytes[frameOffset + 1] : left;
+                    byte right = info.Channels > 1 && frameOffset + 1 < bytes.Length ? bytes[frameOffset + 1] : left;
                     sampleVal = (((left + right) / 2.0f) - 128.0f) / 128.0f;
                 }
 
@@ -212,10 +224,11 @@ public static class AudioWaveformLoader
             if (rms > maxEnergy) maxEnergy = rms;
         }
 
-        // Normalize waveform with slight perceptual compression for clean UI visualization
+        // Normalize waveform with slight perceptual compression and noise gate for pure vocal speech clarity
+        float normFactor = Math.Max(maxEnergy, 0.04f);
         for (int bin = 0; bin < resolution; bin++)
         {
-            var norm = result[bin] / maxEnergy;
+            var norm = result[bin] / normFactor;
             result[bin] = (float)Math.Clamp(Math.Pow(norm, 0.75), 0.0, 1.0);
         }
 

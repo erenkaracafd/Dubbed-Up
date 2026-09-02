@@ -14,6 +14,7 @@ public partial class PlaybackScreen : BaseScreen
     private Label? _subtitleLabel;
     private Button? _playPauseButton;
     private Button? _replayButton;
+    private Button? _exportButton;
     private Button? _proceedButton;
     private Button? _menuButton;
 
@@ -33,6 +34,7 @@ public partial class PlaybackScreen : BaseScreen
         _subtitleLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/SubtitleLabel");
         _playPauseButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ControlsContainer/PlayPauseButton");
         _replayButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ControlsContainer/ReplayButton");
+        _exportButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ControlsContainer/ExportButton");
         _proceedButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ProceedButton");
         _menuButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/MenuButton");
 
@@ -44,6 +46,11 @@ public partial class PlaybackScreen : BaseScreen
         if (_replayButton is not null)
         {
             _replayButton.Pressed += OnReplayPressed;
+        }
+
+        if (_exportButton is not null)
+        {
+            _exportButton.Pressed += OnExportPressed;
         }
 
         if (_proceedButton is not null)
@@ -239,6 +246,49 @@ public partial class PlaybackScreen : BaseScreen
         catch (Exception ex)
         {
             UpdateStatusText($"Error: {ex.Message}");
+        }
+    }
+
+    private async void OnExportPressed()
+    {
+        if (Coordinator?.CurrentScene is null)
+        {
+            UpdateStatusText("❌ No active scene to export.");
+            return;
+        }
+
+        if (_exportButton is not null)
+        {
+            _exportButton.Disabled = true;
+            _exportButton.Text = "⏳ Exporting...";
+        }
+
+        UpdateStatusText("🎬 Mixing audio tracks and rendering MP4...");
+
+        var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
+        var exportedFile = await VideoDubExporter.ExportDubbedVideoAsync(
+            Coordinator.CurrentScene,
+            folderPath,
+            Coordinator.TakeStore,
+            status =>
+            {
+                UpdateStatusText(status);
+            });
+
+        if (_exportButton is not null)
+        {
+            _exportButton.Disabled = false;
+            _exportButton.Text = "🎬 Export Video (.mp4)";
+        }
+
+        if (!string.IsNullOrEmpty(exportedFile) && System.IO.File.Exists(exportedFile))
+        {
+            UpdateStatusText($"✅ Video saved: {System.IO.Path.GetFileName(exportedFile)}");
+            OS.ShellOpen(System.IO.Path.GetDirectoryName(exportedFile) ?? exportedFile);
+        }
+        else
+        {
+            UpdateStatusText("❌ Video export failed. Check FFmpeg availability.");
         }
     }
 

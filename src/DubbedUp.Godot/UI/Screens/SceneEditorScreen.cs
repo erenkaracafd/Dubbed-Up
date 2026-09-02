@@ -3,6 +3,7 @@ using DubbedUp.Core.Characters;
 using DubbedUp.Core.ProjectFormat;
 using DubbedUp.Core.Scenes;
 using DubbedUp.Core.Timeline;
+using DubbedUp.Godot.Ai;
 using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
 using DubbedUp.Godot.UI.Controls;
@@ -23,6 +24,7 @@ public partial class SceneEditorScreen : BaseScreen
     private Label? _videoTimeLabel;
     private HSlider? _timeSlider;
     private PanelContainer? _timelineContainer;
+    private Button? _autoDetectButton;
     private Button? _addBoxButton;
     private Button? _deleteBoxButton;
     private VBoxContainer? _slotsContainer;
@@ -72,6 +74,7 @@ public partial class SceneEditorScreen : BaseScreen
         _videoTimeLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/VideoTimeLabel");
         _timeSlider = GetNodeOrNull<HSlider>("ScrollContainer/CenterContainer/VBoxContainer/TimeSlider");
         _timelineContainer = GetNodeOrNull<PanelContainer>("ScrollContainer/CenterContainer/VBoxContainer/TimelineContainer");
+        _autoDetectButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/AutoDetectButton");
         _addBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/AddBoxButton");
         _deleteBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/DeleteBoxButton");
         _slotsContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/SlotsContainer");
@@ -95,6 +98,7 @@ public partial class SceneEditorScreen : BaseScreen
         if (_seekBackButton is not null) _seekBackButton.Pressed += () => SeekRelative(-5.0);
         if (_seekForwardButton is not null) _seekForwardButton.Pressed += () => SeekRelative(5.0);
         if (_stopButton is not null) _stopButton.Pressed += OnStopPressed;
+        if (_autoDetectButton is not null) _autoDetectButton.Pressed += OnAutoDetectPressed;
         if (_addBoxButton is not null) _addBoxButton.Pressed += OnAddBoxPressed;
         if (_deleteBoxButton is not null) _deleteBoxButton.Pressed += OnDeleteSelectedBoxPressed;
         if (_saveAndProceedButton is not null) _saveAndProceedButton.Pressed += OnSaveAndProceedPressed;
@@ -436,6 +440,60 @@ public partial class SceneEditorScreen : BaseScreen
         _timelineEditor?.SetPlayhead(clamped);
     }
 
+    private void OnAutoDetectPressed()
+    {
+        if (string.IsNullOrEmpty(_currentWavPath) || !System.IO.File.Exists(_currentWavPath))
+        {
+            var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
+            if (!string.IsNullOrEmpty(folderPath))
+            {
+                _currentWavPath = VideoPlayback.MediaTranscoder.EnsureAudioExtracted(folderPath);
+            }
+        }
+
+        if (string.IsNullOrEmpty(_currentWavPath) || !System.IO.File.Exists(_currentWavPath))
+        {
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = "❌ No audio stream found to analyze.";
+            }
+            return;
+        }
+
+        var detected = LocalAiSceneExtractor.DetectSpeechFromWavFile(_currentWavPath, maxSlots: 20);
+        if (detected.Count == 0)
+        {
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = "⚠️ No distinct speech boundaries detected automatically. You can add boxes manually.";
+            }
+            return;
+        }
+
+        _editableSlots.Clear();
+        for (int i = 0; i < detected.Count; i++)
+        {
+            var seg = detected[i];
+            _editableSlots.Add(new EditableVoiceSlot
+            {
+                SlotId = $"slot-{i + 1}",
+                CharacterId = seg.CharacterId,
+                CharacterName = seg.SpeakerDisplayName,
+                Prompt = seg.Prompt,
+                StartSeconds = Math.Round(seg.StartMilliseconds / 1000.0, 2),
+                EndSeconds = Math.Round(seg.EndMilliseconds / 1000.0, 2)
+            });
+        }
+
+        RebuildSlotsUi();
+        SyncTimelineData();
+
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = $"✨ Successfully auto-detected {detected.Count} speech lines from audio waveform!";
+        }
+    }
+
     private void OnAddBoxPressed()
     {
         var currentPos = _videoPlayer is not null && _videoPlayer.IsPlaying() ? _videoPlayer.GetStreamPosition() : (_timeSlider?.Value ?? 0.0);
@@ -444,12 +502,13 @@ public partial class SceneEditorScreen : BaseScreen
         if (end <= start) end = Math.Min(_totalDuration, start + 1.0);
 
         var nextIdx = _editableSlots.Count + 1;
+        var speakerNum = ((_editableSlots.Count) % 2) + 1;
         var newSlot = new EditableVoiceSlot
         {
             SlotId = $"slot-{nextIdx}",
-            CharacterId = $"char-{nextIdx}",
-            CharacterName = $"Character {nextIdx}",
-            Prompt = "Enter dialogue prompt here...",
+            CharacterId = $"char-{speakerNum}",
+            CharacterName = $"Character {speakerNum}",
+            Prompt = $"Line {nextIdx} dialogue prompt",
             StartSeconds = start,
             EndSeconds = end
         };
@@ -691,12 +750,13 @@ public partial class SceneEditorScreen : BaseScreen
 
         _isPreviewingSlot = true;
         _previewEndSec = slot.EndSeconds;
-        SeekTo(slot.StartSeconds);
+        var leadInStart = Math.Max(0.0, slot.StartSeconds - 3.0);
+        SeekTo(leadInStart);
         PlayVideo();
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"🎧 Previewing: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
+            _statusLabel.Text = $"🎧 Previewing with 3s lead-in: {slot.CharacterName} ({leadInStart:F1}s → {slot.EndSeconds:F1}s)";
         }
     }
 

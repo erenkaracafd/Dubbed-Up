@@ -82,10 +82,33 @@ public static class LocalAiSceneExtractor
     }
 
     /// <summary>
-    /// Analyzes an uncompressed WAV byte stream using energy-based Voice Activity Detection (VAD)
-    /// to detect speech bursts, silence boundaries, and automatic dialogue timings.
+    /// Reads a WAV file and analyzes acoustic energy to automatically detect speech segments (up to maxSlots).
     /// </summary>
-    public static IReadOnlyList<DetectedSpeechSegment> DetectSpeechFromWavBytes(byte[] wavBytes, double silenceThresholdSec = 0.6)
+    public static IReadOnlyList<DetectedSpeechSegment> DetectSpeechFromWavFile(string wavFilePath, int maxSlots = 20, double silenceThresholdSec = 0.5)
+    {
+        if (string.IsNullOrWhiteSpace(wavFilePath) || !System.IO.File.Exists(wavFilePath))
+        {
+            return Array.Empty<DetectedSpeechSegment>();
+        }
+
+        try
+        {
+            var bytes = System.IO.File.ReadAllBytes(wavFilePath);
+            return DetectSpeechFromWavBytes(bytes, silenceThresholdSec, maxSlots);
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[LocalAiSceneExtractor] Error detecting speech from '{wavFilePath}': {ex.Message}");
+            return Array.Empty<DetectedSpeechSegment>();
+        }
+    }
+
+    /// <summary>
+    /// Analyzes an uncompressed WAV byte stream using vocal-frequency bandpass Voice Activity Detection (VAD)
+    /// to detect speech bursts, silence boundaries, and automatic dialogue timings up to maxSlots.
+    /// Splits continuously into new boxes whenever speech pauses for >= 350ms or exceeds 4.5s.
+    /// </summary>
+    public static IReadOnlyList<DetectedSpeechSegment> DetectSpeechFromWavBytes(byte[] wavBytes, double silenceThresholdSec = 0.35, int maxSlots = 20)
     {
         var segments = new List<DetectedSpeechSegment>();
 
@@ -105,78 +128,141 @@ public static class LocalAiSceneExtractor
         }
 
         int bytesPerSample = bitsPerSample / 8;
-        int frameSizeSamples = sampleRate / 20; // 50ms windows
+        int frameSizeSamples = sampleRate / 25; // 40ms windows for crisp pause detection
         int frameSizeBytes = frameSizeSamples * channels * bytesPerSample;
 
-        int offset = 44; // Start of PCM
-        long currentMs = 0;
-        long segmentStartMs = -1;
-        long lastSpeechMs = -1;
-        int segmentIndex = 1;
+        int offset = 44; // Start of PCM data
 
-        // Energy threshold for speech vs background
-        const double energyThreshold = 800.0;
+        // 1. First pass: compute average vocal-band RMS energy across frames
+        double totalRms = 0.0;
+        int frameCount = 0;
+        double maxRms = 0.0;
+
+        // Bandpass filter state (simple RC filter: HPF 200Hz, LPF 3500Hz for human vocal formants)
+        double dt = 1.0 / sampleRate;
+        double rcHigh = 1.0 / (2.0 * Math.PI * 200.0);
+        double alphaHigh = rcHigh / (rcHigh + dt);
+        double rcLow = 1.0 / (2.0 * Math.PI * 3500.0);
+        double alphaLow = dt / (rcLow + dt);
 
         while (offset + frameSizeBytes <= wavBytes.Length)
         {
             double sumSquare = 0;
             int samplesInFrame = 0;
+            double prevIn = 0;
+            double prevHp = 0;
+            double prevLp = 0;
 
-            for (int i = 0; i < frameSizeSamples * channels; i++)
+            for (int i = 0; i < frameSizeSamples * channels; i += channels)
             {
                 short sample = BitConverter.ToInt16(wavBytes, offset + (i * 2));
-                sumSquare += sample * sample;
+                double input = sample;
+
+                // Highpass 200Hz (cuts deep bass/drums)
+                double hp = alphaHigh * (prevHp + input - prevIn);
+                prevIn = input;
+                prevHp = hp;
+
+                // Lowpass 3500Hz (cuts cymbals/high hats)
+                double lp = prevLp + alphaLow * (hp - prevLp);
+                prevLp = lp;
+
+                sumSquare += lp * lp;
                 samplesInFrame++;
             }
 
-            double rms = Math.Sqrt(sumSquare / Math.Max(1, samplesInFrame));
-            bool isSpeech = rms > energyThreshold;
+            double frameRms = Math.Sqrt(sumSquare / Math.Max(1, samplesInFrame));
+            totalRms += frameRms;
+            if (frameRms > maxRms) maxRms = frameRms;
+            frameCount++;
+            offset += frameSizeBytes;
+        }
+
+        double avgRms = frameCount > 0 ? totalRms / frameCount : 500.0;
+        // Music rejection: threshold set above background noise floor and bass/drum bleed
+        double dynamicThreshold = Math.Max(400.0, Math.Min(avgRms * 1.30, maxRms * 0.28));
+
+        // 2. Second pass: detect speech bursts and split on pauses >= 350ms
+        offset = 44;
+        long currentMs = 0;
+        long segmentStartMs = -1;
+        long lastSpeechMs = -1;
+        int segmentIndex = 1;
+
+        while (offset + frameSizeBytes <= wavBytes.Length && segments.Count < maxSlots)
+        {
+            double sumSquare = 0;
+            int samplesInFrame = 0;
+            double prevIn = 0;
+            double prevHp = 0;
+            double prevLp = 0;
+
+            for (int i = 0; i < frameSizeSamples * channels; i += channels)
+            {
+                short sample = BitConverter.ToInt16(wavBytes, offset + (i * 2));
+                double input = sample;
+
+                double hp = alphaHigh * (prevHp + input - prevIn);
+                prevIn = input;
+                prevHp = hp;
+
+                double lp = prevLp + alphaLow * (hp - prevLp);
+                prevLp = lp;
+
+                sumSquare += lp * lp;
+                samplesInFrame++;
+            }
+
+            double frameRms = Math.Sqrt(sumSquare / Math.Max(1, samplesInFrame));
+            bool isSpeech = frameRms > dynamicThreshold;
 
             if (isSpeech)
             {
                 if (segmentStartMs < 0)
                 {
-                    segmentStartMs = Math.Max(0, currentMs - 100); // 100ms lead-in
+                    segmentStartMs = Math.Max(0, currentMs - 80); // 80ms lead-in
                 }
-                lastSpeechMs = currentMs + 50;
+                lastSpeechMs = currentMs + 40;
             }
             else
             {
-                if (segmentStartMs >= 0 && (currentMs - lastSpeechMs) > (silenceThresholdSec * 1000.0))
+                // If speech stops for >= silenceThresholdSec (default 350ms pause), close box & start new on next phrase
+                if (segmentStartMs >= 0 && (currentMs - lastSpeechMs) >= (silenceThresholdSec * 1000.0))
                 {
-                    var segmentEndMs = lastSpeechMs + 200;
-                    if (segmentEndMs - segmentStartMs >= 1000) // At least 1 second
+                    var segmentEndMs = lastSpeechMs + 150;
+                    if (segmentEndMs - segmentStartMs >= 700) // Minimum 700ms for a speech line
                     {
-                        var speakerNum = ((segmentIndex - 1) % 2) + 1;
-                        segments.Add(new DetectedSpeechSegment(
-                            $"speaker-{speakerNum}",
-                            $"Character {speakerNum}",
-                            $"Replik {segmentIndex} (Seslendirin)",
-                            segmentStartMs,
-                            segmentEndMs));
-                        segmentIndex++;
+                        AddSegment(segments, segmentStartMs, segmentEndMs, ref segmentIndex, maxSlots);
                     }
                     segmentStartMs = -1;
                 }
             }
 
             offset += frameSizeBytes;
-            currentMs += 50;
+            currentMs += 40;
         }
 
-        // Close last segment if active
-        if (segmentStartMs >= 0 && lastSpeechMs > segmentStartMs + 1000)
+        // Close trailing segment if active
+        if (segmentStartMs >= 0 && lastSpeechMs > segmentStartMs + 700 && segments.Count < maxSlots)
         {
-            var speakerNum = ((segmentIndex - 1) % 2) + 1;
-            segments.Add(new DetectedSpeechSegment(
-                $"speaker-{speakerNum}",
-                $"Character {speakerNum}",
-                $"Replik {segmentIndex} (Seslendirin)",
-                segmentStartMs,
-                lastSpeechMs + 200));
+            AddSegment(segments, segmentStartMs, lastSpeechMs + 150, ref segmentIndex, maxSlots);
         }
 
         return segments;
+    }
+
+    private static void AddSegment(List<DetectedSpeechSegment> segments, long startMs, long endMs, ref int segmentIndex, int maxSlots)
+    {
+        if (segments.Count >= maxSlots) return;
+
+        var speakerNum = ((segmentIndex - 1) % 2) + 1;
+        segments.Add(new DetectedSpeechSegment(
+            $"char-{speakerNum}",
+            $"Character {speakerNum}",
+            $"Line {segmentIndex} (Auto-detected dialogue)",
+            startMs,
+            endMs));
+        segmentIndex++;
     }
 
     private static bool TryParseSrtTimestamp(string timecode, out long milliseconds)

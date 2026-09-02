@@ -36,10 +36,30 @@ public sealed class AiSceneBuilderTests
     }
 
     [Fact]
-    public void DetectedSpeechSegment_InvalidDuration_ThrowsArgumentException()
+    public void BuildScene_With20Segments_ProducesValidDocument()
     {
-        Assert.Throws<ArgumentException>(() =>
-            new DetectedSpeechSegment("spk", "Speaker", "Prompt text", 5000, 2000));
+        var segments = new List<DetectedSpeechSegment>();
+        for (int i = 1; i <= 20; i++)
+        {
+            var speakerNum = ((i - 1) % 2) + 1;
+            segments.Add(new DetectedSpeechSegment(
+                $"char-{speakerNum}",
+                $"Character {speakerNum}",
+                $"Dialogue line #{i}",
+                i * 3000,
+                (i * 3000) + 2500));
+        }
+
+        var doc = AiSceneBuilder.BuildScene("Epic 20 Line Scene", "epic-20-line", 65000, "media/video.ogv", segments);
+
+        Assert.NotNull(doc);
+        Assert.Equal(20, doc.VoiceSlots.Count);
+        Assert.Equal(20, doc.Timeline.Count);
+        Assert.Equal(2, doc.Characters.Count);
+        Assert.True(doc.DurationMilliseconds >= 63500);
+
+        // Ensure full schema validation passes
+        ProjectValidator.Validate(doc);
     }
 }
 

@@ -42,6 +42,7 @@ public partial class SceneCreatorScreen : BaseScreen
 
     private readonly List<string> _discoveredMediaFiles = [];
     private readonly List<PanelContainer> _cardNodes = [];
+    private readonly List<DetectedSpeechSegment> _detectedSegments = [];
     private string? _selectedSourceMediaFile;
     private PanelContainer? _selectedCardPanel;
 
@@ -356,26 +357,81 @@ public partial class SceneCreatorScreen : BaseScreen
 
     private void OnAutoExtractPressed()
     {
-        var rawText = _srtInputText?.Text ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(rawText))
+        var rawText = _srtInputText?.Text?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(rawText))
+        {
+            var detected = LocalAiSceneExtractor.ParseSrtText(rawText);
+            if (detected.Count > 0)
+            {
+                _detectedSegments.Clear();
+                _detectedSegments.AddRange(detected);
+                ApplyDetectedSegmentsToForm(detected);
+                if (_aiStatusLabel is not null)
+                {
+                    _aiStatusLabel.Text = $"✅ Extracted {detected.Count} speech lines from script/SRT!";
+                }
+                return;
+            }
+        }
+
+        // If no SRT was supplied, perform automatic Voice Activity Detection on the selected video
+        var sourceMediaFile = _selectedSourceMediaFile;
+        if (string.IsNullOrWhiteSpace(sourceMediaFile) || !System.IO.File.Exists(sourceMediaFile))
         {
             if (_aiStatusLabel is not null)
             {
-                _aiStatusLabel.Text = "⚠️ Please paste an SRT subtitle or timestamped script above.";
+                _aiStatusLabel.Text = "⚠️ Select a video from above or paste an SRT script.";
             }
             return;
         }
 
-        var detected = LocalAiSceneExtractor.ParseSrtText(rawText);
-        if (detected.Count == 0)
+        if (_aiStatusLabel is not null)
+        {
+            _aiStatusLabel.Text = "⏳ Analyzing audio waveforms for speech activity...";
+        }
+
+        // Extract audio from video file to temporary WAV and detect speech bursts
+        try
+        {
+            var tempWav = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"dubbedup_vad_{Guid.NewGuid():N}.wav");
+            var ffmpegArgs = $"-y -loglevel error -i \"{sourceMediaFile}\" -vn -acodec pcm_s16le -ar 44100 -ac 2 \"{tempWav}\"";
+            VideoPlayback.MediaTranscoder.RunProcess("ffmpeg", ffmpegArgs, 30000);
+
+            if (System.IO.File.Exists(tempWav))
+            {
+                var detected = LocalAiSceneExtractor.DetectSpeechFromWavFile(tempWav, maxSlots: 20);
+                try { System.IO.File.Delete(tempWav); } catch { }
+
+                if (detected.Count > 0)
+                {
+                    _detectedSegments.Clear();
+                    _detectedSegments.AddRange(detected);
+                    ApplyDetectedSegmentsToForm(detected);
+
+                    if (_aiStatusLabel is not null)
+                    {
+                        _aiStatusLabel.Text = $"✨ Auto-detected {detected.Count} speech lines from audio! Click Save to open in editor.";
+                    }
+                    return;
+                }
+            }
+
+            if (_aiStatusLabel is not null)
+            {
+                _aiStatusLabel.Text = "⚠️ No distinct speech boundaries detected. Using default 2 slots.";
+            }
+        }
+        catch (Exception ex)
         {
             if (_aiStatusLabel is not null)
             {
-                _aiStatusLabel.Text = "❌ No timestamped dialogue found in the text. Check formatting.";
+                _aiStatusLabel.Text = $"Detection note: {ex.Message}";
             }
-            return;
         }
+    }
 
+    private void ApplyDetectedSegmentsToForm(IReadOnlyList<DetectedSpeechSegment> detected)
+    {
         if (detected.Count > 0)
         {
             var first = detected[0];
@@ -401,12 +457,8 @@ public partial class SceneCreatorScreen : BaseScreen
         var maxEndMs = detected.Max(d => d.EndMilliseconds);
         if (_durationSpinBox is not null && maxEndMs > (long)(_durationSpinBox.Value * 1000.0))
         {
+            _durationSpinBox.MaxValue = Math.Max(1800.0, (maxEndMs / 1000.0) + 10.0);
             _durationSpinBox.Value = (maxEndMs / 1000.0) + 1.0;
-        }
-
-        if (_aiStatusLabel is not null)
-        {
-            _aiStatusLabel.Text = $"✅ Extracted {detected.Count} speech lines into characters!";
         }
     }
 
@@ -462,11 +514,13 @@ public partial class SceneCreatorScreen : BaseScreen
 
         try
         {
-            var segments = new List<DetectedSpeechSegment>
-            {
-                new("char-1", char1Name, prompt1, slot1StartMs, slot1EndMs),
-                new("char-2", char2Name, prompt2, slot2StartMs, slot2EndMs)
-            };
+            var segments = _detectedSegments.Count > 0
+                ? _detectedSegments
+                : new List<DetectedSpeechSegment>
+                {
+                    new("char-1", char1Name, prompt1, slot1StartMs, slot1EndMs),
+                    new("char-2", char2Name, prompt2, slot2StartMs, slot2EndMs)
+                };
 
             // Destination folders
             var targetFolder = ProjectSettings.GlobalizePath($"user://workshop_scenes/{sceneId}");
