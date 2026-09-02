@@ -26,6 +26,7 @@ public partial class SceneEditorScreen : BaseScreen
     private PanelContainer? _timelineContainer;
     private Button? _autoDetectButton;
     private Button? _addBoxButton;
+    private Button? _cutBoxButton;
     private Button? _deleteBoxButton;
     private VBoxContainer? _slotsContainer;
     private Label? _statusLabel;
@@ -76,6 +77,7 @@ public partial class SceneEditorScreen : BaseScreen
         _timelineContainer = GetNodeOrNull<PanelContainer>("ScrollContainer/CenterContainer/VBoxContainer/TimelineContainer");
         _autoDetectButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/AutoDetectButton");
         _addBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/AddBoxButton");
+        _cutBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/CutBoxButton");
         _deleteBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/DeleteBoxButton");
         _slotsContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/SlotsContainer");
         _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
@@ -92,6 +94,7 @@ public partial class SceneEditorScreen : BaseScreen
             _timelineEditor.SlotSelected += OnTimelineSlotSelected;
             _timelineEditor.SlotChanged += OnTimelineSlotChanged;
             _timelineEditor.SlotDeleteRequested += DeleteSlotAtIndex;
+            _timelineEditor.SlotSplitRequested += SplitSlotAtIndex;
         }
 
         if (_playPauseButton is not null) _playPauseButton.Pressed += OnPlayPausePressed;
@@ -100,6 +103,7 @@ public partial class SceneEditorScreen : BaseScreen
         if (_stopButton is not null) _stopButton.Pressed += OnStopPressed;
         if (_autoDetectButton is not null) _autoDetectButton.Pressed += OnAutoDetectPressed;
         if (_addBoxButton is not null) _addBoxButton.Pressed += OnAddBoxPressed;
+        if (_cutBoxButton is not null) _cutBoxButton.Pressed += OnCutSelectedBoxPressed;
         if (_deleteBoxButton is not null) _deleteBoxButton.Pressed += OnDeleteSelectedBoxPressed;
         if (_saveAndProceedButton is not null) _saveAndProceedButton.Pressed += OnSaveAndProceedPressed;
         if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
@@ -460,12 +464,23 @@ public partial class SceneEditorScreen : BaseScreen
             return;
         }
 
-        var detected = LocalAiSceneExtractor.DetectSpeechFromWavFile(_currentWavPath, maxSlots: 20);
+        // Prioritize isolated vocals.wav stem if available for clean speech recognition
+        var packageDir = Coordinator?.SelectedScenePackage?.PackageDirectory;
+        if (!string.IsNullOrEmpty(packageDir))
+        {
+            var vocalsWav = System.IO.Path.Combine(packageDir, "media", "vocals.wav");
+            if (System.IO.File.Exists(vocalsWav))
+            {
+                _currentWavPath = vocalsWav;
+            }
+        }
+
+        var detected = LocalAiSceneExtractor.DetectSpeechFromWavFile(_currentWavPath, maxSlots: 30);
         if (detected.Count == 0)
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "⚠️ No distinct speech boundaries detected automatically. You can add boxes manually.";
+                _statusLabel.Text = "⚠️ No spoken dialogue found in audio (silence/music skipped). You can add boxes manually.";
             }
             return;
         }
@@ -490,7 +505,64 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"✨ Successfully auto-detected {detected.Count} speech lines from audio waveform!";
+            _statusLabel.Text = $"✨ AI extracted {detected.Count} dialogue lines with subtitles (silence skipped)!";
+        }
+    }
+
+    private void OnCutSelectedBoxPressed()
+    {
+        var selectedIdx = _timelineEditor?.GetSelectedSlotIndex() ?? -1;
+        if (selectedIdx < 0 || selectedIdx >= _editableSlots.Count)
+        {
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = "⚠️ Please select a speech box first to cut/split it.";
+            }
+            return;
+        }
+
+        var currentPos = _videoPlayer is not null && _videoPlayer.IsPlaying() ? _videoPlayer.GetStreamPosition() : (_timeSlider?.Value ?? 0.0);
+        SplitSlotAtIndex(selectedIdx, currentPos);
+    }
+
+    private void SplitSlotAtIndex(int slotIndex, double splitSeconds)
+    {
+        if (slotIndex < 0 || slotIndex >= _editableSlots.Count) return;
+
+        var slot = _editableSlots[slotIndex];
+        var splitSec = Math.Round(splitSeconds, 2);
+
+        if (splitSec <= slot.StartSeconds + 0.3 || splitSec >= slot.EndSeconds - 0.3)
+        {
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = $"⚠️ Playhead ({splitSec:F1}s) must be inside the selected box ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s) to cut.";
+            }
+            return;
+        }
+
+        var oldEnd = slot.EndSeconds;
+        slot.EndSeconds = splitSec;
+
+        var nextIdx = _editableSlots.Count + 1;
+        var newSlot = new EditableVoiceSlot
+        {
+            SlotId = $"slot-{nextIdx}",
+            CharacterId = slot.CharacterId,
+            CharacterName = slot.CharacterName,
+            Prompt = slot.Prompt,
+            StartSeconds = splitSec,
+            EndSeconds = oldEnd
+        };
+
+        _editableSlots.Insert(slotIndex + 1, newSlot);
+        RebuildSlotsUi();
+        SyncTimelineData();
+        _timelineEditor?.SelectSlot(slotIndex + 1);
+
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = $"✂️ Cut speech box at {splitSec:F1}s into two boxes!";
         }
     }
 

@@ -82,9 +82,11 @@ public static class LocalAiSceneExtractor
     }
 
     /// <summary>
-    /// Reads a WAV file and analyzes acoustic energy to automatically detect speech segments (up to maxSlots).
+    /// Reads a WAV file and uses Whisper Speech-To-Text to automatically extract subtitles and exact sentence boundaries.
+    /// Where no words/subtitles are found (silence or pure music), NO boxes are generated.
+    /// Falls back to offline C# acoustic Voice Activity Detection (VAD) if Whisper is not available.
     /// </summary>
-    public static IReadOnlyList<DetectedSpeechSegment> DetectSpeechFromWavFile(string wavFilePath, int maxSlots = 20, double silenceThresholdSec = 0.5)
+    public static IReadOnlyList<DetectedSpeechSegment> DetectSpeechFromWavFile(string wavFilePath, int maxSlots = 30, double silenceThresholdSec = 0.5)
     {
         if (string.IsNullOrWhiteSpace(wavFilePath) || !System.IO.File.Exists(wavFilePath))
         {
@@ -93,6 +95,14 @@ public static class LocalAiSceneExtractor
 
         try
         {
+            // 1. Prioritize Whisper for actual spoken subtitles with silence rejection
+            var whisperSegments = DetectSpeechWithWhisper(wavFilePath, maxSlots);
+            if (whisperSegments is not null && whisperSegments.Count > 0)
+            {
+                return whisperSegments;
+            }
+
+            // 2. Fallback to pure C# acoustic energy detection
             var bytes = System.IO.File.ReadAllBytes(wavFilePath);
             return DetectSpeechFromWavBytes(bytes, silenceThresholdSec, maxSlots);
         }
@@ -101,6 +111,107 @@ public static class LocalAiSceneExtractor
             GD.PrintErr($"[LocalAiSceneExtractor] Error detecting speech from '{wavFilePath}': {ex.Message}");
             return Array.Empty<DetectedSpeechSegment>();
         }
+    }
+
+    /// <summary>
+    /// Invokes offline Whisper model to automatically extract spoken subtitles and exact sentence boundaries.
+    /// Returns only segments where speech/subtitles actually exist (no ghost boxes during silence or pure music).
+    /// </summary>
+    public static IReadOnlyList<DetectedSpeechSegment>? DetectSpeechWithWhisper(string wavFilePath, int maxSlots = 30)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(wavFilePath) || !System.IO.File.Exists(wavFilePath)) return null;
+
+            // Find whisper_transcribe.py
+            var possiblePaths = new[]
+            {
+                ProjectSettings.GlobalizePath("res://Scripts/whisper_transcribe.py"),
+                System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "whisper_transcribe.py"),
+                System.IO.Path.GetFullPath("src/DubbedUp.Godot/Scripts/whisper_transcribe.py"),
+                System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "src", "DubbedUp.Godot", "Scripts", "whisper_transcribe.py")
+            };
+
+            string? scriptPath = null;
+            foreach (var p in possiblePaths)
+            {
+                if (System.IO.File.Exists(p))
+                {
+                    scriptPath = p;
+                    break;
+                }
+            }
+
+            if (scriptPath is null) return null;
+
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "python",
+                Arguments = $"\"{scriptPath}\" \"{wavFilePath}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8,
+            };
+
+            // Force Python to run in full UTF-8 mode on Windows for Turkish characters (ç, ğ, ı, ö, ş, ü, vb.)
+            psi.EnvironmentVariables["PYTHONUTF8"] = "1";
+            psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
+
+            using var proc = System.Diagnostics.Process.Start(psi);
+            if (proc is null) return null;
+
+            var stdout = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit(60000);
+
+            if (string.IsNullOrWhiteSpace(stdout)) return null;
+
+            int startIdx = stdout.IndexOf("---WHISPER_JSON_START---", StringComparison.Ordinal);
+            int endIdx = stdout.IndexOf("---WHISPER_JSON_END---", StringComparison.Ordinal);
+
+            if (startIdx >= 0 && endIdx > startIdx)
+            {
+                var json = stdout.Substring(startIdx + 24, endIdx - (startIdx + 24)).Trim();
+                var jsonDoc = System.Text.Json.JsonDocument.Parse(json);
+                var segments = new List<DetectedSpeechSegment>();
+                int speakerIdx = 0;
+
+                foreach (var el in jsonDoc.RootElement.EnumerateArray())
+                {
+                    if (segments.Count >= maxSlots) break;
+
+                    long startMs = el.GetProperty("startMs").GetInt64();
+                    long endMs = el.GetProperty("endMs").GetInt64();
+                    string text = el.GetProperty("text").GetString()?.Trim() ?? string.Empty;
+
+                    if (!string.IsNullOrWhiteSpace(text) && endMs > startMs)
+                    {
+                        var speakerNum = (speakerIdx % 2) + 1;
+                        segments.Add(new DetectedSpeechSegment(
+                            $"char-{speakerNum}",
+                            $"Character {speakerNum}",
+                            text,
+                            startMs,
+                            endMs));
+                        speakerIdx++;
+                    }
+                }
+
+                if (segments.Count > 0)
+                {
+                    GD.Print($"[LocalAiSceneExtractor] Whisper extracted {segments.Count} spoken subtitle lines!");
+                    return segments;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[LocalAiSceneExtractor] Whisper extraction exception: {ex.Message}");
+        }
+
+        return null;
     }
 
     /// <summary>

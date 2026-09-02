@@ -345,10 +345,26 @@ public static class MediaTranscoder
         // 2. Extract audio.wav first (ultra-fast, takes 50ms)
         EnsureAudioExtracted(packageDir);
 
-        // 3. Fast Multithreaded Transcode to video.ogv with FFmpeg (1080p capped at 30fps with 0.5s GOP for smooth playback)
-        var args = $"-y -loglevel error -i \"{safeInputPath}\" -threads 0 -vf \"scale='min(1920,iw)':-2\" -r 30 -g 15 -c:v libtheora -q:v 6 -c:a libvorbis -q:a 5 -pix_fmt yuv420p \"{ogvTarget}\"";
-        RunProcess("ffmpeg", args, 180000);
+        // 3. Calculate dynamic timeout based on audio duration (minimum 10 minutes)
+        var audioWav = System.IO.Path.Combine(mediaDir, "audio.wav");
+        var durationSec = System.IO.File.Exists(audioWav) ? AudioPlayback.AudioWaveformLoader.GetAudioDurationSeconds(audioWav) : 60.0;
+        int timeoutMs = Math.Max(600000, (int)(durationSec * 10 * 1000));
 
-        return System.IO.File.Exists(ogvTarget) ? ogvTarget : null;
+        // 4. Fast in-game proxy transcode: 720p capped at 30fps with speed_level 2 and 0.5s GOP for instant seeking & zero stutter
+        var args = $"-y -loglevel error -i \"{safeInputPath}\" -threads 0 -vf \"scale='min(1280,iw)':-2\" -r 30 -g 15 -c:v libtheora -speed_level 2 -q:v 7 -c:a libvorbis -q:a 5 -pix_fmt yuv420p \"{ogvTarget}\"";
+        bool success = RunProcess("ffmpeg", args, timeoutMs);
+
+        if (!success || !System.IO.File.Exists(ogvTarget) || new System.IO.FileInfo(ogvTarget).Length < 1000)
+        {
+            if (System.IO.File.Exists(ogvTarget))
+            {
+                try { System.IO.File.Delete(ogvTarget); } catch { }
+            }
+            GD.PrintErr($"[MediaTranscoder] Transcoding to video.ogv failed or timed out for: '{safeInputPath}'");
+            return null;
+        }
+
+        GD.Print($"[MediaTranscoder] Successfully created in-game 720p proxy video.ogv for: '{ogvTarget}'");
+        return ogvTarget;
     }
 }

@@ -21,28 +21,14 @@ public partial class SceneCreatorScreen : BaseScreen
 
     private LineEdit? _titleInput;
     private LineEdit? _sceneIdInput;
-    private SpinBox? _durationSpinBox;
-    private LineEdit? _char1NameInput;
-    private LineEdit? _char2NameInput;
-    private LineEdit? _prompt1Input;
-    private SpinBox? _slot1StartSpin;
-    private SpinBox? _slot1EndSpin;
-    private LineEdit? _prompt2Input;
-    private SpinBox? _slot2StartSpin;
-    private SpinBox? _slot2EndSpin;
 
-    // AI Auto-detect fields
-    private TextEdit? _srtInputText;
-    private Button? _autoExtractButton;
-    private Label? _aiStatusLabel;
-
+    private Label? _statusInfoLabel;
     private Label? _errorLabel;
     private Button? _saveButton;
     private Button? _cancelButton;
 
     private readonly List<string> _discoveredMediaFiles = [];
     private readonly List<PanelContainer> _cardNodes = [];
-    private readonly List<DetectedSpeechSegment> _detectedSegments = [];
     private string? _selectedSourceMediaFile;
     private PanelContainer? _selectedCardPanel;
 
@@ -55,22 +41,7 @@ public partial class SceneCreatorScreen : BaseScreen
 
         _titleInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/TitleInput");
         _sceneIdInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/SceneIdInput");
-        _durationSpinBox = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/DurationSpinBox");
-
-        _srtInputText = GetNodeOrNull<TextEdit>("ScrollContainer/CenterContainer/VBoxContainer/AiContainer/SrtInputText");
-        _autoExtractButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/AiContainer/AutoExtractButton");
-        _aiStatusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/AiContainer/AiStatusLabel");
-
-        _char1NameInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Char1NameInput");
-        _char2NameInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Char2NameInput");
-
-        _prompt1Input = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1PromptInput");
-        _slot1StartSpin = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox/StartSpin");
-        _slot1EndSpin = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot1HBox/EndSpin");
-
-        _prompt2Input = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2PromptInput");
-        _slot2StartSpin = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox/StartSpin");
-        _slot2EndSpin = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/Slot2HBox/EndSpin");
+        _statusInfoLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusInfoLabel");
 
         _errorLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/ErrorLabel");
         _saveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox/SaveButton");
@@ -80,7 +51,6 @@ public partial class SceneCreatorScreen : BaseScreen
         if (_refreshMediaButton is not null) _refreshMediaButton.Pressed += ScanMediaFiles;
 
         if (_titleInput is not null) _titleInput.TextChanged += OnTitleChanged;
-        if (_autoExtractButton is not null) _autoExtractButton.Pressed += OnAutoExtractPressed;
         if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
         if (_cancelButton is not null) _cancelButton.Pressed += OnCancelPressed;
 
@@ -307,12 +277,6 @@ public partial class SceneCreatorScreen : BaseScreen
         if (_titleInput is not null) _titleInput.Text = cleanTitle;
         if (_sceneIdInput is not null) _sceneIdInput.Text = ToKebabCase(fileNameWithoutExt);
 
-        var dur = AudioWaveformLoader.GetAudioDurationSeconds(videoPath);
-        if (dur > 0 && _durationSpinBox is not null)
-        {
-            _durationSpinBox.Value = Math.Round(dur, 1);
-        }
-
         if (_errorLabel is not null) _errorLabel.Visible = false;
     }
 
@@ -355,132 +319,10 @@ public partial class SceneCreatorScreen : BaseScreen
         return string.IsNullOrEmpty(sanitized) ? "my-custom-scene" : sanitized;
     }
 
-    private void OnAutoExtractPressed()
-    {
-        var rawText = _srtInputText?.Text?.Trim() ?? string.Empty;
-        if (!string.IsNullOrWhiteSpace(rawText))
-        {
-            var detected = LocalAiSceneExtractor.ParseSrtText(rawText);
-            if (detected.Count > 0)
-            {
-                _detectedSegments.Clear();
-                _detectedSegments.AddRange(detected);
-                ApplyDetectedSegmentsToForm(detected);
-                if (_aiStatusLabel is not null)
-                {
-                    _aiStatusLabel.Text = $"✅ Extracted {detected.Count} speech lines from script/SRT!";
-                }
-                return;
-            }
-        }
-
-        // If no SRT was supplied, perform automatic Voice Activity Detection on the selected video
-        var sourceMediaFile = _selectedSourceMediaFile;
-        if (string.IsNullOrWhiteSpace(sourceMediaFile) || !System.IO.File.Exists(sourceMediaFile))
-        {
-            if (_aiStatusLabel is not null)
-            {
-                _aiStatusLabel.Text = "⚠️ Select a video from above or paste an SRT script.";
-            }
-            return;
-        }
-
-        if (_aiStatusLabel is not null)
-        {
-            _aiStatusLabel.Text = "⏳ Analyzing audio waveforms for speech activity...";
-        }
-
-        // Extract audio from video file to temporary WAV and detect speech bursts
-        try
-        {
-            var tempWav = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"dubbedup_vad_{Guid.NewGuid():N}.wav");
-            var ffmpegArgs = $"-y -loglevel error -i \"{sourceMediaFile}\" -vn -acodec pcm_s16le -ar 44100 -ac 2 \"{tempWav}\"";
-            VideoPlayback.MediaTranscoder.RunProcess("ffmpeg", ffmpegArgs, 30000);
-
-            if (System.IO.File.Exists(tempWav))
-            {
-                var detected = LocalAiSceneExtractor.DetectSpeechFromWavFile(tempWav, maxSlots: 20);
-                try { System.IO.File.Delete(tempWav); } catch { }
-
-                if (detected.Count > 0)
-                {
-                    _detectedSegments.Clear();
-                    _detectedSegments.AddRange(detected);
-                    ApplyDetectedSegmentsToForm(detected);
-
-                    if (_aiStatusLabel is not null)
-                    {
-                        _aiStatusLabel.Text = $"✨ Auto-detected {detected.Count} speech lines from audio! Click Save to open in editor.";
-                    }
-                    return;
-                }
-            }
-
-            if (_aiStatusLabel is not null)
-            {
-                _aiStatusLabel.Text = "⚠️ No distinct speech boundaries detected. Using default 2 slots.";
-            }
-        }
-        catch (Exception ex)
-        {
-            if (_aiStatusLabel is not null)
-            {
-                _aiStatusLabel.Text = $"Detection note: {ex.Message}";
-            }
-        }
-    }
-
-    private void ApplyDetectedSegmentsToForm(IReadOnlyList<DetectedSpeechSegment> detected)
-    {
-        if (detected.Count > 0)
-        {
-            var first = detected[0];
-            if (_char1NameInput is not null && !string.IsNullOrWhiteSpace(first.SpeakerDisplayName))
-                _char1NameInput.Text = first.SpeakerDisplayName;
-            if (_prompt1Input is not null && !string.IsNullOrWhiteSpace(first.Prompt))
-                _prompt1Input.Text = first.Prompt;
-            if (_slot1StartSpin is not null) _slot1StartSpin.Value = first.StartMilliseconds / 1000.0;
-            if (_slot1EndSpin is not null) _slot1EndSpin.Value = first.EndMilliseconds / 1000.0;
-        }
-
-        if (detected.Count > 1)
-        {
-            var second = detected[1];
-            if (_char2NameInput is not null && !string.IsNullOrWhiteSpace(second.SpeakerDisplayName))
-                _char2NameInput.Text = second.SpeakerDisplayName;
-            if (_prompt2Input is not null && !string.IsNullOrWhiteSpace(second.Prompt))
-                _prompt2Input.Text = second.Prompt;
-            if (_slot2StartSpin is not null) _slot2StartSpin.Value = second.StartMilliseconds / 1000.0;
-            if (_slot2EndSpin is not null) _slot2EndSpin.Value = second.EndMilliseconds / 1000.0;
-        }
-
-        var maxEndMs = detected.Max(d => d.EndMilliseconds);
-        if (_durationSpinBox is not null && maxEndMs > (long)(_durationSpinBox.Value * 1000.0))
-        {
-            _durationSpinBox.MaxValue = Math.Max(1800.0, (maxEndMs / 1000.0) + 10.0);
-            _durationSpinBox.Value = (maxEndMs / 1000.0) + 1.0;
-        }
-    }
-
     private async void OnSavePressed()
     {
         var title = _titleInput?.Text?.Trim() ?? string.Empty;
         var sceneId = _sceneIdInput?.Text?.Trim() ?? string.Empty;
-        var durationSec = _durationSpinBox?.Value ?? 10.0;
-        var durationMs = (long)(durationSec * 1000.0);
-
-        var char1Name = _char1NameInput?.Text?.Trim();
-        var char2Name = _char2NameInput?.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(char1Name)) char1Name = "Character 1";
-        if (string.IsNullOrWhiteSpace(char2Name)) char2Name = "Character 2";
-
-        var prompt1 = _prompt1Input?.Text?.Trim() ?? "Line 1 dialogue prompt";
-        var slot1StartMs = (long)((_slot1StartSpin?.Value ?? 1.0) * 1000.0);
-        var slot1EndMs = (long)((_slot1EndSpin?.Value ?? 4.0) * 1000.0);
-
-        var prompt2 = _prompt2Input?.Text?.Trim() ?? "Line 2 dialogue prompt";
-        var slot2StartMs = (long)((_slot2StartSpin?.Value ?? 5.0) * 1000.0);
-        var slot2EndMs = (long)((_slot2EndSpin?.Value ?? 8.0) * 1000.0);
 
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -507,20 +349,19 @@ public partial class SceneCreatorScreen : BaseScreen
             _saveButton.Disabled = true;
             _saveButton.Text = "⏳ Transcoding Video & Separating Stems...";
         }
-        if (_aiStatusLabel is not null)
+        if (_statusInfoLabel is not null)
         {
-            _aiStatusLabel.Text = "⏳ Transcoding video & separating vocals... Please wait.";
+            _statusInfoLabel.Text = "⏳ Transcoding video & separating vocals... Please wait.";
         }
 
         try
         {
-            var segments = _detectedSegments.Count > 0
-                ? _detectedSegments
-                : new List<DetectedSpeechSegment>
-                {
-                    new("char-1", char1Name, prompt1, slot1StartMs, slot1EndMs),
-                    new("char-2", char2Name, prompt2, slot2StartMs, slot2EndMs)
-                };
+            long durationMs = 20000;
+            var segments = new List<DetectedSpeechSegment>
+            {
+                new("char-1", "Character 1", "Line 1 dialogue prompt", 1000, 4000),
+                new("char-2", "Character 2", "Line 2 dialogue prompt", 4500, 8500)
+            };
 
             // Destination folders
             var targetFolder = ProjectSettings.GlobalizePath($"user://workshop_scenes/{sceneId}");

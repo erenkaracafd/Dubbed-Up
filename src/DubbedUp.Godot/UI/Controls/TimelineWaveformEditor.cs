@@ -17,6 +17,9 @@ public partial class TimelineWaveformEditor : Control
     [Signal]
     public delegate void SlotDeleteRequestedEventHandler(int slotIndex);
 
+    [Signal]
+    public delegate void SlotSplitRequestedEventHandler(int slotIndex, double splitSeconds);
+
     public sealed class TimelineSlotData
     {
         public string SlotId { get; set; } = "";
@@ -34,7 +37,7 @@ public partial class TimelineWaveformEditor : Control
     private int _selectedSlotIndex = -1;
 
     // Dragging state
-    private enum DragMode { None, Playhead, MoveBox, ResizeLeft, ResizeRight }
+    private enum DragMode { None, Playhead, MoveBox, ResizeLeft, ResizeRight, SelectOnly }
     private DragMode _currentDragMode = DragMode.None;
     private int _draggedSlotIndex = -1;
     private double _dragStartMouseX = 0.0;
@@ -133,7 +136,7 @@ public partial class TimelineWaveformEditor : Control
         DrawRect(bgRect, new Color(0.20f, 0.35f, 0.55f, 0.9f), false, 2.0f);
 
         // 2. Time Grid & Ruler Marks
-        var font = ThemeDB.FallbackFont;
+        var font = GetThemeDefaultFont() ?? ThemeDB.FallbackFont;
         var fontSize = 11;
         var stepSec = _totalDuration > 60.0 ? 5.0 : (_totalDuration > 20.0 ? 2.0 : 1.0);
 
@@ -193,36 +196,59 @@ public partial class TimelineWaveformEditor : Control
             var xStart = (float)(Math.Clamp(slot.StartSeconds / _totalDuration, 0.0, 1.0) * size.X);
             var xEnd = (float)(Math.Clamp(slot.EndSeconds / _totalDuration, 0.0, 1.0) * size.X);
             var width = Math.Max(14.0f, xEnd - xStart);
+            var yTop = 16.0f;
+            var boxHeight = size.Y - 18.0f;
+            var yBottom = yTop + boxHeight;
 
             var isSelected = (i == _selectedSlotIndex);
             var baseColor = slot.BoxColor;
-            var boxColor = isSelected ? new Color(0.2f, 0.95f, 0.45f, 0.55f) : baseColor;
-            var borderColor = isSelected ? new Color(0.4f, 1.0f, 0.6f, 1.0f) : new Color(baseColor.R, baseColor.G, baseColor.B, 0.95f);
+            var boxColor = isSelected ? new Color(0.2f, 0.95f, 0.45f, 0.35f) : new Color(baseColor.R, baseColor.G, baseColor.B, 0.20f);
+            var borderColor = isSelected ? new Color(0.4f, 1.0f, 0.6f, 0.95f) : new Color(baseColor.R, baseColor.G, baseColor.B, 0.70f);
 
-            var slotRect = new Rect2(xStart, 16, width, size.Y - 18);
+            var slotRect = new Rect2(xStart, yTop, width, boxHeight);
 
             // Fill transparent colored box
             DrawRect(slotRect, boxColor);
-            // Border
-            DrawRect(slotRect, borderColor, false, isSelected ? 2.5f : 1.5f);
+            // Ultra-thin sleek 1px border so waveform peaks are completely visible
+            DrawRect(slotRect, borderColor, false, 1.0f);
 
-            // Left and Right resize handle bars
-            DrawRect(new Rect2(xStart, 16, 5, size.Y - 18), borderColor);
-            DrawRect(new Rect2(xStart + width - 5, 16, 5, size.Y - 18), borderColor);
+            // Corner handles on Left & Right edges for precise resize grasping
+            var cornerSize = 7.0f;
+            var handleColor = isSelected ? new Color(0.4f, 1.0f, 0.6f, 1.0f) : new Color(1.0f, 1.0f, 1.0f, 0.90f);
+
+            // Left top & bottom corners
+            DrawLine(new Vector2(xStart, yTop), new Vector2(xStart + cornerSize, yTop), handleColor, 2.0f);
+            DrawLine(new Vector2(xStart, yTop), new Vector2(xStart, yTop + cornerSize), handleColor, 2.0f);
+            DrawLine(new Vector2(xStart, yBottom), new Vector2(xStart + cornerSize, yBottom), handleColor, 2.0f);
+            DrawLine(new Vector2(xStart, yBottom), new Vector2(xStart, yBottom - cornerSize), handleColor, 2.0f);
+
+            // Right top & bottom corners
+            DrawLine(new Vector2(xEnd, yTop), new Vector2(xEnd - cornerSize, yTop), handleColor, 2.0f);
+            DrawLine(new Vector2(xEnd, yTop), new Vector2(xEnd, yTop + cornerSize), handleColor, 2.0f);
+            DrawLine(new Vector2(xEnd, yBottom), new Vector2(xEnd - cornerSize, yBottom), handleColor, 2.0f);
+            DrawLine(new Vector2(xEnd, yBottom), new Vector2(xEnd, yBottom - cornerSize), handleColor, 2.0f);
+
+            // Center Grip Dot for moving (Only moving happens by dragging this dot!)
+            var midX = xStart + (width / 2.0f);
+            var midY = yTop + (boxHeight / 2.0f);
+            var dotRadius = isSelected ? 6.5f : 5.0f;
+            DrawCircle(new Vector2(midX, midY), dotRadius + 1.5f, new Color(0.05f, 0.08f, 0.14f, 0.95f));
+            DrawCircle(new Vector2(midX, midY), dotRadius, isSelected ? new Color(0.3f, 1.0f, 0.5f, 1.0f) : new Color(0.9f, 0.95f, 1.0f, 0.95f));
+            DrawArc(new Vector2(midX, midY), dotRadius + 1.5f, 0, Mathf.Tau, 16, borderColor, 1.2f);
 
             // Header Tag (Number & Character Name)
             var tagText = $"#{i + 1} {slot.CharacterName}";
             var tagWidth = Math.Min(width, 160);
-            var tagBgRect = new Rect2(xStart, 16, tagWidth, 16);
+            var tagBgRect = new Rect2(xStart, yTop, tagWidth, 16);
             DrawRect(tagBgRect, new Color(0.0f, 0.0f, 0.0f, 0.80f));
-            DrawString(font, new Vector2(xStart + 4, 28), tagText, HorizontalAlignment.Left, (int)tagWidth - 20, 11, new Color(1.0f, 1.0f, 1.0f, 1.0f));
+            DrawString(font, new Vector2(xStart + 4, yTop + 12), tagText, HorizontalAlignment.Left, (int)tagWidth - 20, 11, new Color(1.0f, 1.0f, 1.0f, 1.0f));
 
             // Delete 'x' Icon button at top right of the box if width allows
             if (width >= 35)
             {
-                var deleteIconRect = new Rect2(xStart + width - 16, 16, 16, 16);
+                var deleteIconRect = new Rect2(xStart + width - 16, yTop, 16, 16);
                 DrawRect(deleteIconRect, isSelected ? new Color(0.9f, 0.2f, 0.2f, 0.9f) : new Color(0.0f, 0.0f, 0.0f, 0.7f));
-                DrawString(font, new Vector2(xStart + width - 13, 28), "✕", HorizontalAlignment.Left, -1, 10, new Color(1.0f, 1.0f, 1.0f, 1.0f));
+                DrawString(font, new Vector2(xStart + width - 13, yTop + 12), "✕", HorizontalAlignment.Left, -1, 10, new Color(1.0f, 1.0f, 1.0f, 1.0f));
             }
         }
 
@@ -241,6 +267,20 @@ public partial class TimelineWaveformEditor : Control
         DrawColoredPolygon(pointerPoints, playheadColor);
     }
 
+    public bool RequestSplitAtPlayhead()
+    {
+        if (_selectedSlotIndex >= 0 && _selectedSlotIndex < _slots.Count)
+        {
+            var slot = _slots[_selectedSlotIndex];
+            if (_currentPlayhead > slot.StartSeconds + 0.3 && _currentPlayhead < slot.EndSeconds - 0.3)
+            {
+                EmitSignal(SignalName.SlotSplitRequested, _selectedSlotIndex, _currentPlayhead);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public override void _GuiInput(InputEvent @event)
     {
         var size = Size;
@@ -256,6 +296,11 @@ public partial class TimelineWaveformEditor : Control
                     return;
                 }
             }
+            else if (ek.Keycode == Key.C || ek.Keycode == Key.X)
+            {
+                RequestSplitAtPlayhead();
+                return;
+            }
         }
 
         if (@event is InputEventMouseButton mb)
@@ -270,7 +315,7 @@ public partial class TimelineWaveformEditor : Control
                 {
                     GrabFocus();
 
-                    // Check if clicked on slot box, delete icon, or resize edges
+                    // Check if clicked on slot box, delete icon, center dot, or resize edges
                     var hitSlot = -1;
                     var dragMode = DragMode.Playhead;
 
@@ -279,6 +324,9 @@ public partial class TimelineWaveformEditor : Control
                         var s = _slots[i];
                         var x1 = (s.StartSeconds / _totalDuration) * size.X;
                         var x2 = (s.EndSeconds / _totalDuration) * size.X;
+                        var boxW = x2 - x1;
+                        var midX = x1 + (boxW / 2.0f);
+                        var midY = 16.0f + (size.Y - 18.0f) / 2.0f;
 
                         if (mouseX >= x1 - 6 && mouseX <= x2 + 6)
                         {
@@ -290,9 +338,29 @@ public partial class TimelineWaveformEditor : Control
                             }
 
                             hitSlot = i;
-                            if (Math.Abs(mouseX - x1) <= 8) dragMode = DragMode.ResizeLeft;
-                            else if (Math.Abs(mouseX - x2) <= 8) dragMode = DragMode.ResizeRight;
-                            else dragMode = DragMode.MoveBox;
+                            // Check resize handles (within 8px of edges)
+                            if (Math.Abs(mouseX - x1) <= 8)
+                            {
+                                dragMode = DragMode.ResizeLeft;
+                            }
+                            else if (Math.Abs(mouseX - x2) <= 8)
+                            {
+                                dragMode = DragMode.ResizeRight;
+                            }
+                            else
+                            {
+                                // Check distance to center dot (within 14px radius allows moving!)
+                                var distToCenter = Math.Sqrt(Math.Pow(mouseX - midX, 2) + Math.Pow(mouseY - midY, 2));
+                                if (distToCenter <= 14.0)
+                                {
+                                    dragMode = DragMode.MoveBox;
+                                }
+                                else
+                                {
+                                    // Clicking inside body selects slot and seeks without moving!
+                                    dragMode = DragMode.SelectOnly;
+                                }
+                            }
                             break;
                         }
                     }
@@ -306,6 +374,12 @@ public partial class TimelineWaveformEditor : Control
                         _dragOrigEndSec = _slots[hitSlot].EndSeconds;
                         SelectSlot(hitSlot);
                         EmitSignal(SignalName.SlotSelected, hitSlot);
+
+                        if (dragMode == DragMode.SelectOnly)
+                        {
+                            _currentPlayhead = Math.Clamp(clickedSec, 0.0, _totalDuration);
+                            EmitSignal(SignalName.SeekRequested, _currentPlayhead);
+                        }
                     }
                     else
                     {
@@ -317,7 +391,7 @@ public partial class TimelineWaveformEditor : Control
                 }
                 else
                 {
-                    if (_currentDragMode != DragMode.None && _draggedSlotIndex != -1)
+                    if (_currentDragMode is DragMode.MoveBox or DragMode.ResizeLeft or DragMode.ResizeRight && _draggedSlotIndex != -1)
                     {
                         EmitSignal(SignalName.SlotChanged, _draggedSlotIndex);
                     }

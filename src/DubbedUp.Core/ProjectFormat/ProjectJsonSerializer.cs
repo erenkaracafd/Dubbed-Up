@@ -59,6 +59,7 @@ public static class ProjectJsonSerializer
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         };
         options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         return options;

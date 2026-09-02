@@ -129,18 +129,24 @@ alignment = 1
 theme_override_constants/separation = 12
 
 [node name="AutoDetectButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
-custom_minimum_size = Vector2(250, 40)
+custom_minimum_size = Vector2(230, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.9, 1, 1)
-text = "✨ Auto-Detect Speech (VAD)"
+text = "✨ Auto-Detect Subtitles (AI)"
 
 [node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
-custom_minimum_size = Vector2(260, 40)
+custom_minimum_size = Vector2(180, 40)
 layout_mode = 2
 text = "➕ Add Speech Box"
 
+[node name="CutBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
+custom_minimum_size = Vector2(180, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+text = "✂️ Cut Box (C)"
+
 [node name="DeleteBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
-custom_minimum_size = Vector2(200, 40)
+custom_minimum_size = Vector2(170, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
 text = "🗑️ Delete Selected"

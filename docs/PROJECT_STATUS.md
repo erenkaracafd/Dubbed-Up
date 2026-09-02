@@ -22,8 +22,15 @@
   - Microphone latency compensation is configurable from 0-400 ms and persisted in `user://audio_settings.cfg`.
 - **Interactive Waveform & Scene Editing**
   - PCM waveform visualization, draggable/resizable speech boxes, subtitle editing, deletion controls, dynamic duration scaling, and scene persistence are implemented.
+  - Streamlined scene creation workflow: input simplified to video picker and title, immediately transitioning to the visual scene editor.
+  - Sleek 1.0px speech box borders with non-obstructive corner resize handles; moving constrained strictly to center grip dot to prevent accidental drags.
+  - Speech box cut/split tool (toolbar button and `C` / `X` shortcut) allowing quick splitting at the current playhead position.
+  - Automatic speech-to-text subtitle generation via local Whisper AI with silent-gap rejection (no ghost boxes in silence or pure music) and full Turkish UTF-8 character support (`ç, ğ, ı, ö, ş, ü, İ`).
 - **Custom Scene Import Pipeline & Transcoding**
   - Imported `.mp4`, `.webm`, `.mov`, and `.mkv` media are automatically transcoded to Godot-native `.ogv` (Theora/Vorbis) and 16-bit PCM `.wav` on-the-fly via `MediaTranscoder.cs`.
+  - In-game video playback uses a smooth 720p proxy for stutter-free 60fps performance across all clip lengths, while final exports remain pristine 1080p H.264 CRF 18.
+  - Dynamic duration-based transcoding timeouts eliminate unexpected ffmpeg kills on longer high-resolution clips.
+  - Per-scene unique thumbnail extraction with SHA-256 path collision prevention and lively frame selection at 2.0s.
   - Safe ASCII normalization and deadlock-free non-blocking process execution guarantee fast, unhindered transcoding.
   - Custom scene media scanning, quick handoff to scene selection, and in-game scene deletion with a safety confirmation modal are implemented.
 - **Selective Audio Composition**
