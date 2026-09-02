@@ -25,9 +25,9 @@ Start with [AGENTS.md](AGENTS.md) and [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELO
 
 ## Local prerequisites
 
-Install a current .NET 8 SDK and the latest Godot 4.7.x .NET editor. On Windows,
-install the local Whisper/FFmpeg media toolchain once (the Visual C++ installer may
-request administrator approval):
+Install a current .NET 8 SDK, Python 3.10 or newer, and the latest Godot 4.7.x
+.NET editor. On Windows, install the local Whisper/FFmpeg media toolchain once
+(the Visual C++ installer may request administrator approval):
 
 ```powershell
 .\scripts\setup-media-tools.ps1
