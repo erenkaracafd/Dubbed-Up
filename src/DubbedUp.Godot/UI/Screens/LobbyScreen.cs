@@ -23,6 +23,22 @@ public partial class LobbyScreen : BaseScreen
     private NetworkLobbyManager? _lobbyManager;
     private bool _isLocalReady = false;
 
+    public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
+    {
+        base.Initialize(navigator, coordinator);
+
+        if (navigator is LocalNavigationController navCtrl)
+        {
+            _lobbyManager = navCtrl.LobbyManager;
+            _lobbyManager.PlayerListUpdated += OnPlayerListUpdated;
+            _lobbyManager.ConnectionStateChanged += OnConnectionStateChanged;
+            _lobbyManager.GameStarted += OnGameStarted;
+
+            UpdatePanelsVisibility(_lobbyManager.IsConnectedToLobby);
+            OnPlayerListUpdated();
+        }
+    }
+
     public override void _Ready()
     {
         _playerNameInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer/PlayerNameInput");
@@ -39,14 +55,6 @@ public partial class LobbyScreen : BaseScreen
         _startButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer/ActionsHBox/StartButton");
         _leaveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer/ActionsHBox/LeaveButton");
         _backButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/BackButton");
-
-        if (Navigator is LocalNavigationController navCtrl)
-        {
-            _lobbyManager = navCtrl.LobbyManager;
-            _lobbyManager.PlayerListUpdated += OnPlayerListUpdated;
-            _lobbyManager.ConnectionStateChanged += OnConnectionStateChanged;
-            _lobbyManager.GameStarted += OnGameStarted;
-        }
 
         if (_hostButton is not null) _hostButton.Pressed += OnHostPressed;
         if (_joinButton is not null) _joinButton.Pressed += OnJoinPressed;
@@ -79,12 +87,35 @@ public partial class LobbyScreen : BaseScreen
         var name = string.IsNullOrWhiteSpace(_playerNameInput?.Text) ? "Host Player" : _playerNameInput.Text.Trim();
         var port = int.TryParse(_portInput?.Text, out var p) ? p : NetworkLobbyManager.DefaultPort;
 
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = $"⏳ Starting server on port {port}...";
+        }
+
         if (_lobbyManager is not null)
         {
             var err = _lobbyManager.HostGame(port, name);
             if (err == Error.Ok)
             {
                 UpdatePanelsVisibility(true);
+                if (_statusLabel is not null)
+                {
+                    _statusLabel.Text = $"✅ Hosting lobby on port {port}. Waiting for players...";
+                }
+            }
+            else
+            {
+                if (_statusLabel is not null)
+                {
+                    _statusLabel.Text = $"❌ Failed to host server on port {port}: {err}";
+                }
+            }
+        }
+        else
+        {
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = "❌ Network manager not available.";
             }
         }
     }
@@ -95,9 +126,21 @@ public partial class LobbyScreen : BaseScreen
         var addr = string.IsNullOrWhiteSpace(_addressInput?.Text) ? "127.0.0.1" : _addressInput.Text.Trim();
         var port = int.TryParse(_portInput?.Text, out var p) ? p : NetworkLobbyManager.DefaultPort;
 
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = $"⏳ Connecting to host at {addr}:{port}...";
+        }
+
         if (_lobbyManager is not null)
         {
-            _lobbyManager.JoinGame(addr, port, name);
+            var err = _lobbyManager.JoinGame(addr, port, name);
+            if (err != Error.Ok)
+            {
+                if (_statusLabel is not null)
+                {
+                    _statusLabel.Text = $"❌ Failed to initiate connection: {err}";
+                }
+            }
         }
     }
 
