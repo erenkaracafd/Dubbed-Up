@@ -276,7 +276,6 @@ public partial class SceneCreatorScreen : BaseScreen
 
         if (_titleInput is not null) _titleInput.Text = cleanTitle;
         if (_sceneIdInput is not null) _sceneIdInput.Text = ToKebabCase(fileNameWithoutExt);
-
         if (_errorLabel is not null) _errorLabel.Visible = false;
     }
 
