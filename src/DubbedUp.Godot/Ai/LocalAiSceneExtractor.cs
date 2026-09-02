@@ -1,4 +1,5 @@
 using DubbedUp.Core.Ai;
+using DubbedUp.Godot.VideoPlayback;
 using Godot;
 
 namespace DubbedUp.Godot.Ai;
@@ -146,8 +147,7 @@ public static class LocalAiSceneExtractor
 
             var psi = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "python",
-                Arguments = $"\"{scriptPath}\" \"{wavFilePath}\"",
+                FileName = ExternalToolLocator.ResolveWhisperPython(),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -159,12 +159,30 @@ public static class LocalAiSceneExtractor
             // Force Python to run in full UTF-8 mode on Windows for Turkish characters (ç, ğ, ı, ö, ş, ü, vb.)
             psi.EnvironmentVariables["PYTHONUTF8"] = "1";
             psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
+            psi.EnvironmentVariables["DUBBEDUP_WHISPER_MODEL"] = ExternalToolLocator.ResolveWhisperModel();
+            ExternalToolLocator.AddFfmpegToPath(psi);
+            psi.ArgumentList.Add(scriptPath);
+            psi.ArgumentList.Add(wavFilePath);
 
             using var proc = System.Diagnostics.Process.Start(psi);
             if (proc is null) return null;
 
-            var stdout = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit(60000);
+            var stdoutTask = proc.StandardOutput.ReadToEndAsync();
+            var stderrTask = proc.StandardError.ReadToEndAsync();
+            if (!proc.WaitForExit(120000))
+            {
+                try { proc.Kill(entireProcessTree: true); } catch { }
+                GD.PrintErr("[LocalAiSceneExtractor] Whisper timed out after 120 seconds.");
+                return null;
+            }
+
+            var stdout = stdoutTask.GetAwaiter().GetResult();
+            var stderr = stderrTask.GetAwaiter().GetResult();
+            if (proc.ExitCode != 0)
+            {
+                GD.PrintErr($"[LocalAiSceneExtractor] Whisper exited with code {proc.ExitCode}: {stderr.Trim()}");
+                return null;
+            }
 
             if (string.IsNullOrWhiteSpace(stdout)) return null;
 

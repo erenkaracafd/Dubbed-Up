@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Steamworks.NET" Version="2024.8.0" />
     <ProjectReference Include="..\DubbedUp.Core\DubbedUp.Core.csproj" />
+    <Content Include="Scripts\whisper_transcribe.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
 

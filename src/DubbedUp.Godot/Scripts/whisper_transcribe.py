@@ -22,8 +22,9 @@ def main():
 
     try:
         import whisper
-        # Load lightweight fast tiny model
-        model = whisper.load_model('tiny')
+        # Keep the default lightweight, while allowing deployments to select a larger model.
+        model_name = os.environ.get('DUBBEDUP_WHISPER_MODEL', 'tiny')
+        model = whisper.load_model(model_name)
         result = model.transcribe(audio_path, fp16=False)
 
         segments = []

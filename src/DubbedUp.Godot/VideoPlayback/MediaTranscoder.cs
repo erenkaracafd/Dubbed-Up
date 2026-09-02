@@ -14,9 +14,12 @@ public static class MediaTranscoder
     {
         try
         {
+            var resolvedFileName = string.Equals(fileName, "ffmpeg", StringComparison.OrdinalIgnoreCase)
+                ? ExternalToolLocator.ResolveFfmpeg()
+                : fileName;
             var psi = new ProcessStartInfo
             {
-                FileName = fileName,
+                FileName = resolvedFileName,
                 Arguments = arguments,
                 WorkingDirectory = workingDir ?? string.Empty,
                 UseShellExecute = false,
@@ -31,7 +34,7 @@ public static class MediaTranscoder
             if (!process.WaitForExit(timeoutMs))
             {
                 try { process.Kill(); } catch { }
-                GD.PrintErr($"[MediaTranscoder] Process '{fileName}' timed out after {timeoutMs}ms");
+                GD.PrintErr($"[MediaTranscoder] Process '{resolvedFileName}' timed out after {timeoutMs}ms");
                 return false;
             }
 

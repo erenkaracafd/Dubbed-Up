@@ -32,14 +32,29 @@ if (-not (Test-Path $sceneJsonPath)) {
     exit 1
 }
 
-$ffmpeg = Get-Command "ffmpeg" -ErrorAction SilentlyContinue
-if (-not $ffmpeg) {
-    Write-Warning "FFmpeg is not found in system PATH. Install FFmpeg to enable automated MP4 video baking."
+$repositoryRoot = Split-Path -Parent $PSScriptRoot
+$toolConfigPath = Join-Path $repositoryRoot '.tools\media-tools.json'
+$ffmpegPath = $env:DUBBEDUP_FFMPEG_PATH
+
+if (-not $ffmpegPath -and (Test-Path -LiteralPath $toolConfigPath)) {
+    $toolConfig = Get-Content -LiteralPath $toolConfigPath -Raw | ConvertFrom-Json
+    $ffmpegPath = $toolConfig.ffmpegPath
+}
+
+if (-not $ffmpegPath) {
+    $ffmpeg = Get-Command 'ffmpeg' -ErrorAction SilentlyContinue
+    if ($ffmpeg) {
+        $ffmpegPath = $ffmpeg.Source
+    }
+}
+
+if (-not $ffmpegPath -or -not (Test-Path -LiteralPath $ffmpegPath)) {
+    Write-Warning "FFmpeg is unavailable. Run .\scripts\setup-media-tools.ps1 to enable automated MP4 video baking."
     Write-Host "You can manually use the WAV files from $TakesFolder in your favorite video editor." -ForegroundColor Yellow
     exit 0
 }
 
-Write-Host "FFmpeg found: $($ffmpeg.Source)" -ForegroundColor Green
+Write-Host "FFmpeg found: $ffmpegPath" -ForegroundColor Green
 $outputDir = Split-Path -Parent (Resolve-Path -Path $OutputVideo -ErrorAction SilentlyContinue)
 if ($outputDir -and (-not (Test-Path $outputDir))) {
     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null

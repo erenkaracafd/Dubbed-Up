@@ -27,6 +27,7 @@
   - Speech box cut/split tool (toolbar button and `C` / `X` shortcut) allowing quick splitting at the current playhead position.
   - Automatic speech-to-text subtitle generation via local Whisper AI with silent-gap rejection (no ghost boxes in silence or pure music) and full Turkish UTF-8 character support (`ç, ğ, ı, ö, ş, ü, İ`).
 - **Custom Scene Import Pipeline & Transcoding**
+  - Windows media prerequisites are reproducibly installed by `scripts/setup-media-tools.ps1`; runtime discovery prefers the ignored project-local Whisper environment/config and falls back to explicit environment variables or system tools.
   - Imported `.mp4`, `.webm`, `.mov`, and `.mkv` media are automatically transcoded to Godot-native `.ogv` (Theora/Vorbis) and 16-bit PCM `.wav` on-the-fly via `MediaTranscoder.cs`.
   - In-game video playback uses a smooth 720p proxy for stutter-free 60fps performance across all clip lengths, while final exports remain pristine 1080p H.264 CRF 18.
   - Dynamic duration-based transcoding timeouts eliminate unexpected ffmpeg kills on longer high-resolution clips.

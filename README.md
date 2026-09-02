@@ -25,7 +25,22 @@ Start with [AGENTS.md](AGENTS.md) and [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELO
 
 ## Local prerequisites
 
-Install a current .NET 8 SDK and the latest Godot 4.7.x .NET editor. Then run:
+Install a current .NET 8 SDK, Python 3.10 or newer, and the latest Godot 4.7.x
+.NET editor. On Windows, install the local Whisper/FFmpeg media toolchain once
+(the Visual C++ installer may request administrator approval):
+
+```powershell
+.\scripts\setup-media-tools.ps1
+```
+
+This installs FFmpeg through WinGet, creates an ignored `.tools/whisper` Python
+environment, installs the locked Whisper runtime, downloads the `tiny` model, and
+writes the ignored `.tools/media-tools.json` discovery file. Tool binaries and AI
+models are never committed. Advanced setups can override discovery with
+`DUBBEDUP_FFMPEG_PATH`, `DUBBEDUP_WHISPER_PYTHON`, and
+`DUBBEDUP_WHISPER_MODEL`.
+
+Then run:
 
 ```powershell
 dotnet restore DubbedUp.sln
