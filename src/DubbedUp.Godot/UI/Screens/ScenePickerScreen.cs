@@ -52,6 +52,7 @@ public partial class ScenePickerScreen : BaseScreen
     private readonly Dictionary<ScenePackage, Control> _cardHolders = [];
     private readonly Dictionary<ScenePackage, PanelContainer> _cardNodes = [];
     private readonly Dictionary<ScenePackage, Controls.MarqueeLabel> _marqueeLabels = [];
+    private readonly Dictionary<ScenePackage, Color> _sceneAccentColors = [];
 
     public override void _Ready()
     {
@@ -60,18 +61,18 @@ public partial class ScenePickerScreen : BaseScreen
         _createSceneButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/CreateSceneButton");
 
         _showcasePanel = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel");
-        _thumbnailFrame = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame");
-        _thumbnailTexture = GetNodeOrNull<TextureRect>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame/ThumbnailTexture");
-        _placeholderIcon = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame/PlaceholderIcon");
-        _showcaseTitle = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseTitle");
-        _durationBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/BadgesHBox/DurationBadge");
-        _slotsBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/BadgesHBox/SlotsBadge");
-        _categoryBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/BadgesHBox/CategoryBadge");
-        _charactersLabel = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/CharactersLabel");
-        _linesPreviewLabel = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/LinesPreviewLabel");
-        _playSelectedButton = GetNodeOrNull<Button>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseActionsHBox/PlaySelectedButton");
-        _editTimelineButton = GetNodeOrNull<Button>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseActionsHBox/EditTimelineButton");
-        _deleteSceneButton = GetNodeOrNull<Button>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseActionsHBox/DeleteSceneButton");
+        _thumbnailFrame = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ThumbnailFrame");
+        _thumbnailTexture = GetNodeOrNull<TextureRect>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ThumbnailFrame/ThumbnailTexture");
+        _placeholderIcon = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ThumbnailFrame/PlaceholderIcon");
+        _showcaseTitle = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ShowcaseTitle");
+        _durationBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/BadgesHBox/DurationBadge");
+        _slotsBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/BadgesHBox/SlotsBadge");
+        _categoryBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/BadgesHBox/CategoryBadge");
+        _charactersLabel = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/CharactersLabel");
+        _linesPreviewLabel = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/LinesPreviewLabel");
+        _playSelectedButton = GetNodeOrNull<Button>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ShowcaseActionsHBox/PlaySelectedButton");
+        _editTimelineButton = GetNodeOrNull<Button>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ShowcaseActionsHBox/EditTimelineButton");
+        _deleteSceneButton = GetNodeOrNull<Button>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ShowcaseActionsHBox/DeleteSceneButton");
 
         _searchInput = GetNodeOrNull<LineEdit>("MainLayoutMargin/SplitHBox/CarouselVBox/SearchHBox/SearchInput");
         _statusLabel = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/CarouselVBox/StatusLabel");
@@ -316,12 +317,106 @@ public partial class ScenePickerScreen : BaseScreen
         HighlightSelectedCard();
     }
 
+    private static readonly Color[] CuratedPalette =
+    [
+        new Color(1.0f, 0.243f, 0.514f), // Hot Pink (#FF3E83)
+        new Color(0.140f, 0.650f, 0.980f), // Sky Blue (#24A6FA)
+        new Color(0.561f, 0.396f, 0.973f), // Royal Violet (#8F65F8)
+        new Color(0.063f, 0.725f, 0.506f), // Emerald (#10B981)
+        new Color(0.961f, 0.580f, 0.100f), // Amber Orange (#F5941A)
+        new Color(0.925f, 0.282f, 0.600f), // Neon Rose (#EC4899)
+        new Color(0.388f, 0.400f, 0.945f), // Electric Indigo (#6366F1)
+        new Color(0.055f, 0.647f, 0.914f), // Ocean Teal (#0EA5E9)
+    ];
+
+    private Color GetSceneAccentColor(ScenePackage package)
+    {
+        if (_sceneAccentColors.TryGetValue(package, out var cached))
+        {
+            return cached;
+        }
+
+        Color resultColor;
+        var thumb = VideoPlayback.VideoThumbnailHelper.GetOrExtractThumbnail(package.PackageDirectory ?? string.Empty);
+        if (thumb is not null)
+        {
+            resultColor = ExtractDominantColor(thumb, package.Title);
+        }
+        else
+        {
+            var hash = Math.Abs(package.Title.GetHashCode());
+            resultColor = CuratedPalette[hash % CuratedPalette.Length];
+        }
+
+        _sceneAccentColors[package] = resultColor;
+        return resultColor;
+    }
+
+    private static Color ExtractDominantColor(Texture2D texture, string fallbackSeed)
+    {
+        try
+        {
+            var image = texture.GetImage();
+            if (image is not null && !image.IsEmpty())
+            {
+                int width = image.GetWidth();
+                int height = image.GetHeight();
+
+                float bestScore = -1f;
+                Color bestColor = Colors.Transparent;
+
+                int stepX = Math.Max(1, width / 14);
+                int stepY = Math.Max(1, height / 10);
+
+                for (int y = stepY / 2; y < height; y += stepY)
+                {
+                    for (int x = stepX / 2; x < width; x += stepX)
+                    {
+                        var p = image.GetPixel(x, y);
+                        if (p.A < 0.5f) continue;
+
+                        float lum = 0.299f * p.R + 0.587f * p.G + 0.114f * p.B;
+                        if (lum < 0.12f || lum > 0.90f) continue; // Skip near-black and glare
+
+                        float max = Math.Max(p.R, Math.Max(p.G, p.B));
+                        float min = Math.Min(p.R, Math.Min(p.G, p.B));
+                        float sat = max > 0 ? (max - min) / max : 0;
+
+                        float score = sat * (1.0f - Math.Abs(lum - 0.5f));
+                        if (score > bestScore)
+                        {
+                            bestScore = score;
+                            bestColor = p;
+                        }
+                    }
+                }
+
+                if (bestScore > 0.06f)
+                {
+                    float h, s, v;
+                    bestColor.ToHsv(out h, out s, out v);
+                    s = Math.Clamp(s * 1.25f, 0.55f, 0.95f);
+                    v = Math.Clamp(v, 0.68f, 0.92f);
+                    return Color.FromHsv(h, s, v);
+                }
+            }
+        }
+        catch
+        {
+            // Ignore
+        }
+
+        var fHash = Math.Abs(fallbackSeed.GetHashCode());
+        return CuratedPalette[fHash % CuratedPalette.Length];
+    }
+
     private Control CreateOsuBeatmapCard(ScenePackage package, int index, int total, out PanelContainer card, out Controls.MarqueeLabel marquee)
     {
         var isSelected = package == _selectedPackage;
+        var accent = GetSceneAccentColor(package);
         int naturalZIndex = Math.Max(0, 50 - index);
 
-        // Outer holder handles the 50px step in ScenesListContainer with descending natural ZIndex
+        // 1. Outer holder handles 50px step in ScenesListContainer with descending natural ZIndex
         var holder = new Control
         {
             CustomMinimumSize = new Vector2(0, 50),
@@ -330,7 +425,7 @@ public partial class ScenePickerScreen : BaseScreen
             ZIndex = isSelected ? 80 : naturalZIndex
         };
 
-        // Inner card is 72px high, overlapping the card below it by 22px
+        // 2. Outer card (Outer Rim): darker/richer cover accent tint + cover-colored drop shadow
         card = new PanelContainer
         {
             CustomMinimumSize = new Vector2(0, 72),
@@ -346,44 +441,65 @@ public partial class ScenePickerScreen : BaseScreen
         };
         holder.AddChild(card);
 
-        ApplyCardStyle(card, isSelected);
+        var outerMargin = new MarginContainer
+        {
+            Name = "OuterMargin",
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        outerMargin.AddThemeConstantOverride("margin_left", 4);
+        outerMargin.AddThemeConstantOverride("margin_right", 4);
+        outerMargin.AddThemeConstantOverride("margin_top", 4);
+        outerMargin.AddThemeConstantOverride("margin_bottom", 4);
+        card.AddChild(outerMargin);
 
-        var margin = new MarginContainer
+        // 3. Inner card (Inner Box): lighter luminous white/soft-tint surface
+        var innerCard = new PanelContainer
+        {
+            Name = "InnerCard",
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill
+        };
+        outerMargin.AddChild(innerCard);
+
+        ApplyCardStyles(card, innerCard, accent, isSelected, isHovered: false);
+
+        var innerMargin = new MarginContainer
         {
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        margin.AddThemeConstantOverride("margin_left", 12);
-        margin.AddThemeConstantOverride("margin_right", 14);
-        margin.AddThemeConstantOverride("margin_top", 8);
-        margin.AddThemeConstantOverride("margin_bottom", 8);
-        card.AddChild(margin);
+        innerMargin.AddThemeConstantOverride("margin_left", 10);
+        innerMargin.AddThemeConstantOverride("margin_right", 12);
+        innerMargin.AddThemeConstantOverride("margin_top", 6);
+        innerMargin.AddThemeConstantOverride("margin_bottom", 6);
+        innerCard.AddChild(innerMargin);
 
         var hbox = new HBoxContainer
         {
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         hbox.AddThemeConstantOverride("separation", 12);
-        margin.AddChild(hbox);
+        innerMargin.AddChild(hbox);
 
         // Mini 16:9 Thumbnail Framed and Clipped
         var thumbFrame = new PanelContainer
         {
-            CustomMinimumSize = new Vector2(90, 50),
+            CustomMinimumSize = new Vector2(86, 48),
             ClipContents = true,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         var thumbStyle = new StyleBoxFlat
         {
-            BgColor = new Color(0.93f, 0.95f, 0.98f),
-            CornerRadiusTopLeft = 10,
-            CornerRadiusTopRight = 10,
-            CornerRadiusBottomLeft = 10,
-            CornerRadiusBottomRight = 10,
-            BorderWidthLeft = 1,
+            BgColor = accent.Lerp(Colors.White, 0.85f),
+            CornerRadiusTopLeft = 9,
+            CornerRadiusTopRight = 9,
+            CornerRadiusBottomLeft = 9,
+            CornerRadiusBottomRight = 9,
+            BorderWidthLeft = 2,
             BorderWidthTop = 1,
             BorderWidthRight = 1,
-            BorderWidthBottom = 1,
-            BorderColor = new Color(0.886f, 0.902f, 0.941f)
+            BorderWidthBottom = 2,
+            BorderColor = accent.Lerp(Colors.White, 0.45f)
         };
         thumbFrame.AddThemeStyleboxOverride("panel", thumbStyle);
         hbox.AddChild(thumbFrame);
@@ -413,7 +529,7 @@ public partial class ScenePickerScreen : BaseScreen
                 SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 MouseFilter = Control.MouseFilterEnum.Ignore
             };
-            iconLabel.AddThemeFontSizeOverride("font_size", 22);
+            iconLabel.AddThemeFontSizeOverride("font_size", 20);
             thumbFrame.AddChild(iconLabel);
         }
 
@@ -431,8 +547,8 @@ public partial class ScenePickerScreen : BaseScreen
         marquee = new Controls.MarqueeLabel
         {
             Text = package.Title,
-            FontSize = 16,
-            FontColor = new Color(0.118f, 0.106f, 0.294f)
+            FontSize = 15,
+            FontColor = new Color(0.094f, 0.086f, 0.180f) // Deep Midnight Slate
         };
         infoVBox.AddChild(marquee);
 
@@ -445,7 +561,7 @@ public partial class ScenePickerScreen : BaseScreen
             AutowrapMode = TextServer.AutowrapMode.Off
         };
         charsLabel.AddThemeColorOverride("font_color", new Color(0.35f, 0.38f, 0.50f));
-        charsLabel.AddThemeFontSizeOverride("font_size", 12);
+        charsLabel.AddThemeFontSizeOverride("font_size", 11);
         infoVBox.AddChild(charsLabel);
 
         // Right side tags
@@ -465,29 +581,48 @@ public partial class ScenePickerScreen : BaseScreen
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
         durLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.40f));
-        durLabel.AddThemeFontSizeOverride("font_size", 12);
+        durLabel.AddThemeFontSizeOverride("font_size", 11);
         rightVBox.AddChild(durLabel);
 
         var isCustom = package.PackageDirectory is not null && !package.PackageDirectory.Contains("OfficialScenes");
+        var badgePanel = new PanelContainer
+        {
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        var badgeStyle = new StyleBoxFlat
+        {
+            BgColor = accent,
+            CornerRadiusTopLeft = 9,
+            CornerRadiusTopRight = 9,
+            CornerRadiusBottomLeft = 9,
+            CornerRadiusBottomRight = 9,
+            ContentMarginLeft = 8,
+            ContentMarginRight = 8,
+            ContentMarginTop = 2,
+            ContentMarginBottom = 2
+        };
+        badgePanel.AddThemeStyleboxOverride("panel", badgeStyle);
         var badgeLabel = new Label
         {
             Text = isCustom ? "Custom" : $"{package.Document.VoiceSlots.Count} Lines",
-            HorizontalAlignment = HorizontalAlignment.Right,
+            HorizontalAlignment = HorizontalAlignment.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        badgeLabel.AddThemeColorOverride("font_color", isCustom ? new Color(0.561f, 0.396f, 0.973f) : new Color(1.0f, 0.243f, 0.514f));
-        badgeLabel.AddThemeFontSizeOverride("font_size", 11);
-        rightVBox.AddChild(badgeLabel);
+        badgeLabel.AddThemeColorOverride("font_color", Colors.White); // Crisp white text!
+        badgeLabel.AddThemeFontSizeOverride("font_size", 10);
+        badgePanel.AddChild(badgeLabel);
+        rightVBox.AddChild(badgePanel);
 
         // Interactive Accordion Hover: pops completely out of the overlap, casts glow, scrolls marquee!
         var capturedCard = card;
+        var capturedInner = innerCard;
         var capturedHolder = holder;
         var capturedMarquee = marquee;
 
         capturedCard.MouseEntered += () =>
         {
             UiSoundManager.Instance.PlayHover();
-            capturedHolder.ZIndex = 150; // Pop holder above all other card rows
+            capturedHolder.ZIndex = 150;
             capturedCard.ZIndex = 150;
             var tween = capturedCard.CreateTween();
             tween?.SetParallel(true);
@@ -496,8 +631,8 @@ public partial class ScenePickerScreen : BaseScreen
                   .SetEase(Tween.EaseType.Out);
             tween?.TweenProperty(capturedCard, "scale", new Vector2(1.03f, 1.03f), 0.12f);
 
-            ApplyCardHoverStyle(capturedCard);
-            capturedMarquee.OnCardHovered(); // Flow long text!
+            ApplyCardStyles(capturedCard, capturedInner, accent, isSelected, isHovered: true);
+            capturedMarquee.OnCardHovered();
             UpdateShowcase(package);
         };
 
@@ -513,8 +648,8 @@ public partial class ScenePickerScreen : BaseScreen
                   .SetEase(Tween.EaseType.Out);
             tween?.TweenProperty(capturedCard, "scale", new Vector2(1.0f, 1.0f), 0.10f);
 
-            ApplyCardStyle(capturedCard, isCurSelected);
-            capturedMarquee.OnCardUnhovered(); // Reset marquee scroll!
+            ApplyCardStyles(capturedCard, capturedInner, accent, isCurSelected, isHovered: false);
+            capturedMarquee.OnCardUnhovered();
 
             if (!isCurSelected && _selectedPackage is not null)
             {
@@ -534,46 +669,46 @@ public partial class ScenePickerScreen : BaseScreen
         return holder;
     }
 
-    private static void ApplyCardStyle(PanelContainer card, bool isSelected)
+    private static void ApplyCardStyles(PanelContainer card, PanelContainer innerCard, Color accent, bool isSelected, bool isHovered)
     {
-        var style = new StyleBoxFlat
+        // 1. Dış Katman (Outer Box): Darker on the outside, rich cover accent border & shadow
+        var outerStyle = new StyleBoxFlat
         {
-            BgColor = isSelected ? new Color(1.0f, 0.965f, 0.985f) : Colors.White,
-            BorderWidthLeft = isSelected ? 4 : 2,
-            BorderWidthTop = 1,
-            BorderWidthRight = 1,
-            BorderWidthBottom = 2,
-            BorderColor = isSelected ? new Color(1.0f, 0.243f, 0.514f) : new Color(0.86f, 0.88f, 0.93f),
-            CornerRadiusTopLeft = 14,
-            CornerRadiusTopRight = 14,
-            CornerRadiusBottomLeft = 14,
-            CornerRadiusBottomRight = 14,
-            ShadowColor = isSelected ? new Color(1.0f, 0.243f, 0.514f, 0.25f) : new Color(0.12f, 0.10f, 0.28f, 0.14f),
-            ShadowSize = isSelected ? 12 : 8,
-            ShadowOffset = new Vector2(0, 5)
-        };
-        card.AddThemeStyleboxOverride("panel", style);
-    }
-
-    private static void ApplyCardHoverStyle(PanelContainer card)
-    {
-        var style = new StyleBoxFlat
-        {
-            BgColor = new Color(1.0f, 0.98f, 0.99f),
-            BorderWidthLeft = 4,
+            BgColor = isSelected
+                ? accent.Lerp(Colors.White, 0.74f)
+                : (isHovered ? accent.Lerp(Colors.White, 0.78f) : accent.Lerp(Colors.White, 0.85f)),
+            BorderWidthLeft = isSelected ? 6 : (isHovered ? 5 : 4),
             BorderWidthTop = 2,
             BorderWidthRight = 2,
             BorderWidthBottom = 3,
-            BorderColor = new Color(1.0f, 0.243f, 0.514f),
+            BorderColor = isHovered ? accent.Lightened(0.12f) : accent,
             CornerRadiusTopLeft = 14,
             CornerRadiusTopRight = 14,
             CornerRadiusBottomLeft = 14,
             CornerRadiusBottomRight = 14,
-            ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.35f),
-            ShadowSize = 16,
-            ShadowOffset = new Vector2(-2, 6)
+            ShadowColor = isHovered
+                ? new Color(accent.R, accent.G, accent.B, 0.45f)
+                : new Color(accent.R * 0.35f, accent.G * 0.35f, accent.B * 0.35f, isSelected ? 0.30f : 0.18f),
+            ShadowSize = isHovered ? 16 : (isSelected ? 12 : 8),
+            ShadowOffset = new Vector2(0, 5)
         };
-        card.AddThemeStyleboxOverride("panel", style);
+        card.AddThemeStyleboxOverride("panel", outerStyle);
+
+        // 2. İç Katman (Inner Box): Progressively lighter towards the inside (illuminated pure radiant surface)
+        var innerStyle = new StyleBoxFlat
+        {
+            BgColor = isHovered ? Colors.White : (isSelected ? new Color(1.0f, 0.99f, 1.0f) : accent.Lerp(Colors.White, 0.95f)),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = isHovered ? accent.Lerp(Colors.White, 0.55f) : accent.Lerp(Colors.White, 0.75f),
+            CornerRadiusTopLeft = 10,
+            CornerRadiusTopRight = 10,
+            CornerRadiusBottomLeft = 10,
+            CornerRadiusBottomRight = 10
+        };
+        innerCard.AddThemeStyleboxOverride("panel", innerStyle);
     }
 
     private void SelectPackage(ScenePackage package)
@@ -594,6 +729,7 @@ public partial class ScenePickerScreen : BaseScreen
         foreach (var (pkg, card) in _cardNodes)
         {
             var isSelected = pkg == _selectedPackage;
+            var accent = GetSceneAccentColor(pkg);
             int naturalZIndex = Math.Max(0, 50 - index);
 
             var holder = _cardHolders.TryGetValue(pkg, out var h) ? h : null;
@@ -602,7 +738,12 @@ public partial class ScenePickerScreen : BaseScreen
                 holder.ZIndex = isSelected ? 80 : naturalZIndex;
             }
             card.ZIndex = isSelected ? 80 : naturalZIndex;
-            ApplyCardStyle(card, isSelected);
+
+            var innerCard = card.GetNodeOrNull<PanelContainer>("OuterMargin/InnerCard");
+            if (innerCard is not null)
+            {
+                ApplyCardStyles(card, innerCard, accent, isSelected, isHovered: false);
+            }
 
             var tween = card.CreateTween();
             tween?.TweenProperty(card, "offset_left", isSelected ? 10.0f : 32.0f, 0.10f)
@@ -615,6 +756,68 @@ public partial class ScenePickerScreen : BaseScreen
     private void UpdateShowcase(ScenePackage? package)
     {
         if (package is null) return;
+        var accent = GetSceneAccentColor(package);
+
+        // Showcase outer panel: cover accent border & soft tinted background
+        if (_showcasePanel is not null)
+        {
+            var showcaseStyle = new StyleBoxFlat
+            {
+                BgColor = accent.Lerp(Colors.White, 0.88f),
+                BorderWidthLeft = 3,
+                BorderWidthTop = 3,
+                BorderWidthRight = 3,
+                BorderWidthBottom = 3,
+                BorderColor = accent,
+                CornerRadiusTopLeft = 24,
+                CornerRadiusTopRight = 24,
+                CornerRadiusBottomLeft = 24,
+                CornerRadiusBottomRight = 24,
+                ShadowColor = new Color(accent.R * 0.35f, accent.G * 0.35f, accent.B * 0.35f, 0.20f),
+                ShadowSize = 18,
+                ShadowOffset = new Vector2(0, 6)
+            };
+            _showcasePanel.AddThemeStyleboxOverride("panel", showcaseStyle);
+        }
+
+        // Showcase inner card: pure radiant white illuminated canvas
+        var showcaseInnerCard = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard");
+        if (showcaseInnerCard is not null)
+        {
+            var innerStyle = new StyleBoxFlat
+            {
+                BgColor = Colors.White,
+                BorderWidthLeft = 1,
+                BorderWidthTop = 1,
+                BorderWidthRight = 1,
+                BorderWidthBottom = 1,
+                BorderColor = accent.Lerp(Colors.White, 0.78f),
+                CornerRadiusTopLeft = 18,
+                CornerRadiusTopRight = 18,
+                CornerRadiusBottomLeft = 18,
+                CornerRadiusBottomRight = 18
+            };
+            showcaseInnerCard.AddThemeStyleboxOverride("panel", innerStyle);
+        }
+
+        // Thumbnail Frame
+        if (_thumbnailFrame is not null)
+        {
+            var frameBox = new StyleBoxFlat
+            {
+                BgColor = accent.Lerp(Colors.White, 0.90f),
+                BorderWidthLeft = 2,
+                BorderWidthTop = 2,
+                BorderWidthRight = 2,
+                BorderWidthBottom = 2,
+                BorderColor = accent.Lerp(Colors.White, 0.50f),
+                CornerRadiusTopLeft = 14,
+                CornerRadiusTopRight = 14,
+                CornerRadiusBottomLeft = 14,
+                CornerRadiusBottomRight = 14
+            };
+            _thumbnailFrame.AddThemeStyleboxOverride("panel", frameBox);
+        }
 
         if (_showcaseTitle is not null)
         {
@@ -625,18 +828,59 @@ public partial class ScenePickerScreen : BaseScreen
         if (_durationBadge is not null)
         {
             _durationBadge.Text = $"⏱️ {durSec:F1}s";
+            var durStyle = new StyleBoxFlat
+            {
+                BgColor = accent.Lerp(Colors.White, 0.88f),
+                CornerRadiusTopLeft = 9,
+                CornerRadiusTopRight = 9,
+                CornerRadiusBottomLeft = 9,
+                CornerRadiusBottomRight = 9,
+                ContentMarginLeft = 8,
+                ContentMarginRight = 8,
+                ContentMarginTop = 3,
+                ContentMarginBottom = 3
+            };
+            _durationBadge.AddThemeStyleboxOverride("panel", durStyle);
+            _durationBadge.AddThemeColorOverride("font_color", new Color(0.12f, 0.14f, 0.25f));
         }
 
         if (_slotsBadge is not null)
         {
-            _slotsBadge.Text = $"🎙️ {package.Document.VoiceSlots.Count} Dialogue Lines";
+            _slotsBadge.Text = $"🎙️ {package.Document.VoiceSlots.Count} Lines";
+            var slotsStyle = new StyleBoxFlat
+            {
+                BgColor = accent,
+                CornerRadiusTopLeft = 9,
+                CornerRadiusTopRight = 9,
+                CornerRadiusBottomLeft = 9,
+                CornerRadiusBottomRight = 9,
+                ContentMarginLeft = 8,
+                ContentMarginRight = 8,
+                ContentMarginTop = 3,
+                ContentMarginBottom = 3
+            };
+            _slotsBadge.AddThemeStyleboxOverride("panel", slotsStyle);
+            _slotsBadge.AddThemeColorOverride("font_color", Colors.White);
         }
 
         var isCustom = package.PackageDirectory is not null && !package.PackageDirectory.Contains("OfficialScenes");
         if (_categoryBadge is not null)
         {
-            _categoryBadge.Text = isCustom ? "• Custom Workshop Scene •" : "• Official Scene •";
-            _categoryBadge.AddThemeColorOverride("font_color", isCustom ? new Color(0.561f, 0.396f, 0.973f) : new Color(1.0f, 0.243f, 0.514f));
+            _categoryBadge.Text = isCustom ? "Custom Workshop" : "Official Scene";
+            var catStyle = new StyleBoxFlat
+            {
+                BgColor = isCustom ? new Color(0.561f, 0.396f, 0.973f) : accent,
+                CornerRadiusTopLeft = 9,
+                CornerRadiusTopRight = 9,
+                CornerRadiusBottomLeft = 9,
+                CornerRadiusBottomRight = 9,
+                ContentMarginLeft = 8,
+                ContentMarginRight = 8,
+                ContentMarginTop = 3,
+                ContentMarginBottom = 3
+            };
+            _categoryBadge.AddThemeStyleboxOverride("panel", catStyle);
+            _categoryBadge.AddThemeColorOverride("font_color", Colors.White);
         }
 
         if (_charactersLabel is not null)
@@ -660,6 +904,20 @@ public partial class ScenePickerScreen : BaseScreen
             _linesPreviewLabel.Text = sampleLines.Count > 0
                 ? $"Dialogue Lines:\n{string.Join("\n", sampleLines)}"
                 : "Dialogue Lines: No voice lines in this scene.";
+        }
+
+        if (_playSelectedButton is not null)
+        {
+            var normal = new StyleBoxFlat { BgColor = accent, CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 8, ShadowColor = new Color(accent.R, accent.G, accent.B, 0.35f) };
+            var hover = new StyleBoxFlat { BgColor = accent.Lightened(0.12f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 12, ShadowColor = new Color(accent.R, accent.G, accent.B, 0.45f) };
+            var pressed = new StyleBoxFlat { BgColor = accent.Darkened(0.12f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23 };
+            _playSelectedButton.AddThemeStyleboxOverride("normal", normal);
+            _playSelectedButton.AddThemeStyleboxOverride("hover", hover);
+            _playSelectedButton.AddThemeStyleboxOverride("pressed", pressed);
+            _playSelectedButton.AddThemeStyleboxOverride("focus", hover);
+            _playSelectedButton.AddThemeColorOverride("font_color", Colors.White);
+            _playSelectedButton.AddThemeColorOverride("font_hover_color", Colors.White);
+            _playSelectedButton.AddThemeColorOverride("font_focus_color", Colors.White);
         }
 
         if (_deleteSceneButton is not null)
