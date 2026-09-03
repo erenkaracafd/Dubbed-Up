@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/SettingsScreen.cs" id="1_settings"]
+[ext_resource type="Script" path="res://UI/Controls/MenuBackgroundVisuals.cs" id="2_bg_visuals"]
 
 [node name="SettingsScreen" type="Control"]
 layout_mode = 3
@@ -11,7 +12,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_settings")
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="MenuBackgroundVisuals" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_bg_visuals")
+
+[node name="CenterArea" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,151 +29,91 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+[node name="SettingsCard" type="PanelContainer" parent="CenterArea"]
+custom_minimum_size = Vector2(860, 500)
+layout_mode = 2
+
+[node name="CardMargin" type="MarginContainer" parent="CenterArea/SettingsCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterArea/SettingsCard/CardMargin"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
-text = "⚙ Audio & Microphone Settings"
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 22
+text = "⚙️ AUDIO, MICROPHONE & DISPLAY SETTINGS"
 horizontal_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="ColumnsHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 14
-text = "Configure playback volume and calibrate your microphone input level."
-horizontal_alignment = 1
+size_flags_vertical = 3
+theme_override_constants/separation = 32
 
-[node name="FormContainer" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(500, 0)
+[node name="LeftCol" type="VBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
-[node name="DisplayHeading" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+[node name="DisplayHeading" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
 text = "🖥 Display Mode:"
 
-[node name="FullscreenCheck" type="CheckButton" parent="CenterContainer/VBoxContainer/FormContainer"]
-custom_minimum_size = Vector2(460, 38)
+[node name="FullscreenCheck" type="CheckButton" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
-text = "🖥 Fullscreen Mode (Tam Ekran)"
+text = "Fullscreen Mode (Tam Ekran - F11)"
 
-[node name="SeparatorLine0" type="HSeparator" parent="CenterContainer/VBoxContainer/FormContainer"]
+[node name="MasterVolLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
-
-[node name="MasterVolLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
-layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
 text = "🔊 Master Playback Volume:"
 
-[node name="MasterVolHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
+[node name="MasterVolHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
-[node name="MasterVolumeSlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/MasterVolHBox"]
-custom_minimum_size = Vector2(380, 24)
+[node name="MasterVolumeSlider" type="HSlider" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/MasterVolHBox"]
+custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
 max_value = 100.0
 value = 100.0
 
-[node name="MasterVolumeValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/MasterVolHBox"]
-custom_minimum_size = Vector2(50, 0)
+[node name="MasterVolumeValueLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/MasterVolHBox"]
+custom_minimum_size = Vector2(45, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 text = "100%"
 
-[node name="SpeakerTestButton" type="Button" parent="CenterContainer/VBoxContainer/FormContainer"]
-custom_minimum_size = Vector2(260, 36)
+[node name="SpeakerTestButton" type="Button" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
+custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
+theme_override_font_sizes/font_size = 13
 text = "🔊 Test Speaker Output (Beep)"
 
-[node name="SeparatorLine1" type="HSeparator" parent="CenterContainer/VBoxContainer/FormContainer"]
+[node name="LeadInLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
-
-[node name="MicDeviceLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
-layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
-text = "🎙 Microphone Device:"
+text = "⏳ Pre-Roll Video Lead-in (Maks: 3s):"
 
-[node name="MicDeviceOption" type="OptionButton" parent="CenterContainer/VBoxContainer/FormContainer"]
-custom_minimum_size = Vector2(460, 40)
+[node name="LeadInHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
+theme_override_constants/separation = 10
 
-[node name="MicGainLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "🎚 Microphone Input Gain:"
-
-[node name="MicGainHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="MicGainSlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/MicGainHBox"]
-custom_minimum_size = Vector2(380, 24)
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 50.0
-max_value = 300.0
-value = 100.0
-
-[node name="MicGainValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/MicGainHBox"]
-custom_minimum_size = Vector2(50, 0)
-layout_mode = 2
-text = "100%"
-
-[node name="MicLatencyLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "⏱ Mic Sync & Latency Offset (Shift Earlier):"
-
-[node name="MicLatencyHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="MicLatencySlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox"]
-custom_minimum_size = Vector2(380, 24)
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 0.0
-max_value = 400.0
-step = 10.0
-value = 150.0
-
-[node name="MicLatencyValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox"]
-custom_minimum_size = Vector2(50, 0)
-layout_mode = 2
-text = "-150ms"
-
-[node name="MicTestButton" type="Button" parent="CenterContainer/VBoxContainer/FormContainer"]
-custom_minimum_size = Vector2(280, 40)
-layout_mode = 2
-text = "🎙 Test Microphone Level"
-
-[node name="TestMeterBar" type="ProgressBar" parent="CenterContainer/VBoxContainer/FormContainer"]
-visible = false
-custom_minimum_size = Vector2(500, 18)
-layout_mode = 2
-value = 50.0
-show_percentage = false
-
-[node name="SeparatorLine2" type="HSeparator" parent="CenterContainer/VBoxContainer/FormContainer"]
-layout_mode = 2
-
-[node name="LeadInLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "⏳ Pre-Roll Video Lead-in (Hazırlık Payı - Maks: 3s):"
-
-[node name="LeadInHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="LeadInSlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/LeadInHBox"]
-custom_minimum_size = Vector2(380, 24)
+[node name="LeadInSlider" type="HSlider" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/LeadInHBox"]
+custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -171,22 +121,24 @@ max_value = 3.0
 step = 0.5
 value = 3.0
 
-[node name="LeadInValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/LeadInHBox"]
-custom_minimum_size = Vector2(50, 0)
+[node name="LeadInValueLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/LeadInHBox"]
+custom_minimum_size = Vector2(45, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 text = "3.0s"
 
-[node name="CountdownLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer"]
+[node name="CountdownLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
-text = "⏲️ Record Countdown (Geri Sayım - Maks: 5s):"
+text = "⏲️ Record Countdown (Geri Sayım):"
 
-[node name="CountdownHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer/FormContainer"]
+[node name="CountdownHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
-[node name="CountdownSlider" type="HSlider" parent="CenterContainer/VBoxContainer/FormContainer/CountdownHBox"]
-custom_minimum_size = Vector2(380, 24)
+[node name="CountdownSlider" type="HSlider" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/CountdownHBox"]
+custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -194,22 +146,108 @@ max_value = 5.0
 step = 1.0
 value = 0.0
 
-[node name="CountdownValueLabel" type="Label" parent="CenterContainer/VBoxContainer/FormContainer/CountdownHBox"]
-custom_minimum_size = Vector2(60, 0)
+[node name="CountdownValueLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/CountdownHBox"]
+custom_minimum_size = Vector2(55, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 text = "Off (0s)"
 
-[node name="ButtonsHBox" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+[node name="RightCol" type="VBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox"]
 layout_mode = 2
-alignment = 1
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="MicDeviceLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 14
+text = "🎙 Microphone Device:"
+
+[node name="MicDeviceOption" type="OptionButton" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+
+[node name="MicGainLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 14
+text = "🎚 Microphone Input Gain:"
+
+[node name="MicGainHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MicGainSlider" type="HSlider" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicGainHBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 50.0
+max_value = 300.0
+value = 100.0
+
+[node name="MicGainValueLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicGainHBox"]
+custom_minimum_size = Vector2(45, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+text = "100%"
+
+[node name="MicLatencyLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 14
+text = "⏱ Mic Sync & Latency Offset:"
+
+[node name="MicLatencyHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MicLatencySlider" type="HSlider" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicLatencyHBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 400.0
+step = 10.0
+value = 150.0
+
+[node name="MicLatencyValueLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicLatencyHBox"]
+custom_minimum_size = Vector2(55, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+text = "-150ms"
+
+[node name="MicTestButton" type="Button" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "🎙 Test Microphone Level"
+
+[node name="TestMeterBar" type="ProgressBar" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
+visible = false
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+value = 50.0
+show_percentage = false
+
+[node name="BottomRow" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer"]
+layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="SaveButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsHBox"]
-custom_minimum_size = Vector2(200, 48)
+[node name="StatusLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow"]
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
+theme_override_font_sizes/font_size = 13
+text = "Configure audio, mic sync, and display."
+
+[node name="SaveButton" type="Button" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow"]
+custom_minimum_size = Vector2(170, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
 text = "💾 Save Settings"
 
-[node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsHBox"]
-custom_minimum_size = Vector2(160, 48)
+[node name="BackButton" type="Button" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow"]
+custom_minimum_size = Vector2(140, 44)
 layout_mode = 2
-text = "Back to Menu"
+theme_override_font_sizes/font_size = 14
+text = "⬅️ Back"

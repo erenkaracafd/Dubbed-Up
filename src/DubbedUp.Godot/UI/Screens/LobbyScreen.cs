@@ -43,19 +43,19 @@ public partial class LobbyScreen : BaseScreen
 
     public override void _Ready()
     {
-        _playerNameInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PlayerNameInput");
-        _addressInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/AddressInput");
-        _portInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PortInput");
-        _hostButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/HostButton");
-        _joinButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/JoinButton");
+        _playerNameInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PlayerNameInput");
+        _addressInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/AddressInput");
+        _portInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PortInput");
+        _hostButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/HostButton");
+        _joinButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/JoinButton");
 
-        _connectionPanel = GetNodeOrNull<Control>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel");
-        _lobbyPanel = GetNodeOrNull<Control>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel");
-        _playersListContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/PlayersListContainer");
-        _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
-        _readyButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/ReadyButton");
-        _startButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/StartButton");
-        _leaveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/LeaveButton");
+        _connectionPanel = GetNodeOrNull<Control>("CenterArea/VBoxContainer/ConnectionPanel");
+        _lobbyPanel = GetNodeOrNull<Control>("CenterArea/VBoxContainer/LobbyPanel");
+        _playersListContainer = GetNodeOrNull<VBoxContainer>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/PlayersListContainer");
+        _statusLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/StatusLabel");
+        _readyButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/ReadyButton");
+        _startButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/StartButton");
+        _leaveButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/LeaveButton");
         _backButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/BackButton");
 
         ApplyStyling();

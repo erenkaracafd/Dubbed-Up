@@ -32,37 +32,35 @@ public partial class SettingsScreen : BaseScreen
 
 	public override void _Ready()
 	{
-		_fullscreenCheck = GetNodeOrNull<CheckButton>("CenterContainer/VBoxContainer/FormContainer/FullscreenCheck");
-		_masterVolumeSlider = GetNodeOrNull<HSlider>("CenterContainer/VBoxContainer/FormContainer/MasterVolHBox/MasterVolumeSlider");
-		_masterVolumeValueLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/MasterVolHBox/MasterVolumeValueLabel");
+		_fullscreenCheck = GetNodeOrNull<CheckButton>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/FullscreenCheck");
+		_masterVolumeSlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/MasterVolHBox/MasterVolumeSlider");
+		_masterVolumeValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/MasterVolHBox/MasterVolumeValueLabel");
 
 		if (_fullscreenCheck is not null)
 		{
 			_fullscreenCheck.Toggled += OnFullscreenToggled;
 		}
 
-		_micGainSlider = GetNodeOrNull<HSlider>("CenterContainer/VBoxContainer/FormContainer/MicGainHBox/MicGainSlider");
-		_micGainValueLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/MicGainHBox/MicGainValueLabel");
+		_speakerTestButton = GetNodeOrNull<Button>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/SpeakerTestButton");
+		_leadInSlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/LeadInHBox/LeadInSlider");
+		_leadInValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/LeadInHBox/LeadInValueLabel");
+		_countdownSlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/CountdownHBox/CountdownSlider");
+		_countdownValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/CountdownHBox/CountdownValueLabel");
 
-		_micLatencySlider = GetNodeOrNull<HSlider>("CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox/MicLatencySlider");
-		_micLatencyValueLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/MicLatencyHBox/MicLatencyValueLabel");
+		_micDeviceLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicDeviceLabel");
+		_micDeviceOption = GetNodeOrNull<OptionButton>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicDeviceOption");
+		_micGainSlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicGainHBox/MicGainSlider");
+		_micGainValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicGainHBox/MicGainValueLabel");
+		_micLatencySlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicLatencyHBox/MicLatencySlider");
+		_micLatencyValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicLatencyHBox/MicLatencyValueLabel");
+		_micTestButton = GetNodeOrNull<Button>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicTestButton");
+		_testMeterBar = GetNodeOrNull<ProgressBar>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/TestMeterBar");
 
-		_micDeviceLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/MicDeviceLabel");
-		_micDeviceOption = GetNodeOrNull<OptionButton>("CenterContainer/VBoxContainer/FormContainer/MicDeviceOption");
+		_statusLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow/StatusLabel");
+		_saveButton = GetNodeOrNull<Button>("CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow/SaveButton");
+		_backButton = GetNodeOrNull<Button>("CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow/BackButton");
 
-		_micTestButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/FormContainer/MicTestButton");
-		_testMeterBar = GetNodeOrNull<ProgressBar>("CenterContainer/VBoxContainer/FormContainer/TestMeterBar");
-		_speakerTestButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/FormContainer/SpeakerTestButton");
-
-		_leadInSlider = GetNodeOrNull<HSlider>("CenterContainer/VBoxContainer/FormContainer/LeadInHBox/LeadInSlider");
-		_leadInValueLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/LeadInHBox/LeadInValueLabel");
-
-		_countdownSlider = GetNodeOrNull<HSlider>("CenterContainer/VBoxContainer/FormContainer/CountdownHBox/CountdownSlider");
-		_countdownValueLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/FormContainer/CountdownHBox/CountdownValueLabel");
-
-		_statusLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/StatusLabel");
-		_saveButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ButtonsHBox/SaveButton");
-		_backButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ButtonsHBox/BackButton");
+		ApplyStyling();
 
 		// Beep test player
 		_beepPlayer = new AudioStreamPlayer();
@@ -443,5 +441,64 @@ public partial class SettingsScreen : BaseScreen
 		_isTestingMic = false;
 		AutoSaveSettings();
 		Navigator?.NavigateTo(AppScreen.MainMenu);
+	}
+
+	private void ApplyStyling()
+	{
+		var card = GetNodeOrNull<PanelContainer>("CenterArea/SettingsCard");
+		if (card is not null)
+		{
+			var cardStyle = new StyleBoxFlat
+			{
+				BgColor = Colors.White,
+				BorderWidthLeft = 2,
+				BorderWidthTop = 2,
+				BorderWidthRight = 2,
+				BorderWidthBottom = 2,
+				BorderColor = new Color(0.886f, 0.902f, 0.941f),
+				CornerRadiusTopLeft = 24,
+				CornerRadiusTopRight = 24,
+				CornerRadiusBottomLeft = 24,
+				CornerRadiusBottomRight = 24,
+				ShadowColor = new Color(0.12f, 0.11f, 0.30f, 0.08f),
+				ShadowSize = 18,
+				ShadowOffset = new Vector2(0, 6)
+			};
+			card.AddThemeStyleboxOverride("panel", cardStyle);
+		}
+
+		if (_saveButton is not null)
+		{
+			var normal = new StyleBoxFlat { BgColor = new Color(1.0f, 0.243f, 0.514f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22, ShadowSize = 8, ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.35f) };
+			var hover = new StyleBoxFlat { BgColor = new Color(1.0f, 0.360f, 0.600f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22, ShadowSize = 12, ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.45f) };
+			var pressed = new StyleBoxFlat { BgColor = new Color(0.870f, 0.140f, 0.410f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22, ShadowSize = 2 };
+			_saveButton.AddThemeStyleboxOverride("normal", normal);
+			_saveButton.AddThemeStyleboxOverride("hover", hover);
+			_saveButton.AddThemeStyleboxOverride("pressed", pressed);
+			_saveButton.AddThemeStyleboxOverride("focus", hover);
+			_saveButton.AddThemeColorOverride("font_color", Colors.White);
+			AudioPlayback.UiSoundManager.Attach(_saveButton);
+		}
+
+		if (_backButton is not null)
+		{
+			var normal = new StyleBoxFlat { BgColor = Colors.White, BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.886f, 0.902f, 0.941f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22 };
+			var hover = new StyleBoxFlat { BgColor = new Color(0.95f, 0.97f, 1.0f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22 };
+			_backButton.AddThemeStyleboxOverride("normal", normal);
+			_backButton.AddThemeStyleboxOverride("hover", hover);
+			_backButton.AddThemeStyleboxOverride("focus", hover);
+			_backButton.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
+			AudioPlayback.UiSoundManager.Attach(_backButton);
+		}
+
+		if (_speakerTestButton is not null)
+		{
+			AudioPlayback.UiSoundManager.Attach(_speakerTestButton);
+		}
+
+		if (_micTestButton is not null)
+		{
+			AudioPlayback.UiSoundManager.Attach(_micTestButton);
+		}
 	}
 }

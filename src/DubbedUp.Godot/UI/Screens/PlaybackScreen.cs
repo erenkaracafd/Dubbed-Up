@@ -1,3 +1,5 @@
+using System;
+using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
 using DubbedUp.Godot.VideoPlayback;
 using Godot;
@@ -27,41 +29,24 @@ public partial class PlaybackScreen : BaseScreen
     public override void _Ready()
     {
         _videoContainer = GetNodeOrNull<AspectRatioContainer>("CenterContainer/VBoxContainer/VideoContainer");
-        _scenePlayer = GetNodeOrNull<SynchronizedScenePlayer>("CenterContainer/VBoxContainer/VideoContainer/PlayerViewport/SynchronizedScenePlayer") ?? GetNodeOrNull<SynchronizedScenePlayer>("CenterContainer/VBoxContainer/PlayerViewport/SynchronizedScenePlayer");
+        _scenePlayer = GetNodeOrNull<SynchronizedScenePlayer>("CenterContainer/VBoxContainer/VideoContainer/PlayerViewport/SynchronizedScenePlayer");
         _progressBar = GetNodeOrNull<ProgressBar>("CenterContainer/VBoxContainer/ProgressBar");
-        _timeLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/TimeLabel");
-        _statusLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/StatusLabel");
+        _timeLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/TimeRow/TimeLabel");
+        _statusLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/TimeRow/StatusLabel");
         _subtitleLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/SubtitleLabel");
         _playPauseButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ControlsContainer/PlayPauseButton");
         _replayButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ControlsContainer/ReplayButton");
         _exportButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ControlsContainer/ExportButton");
         _proceedButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ProceedButton");
-        _menuButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/MenuButton");
+        _menuButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/BackButton");
 
-        if (_playPauseButton is not null)
-        {
-            _playPauseButton.Pressed += OnPlayPausePressed;
-        }
+        ApplyStyling();
 
-        if (_replayButton is not null)
-        {
-            _replayButton.Pressed += OnReplayPressed;
-        }
-
-        if (_exportButton is not null)
-        {
-            _exportButton.Pressed += OnExportPressed;
-        }
-
-        if (_proceedButton is not null)
-        {
-            _proceedButton.Pressed += OnProceedPressed;
-        }
-
-        if (_menuButton is not null)
-        {
-            _menuButton.Pressed += OnMenuPressed;
-        }
+        if (_playPauseButton is not null) SetupButton(_playPauseButton, OnPlayPausePressed);
+        if (_replayButton is not null) SetupButton(_replayButton, OnReplayPressed);
+        if (_exportButton is not null) SetupButton(_exportButton, OnExportPressed);
+        if (_proceedButton is not null) SetupButton(_proceedButton, OnProceedPressed);
+        if (_menuButton is not null) SetupButton(_menuButton, OnMenuPressed);
 
         if (Coordinator is not null)
         {
@@ -297,5 +282,65 @@ public partial class PlaybackScreen : BaseScreen
         _scenePlayer?.Stop();
         Coordinator?.ResetSession();
         Navigator?.NavigateTo(AppScreen.MainMenu);
+    }
+
+    private void SetupButton(Button btn, Action action)
+    {
+        btn.Pressed += action;
+        UiSoundManager.Attach(btn);
+    }
+
+    private void ApplyStyling()
+    {
+        var viewport = GetNodeOrNull<PanelContainer>("CenterContainer/VBoxContainer/VideoContainer/PlayerViewport");
+        if (viewport is not null)
+        {
+            var pBox = new StyleBoxFlat
+            {
+                BgColor = Colors.Black,
+                CornerRadiusTopLeft = 14,
+                CornerRadiusTopRight = 14,
+                CornerRadiusBottomLeft = 14,
+                CornerRadiusBottomRight = 14,
+                BorderWidthLeft = 2,
+                BorderWidthTop = 2,
+                BorderWidthRight = 2,
+                BorderWidthBottom = 2,
+                BorderColor = new Color(0.886f, 0.902f, 0.941f)
+            };
+            viewport.AddThemeStyleboxOverride("panel", pBox);
+        }
+
+        if (_playPauseButton is not null) StyleOutlinePill(_playPauseButton, 16);
+        if (_replayButton is not null) StyleActionPill(_replayButton, new Color(0.220f, 0.714f, 1.000f), 16);
+        if (_exportButton is not null) StyleActionPill(_exportButton, new Color(0.561f, 0.396f, 0.973f), 16);
+        if (_proceedButton is not null) StyleActionPill(_proceedButton, new Color(1.0f, 0.243f, 0.514f), 20);
+        if (_menuButton is not null) StyleOutlinePill(_menuButton, 16);
+    }
+
+    private static void StyleActionPill(Button btn, Color color, int radius)
+    {
+        var normal = new StyleBoxFlat { BgColor = color, CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 6, ShadowColor = new Color(color.R, color.G, color.B, 0.3f) };
+        var hover = new StyleBoxFlat { BgColor = color.Lightened(0.15f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 10, ShadowColor = new Color(color.R, color.G, color.B, 0.4f) };
+        var pressed = new StyleBoxFlat { BgColor = color.Darkened(0.15f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 1 };
+
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", pressed);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", Colors.White);
+        btn.AddThemeColorOverride("font_hover_color", Colors.White);
+    }
+
+    private static void StyleOutlinePill(Button btn, int radius)
+    {
+        var normal = new StyleBoxFlat { BgColor = Colors.White, BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.886f, 0.902f, 0.941f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+        var hover = new StyleBoxFlat { BgColor = new Color(0.95f, 0.97f, 1.0f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
+        btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
     }
 }

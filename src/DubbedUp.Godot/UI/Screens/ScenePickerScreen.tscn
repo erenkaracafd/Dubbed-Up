@@ -123,7 +123,7 @@ theme_override_constants/separation = 14
 
 [node name="ThumbnailFrame" type="PanelContainer" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
 clip_contents = true
-custom_minimum_size = Vector2(0, 230)
+custom_minimum_size = Vector2(0, 185)
 layout_mode = 2
 
 [node name="ThumbnailTexture" type="TextureRect" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame"]
@@ -136,7 +136,7 @@ mouse_filter = 2
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_font_sizes/font_size = 54
+theme_override_font_sizes/font_size = 48
 text = "🎬"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -144,7 +144,7 @@ vertical_alignment = 1
 [node name="ShowcaseTitle" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 22
 text = "Scene Title"
 
 [node name="BadgesHBox" type="HBoxContainer" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
@@ -153,13 +153,13 @@ theme_override_constants/separation = 10
 
 [node name="DurationBadge" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/BadgesHBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
+theme_override_colors/font_color = Color(0.18, 0.20, 0.32, 1)
 theme_override_font_sizes/font_size = 13
 text = "⏱️ 0:00"
 
 [node name="SlotsBadge" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/BadgesHBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
+theme_override_colors/font_color = Color(0.18, 0.20, 0.32, 1)
 theme_override_font_sizes/font_size = 13
 text = "🎙️ 0 Lines"
 
@@ -171,7 +171,7 @@ text = "• Official Scene •"
 
 [node name="CharactersLabel" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.45, 0.55, 1)
+theme_override_colors/font_color = Color(0.25, 0.28, 0.40, 1)
 theme_override_font_sizes/font_size = 13
 text = "Characters: Character 1, Character 2"
 autowrap_mode = 2
@@ -185,21 +185,21 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="PlaySelectedButton" type="Button" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseActionsHBox"]
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 16
 text = "▶️   DUB SCENE"
 
 [node name="EditTimelineButton" type="Button" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseActionsHBox"]
-custom_minimum_size = Vector2(130, 52)
+custom_minimum_size = Vector2(130, 46)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "✂️ Edit Box"
 
 [node name="DeleteSceneButton" type="Button" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseActionsHBox"]
 visible = false
-custom_minimum_size = Vector2(52, 52)
+custom_minimum_size = Vector2(46, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "🗑️"

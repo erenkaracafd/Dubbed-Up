@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/VotingScreen.cs" id="1_voting"]
+[ext_resource type="Script" path="res://UI/Controls/MenuBackgroundVisuals.cs" id="2_bg_visuals"]
 
 [node name="VotingScreen" type="Control"]
 layout_mode = 3
@@ -11,7 +12,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_voting")
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="MenuBackgroundVisuals" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_bg_visuals")
+
+[node name="CenterArea" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,43 +29,59 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
+[node name="VotingCard" type="PanelContainer" parent="CenterArea"]
+custom_minimum_size = Vector2(620, 0)
 layout_mode = 2
-custom_minimum_size = Vector2(800, 0)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
+[node name="CardMargin" type="MarginContainer" parent="CenterArea/VotingCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 28
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterArea/VotingCard/CardMargin"]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="CenterArea/VotingCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
-text = "Voting Phase"
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 26
+text = "🏆 VOTE FOR BEST DUB"
 horizontal_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="CenterArea/VotingCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Vote for the best dub performance!"
+theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
+theme_override_font_sizes/font_size = 14
+text = "Select your favorite voice acting performance!"
 horizontal_alignment = 1
 
-[node name="VoterContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="VoterContainer" type="VBoxContainer" parent="CenterArea/VotingCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 
-[node name="ErrorLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="ErrorLabel" type="Label" parent="CenterArea/VotingCard/CardMargin/VBoxContainer"]
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.2, 0.3, 1)
+theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
 
-[node name="SubmitButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 44)
+[node name="ActionsHBox" type="HBoxContainer" parent="CenterArea/VotingCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-text = "Submit All Votes"
+alignment = 1
+theme_override_constants/separation = 16
 
-[node name="MenuButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 44)
+[node name="SubmitButton" type="Button" parent="CenterArea/VotingCard/CardMargin/VBoxContainer/ActionsHBox"]
+custom_minimum_size = Vector2(220, 46)
 layout_mode = 2
-text = "Return to Main Menu"
+theme_override_font_sizes/font_size = 15
+text = "🌟 Submit All Votes"
+
+[node name="MenuButton" type="Button" parent="CenterArea/VotingCard/CardMargin/VBoxContainer/ActionsHBox"]
+custom_minimum_size = Vector2(150, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Main Menu"

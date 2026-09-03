@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/PlaybackScreen.cs" id="1_playback"]
 [ext_resource type="Script" path="res://VideoPlayback/SynchronizedScenePlayer.cs" id="2_player"]
+[ext_resource type="Script" path="res://UI/Controls/MenuBackgroundVisuals.cs" id="3_bg_visuals"]
 
 [node name="PlaybackScreen" type="Control"]
 layout_mode = 3
@@ -12,6 +13,15 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_playback")
 
+[node name="MenuBackgroundVisuals" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_bg_visuals")
+
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -21,23 +31,28 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(680, 0)
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
+alignment = 1
 
 [node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "Synchronized Dub Playback"
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 24
+text = "🎬 SYNCHRONIZED DUB PLAYBACK"
 horizontal_alignment = 1
 
 [node name="VideoContainer" type="AspectRatioContainer" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(720, 405)
+custom_minimum_size = Vector2(560, 315)
 layout_mode = 2
+size_flags_horizontal = 4
 ratio = 1.77778
 alignment_horizontal = 1
 alignment_vertical = 1
 
 [node name="PlayerViewport" type="PanelContainer" parent="CenterContainer/VBoxContainer/VideoContainer"]
+clip_contents = true
 layout_mode = 2
 
 [node name="SynchronizedScenePlayer" type="Control" parent="CenterContainer/VBoxContainer/VideoContainer/PlayerViewport"]
@@ -47,30 +62,37 @@ script = ExtResource("2_player")
 [node name="SubtitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.9, 0.2, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 16
 text = "💬 Character: \"Prompt subtitle\""
 horizontal_alignment = 1
 
 [node name="ProgressBar" type="ProgressBar" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(640, 16)
+custom_minimum_size = Vector2(560, 14)
 layout_mode = 2
+size_flags_horizontal = 4
 value = 0.0
 
-[node name="TimeLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="TimeRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(560, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "00:00 / 00:08"
-horizontal_alignment = 1
+size_flags_horizontal = 4
 
-[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer/TimeRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
+theme_override_font_sizes/font_size = 13
 text = "Playing synchronized scene dub..."
-horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="CenterContainer/VBoxContainer/TimeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TimeLabel" type="Label" parent="CenterContainer/VBoxContainer/TimeRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 13
+text = "00:00 / 00:08"
 
 [node name="ControlsContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -78,27 +100,28 @@ alignment = 1
 theme_override_constants/separation = 12
 
 [node name="PlayPauseButton" type="Button" parent="CenterContainer/VBoxContainer/ControlsContainer"]
-custom_minimum_size = Vector2(120, 40)
+custom_minimum_size = Vector2(100, 38)
 layout_mode = 2
-text = "Pause"
+text = "⏸️ Pause"
 
 [node name="ReplayButton" type="Button" parent="CenterContainer/VBoxContainer/ControlsContainer"]
-custom_minimum_size = Vector2(130, 40)
+custom_minimum_size = Vector2(120, 38)
 layout_mode = 2
-text = "Replay Dub"
+text = "🔄 Replay"
 
 [node name="ExportButton" type="Button" parent="CenterContainer/VBoxContainer/ControlsContainer"]
-custom_minimum_size = Vector2(190, 40)
+custom_minimum_size = Vector2(180, 38)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.9, 1, 1)
 text = "🎬 Export Video (.mp4)"
 
 [node name="ProceedButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(300, 44)
+custom_minimum_size = Vector2(260, 44)
 layout_mode = 2
-text = "Proceed to Voting"
+size_flags_horizontal = 4
+text = "Proceed to Voting →"
 
-[node name="MenuButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(300, 40)
+[node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(180, 36)
 layout_mode = 2
-text = "Return to Main Menu"
+size_flags_horizontal = 4
+text = "⬅️ Back to Main Menu"

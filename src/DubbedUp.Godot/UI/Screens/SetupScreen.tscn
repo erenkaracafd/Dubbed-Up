@@ -51,7 +51,7 @@ theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 20
 text = "🎮 LOCAL GAME SETUP"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="CenterArea" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -60,38 +60,38 @@ offset_top = 56.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="SetupCard" type="PanelContainer" parent="ScrollContainer/CenterContainer"]
-custom_minimum_size = Vector2(540, 0)
+[node name="SetupCard" type="PanelContainer" parent="CenterArea"]
+custom_minimum_size = Vector2(800, 440)
 layout_mode = 2
 
-[node name="Margin" type="MarginContainer" parent="ScrollContainer/CenterContainer/SetupCard"]
+[node name="CardMargin" type="MarginContainer" parent="CenterArea/SetupCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 28
 theme_override_constants/margin_top = 24
 theme_override_constants/margin_right = 28
 theme_override_constants/margin_bottom = 24
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/SetupCard/Margin"]
+[node name="SplitHBox" type="HBoxContainer" parent="CenterArea/SetupCard/CardMargin"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 32
 
-[node name="ThumbnailFrame" type="PanelContainer" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
+[node name="LeftSceneInfo" type="VBoxContainer" parent="CenterArea/SetupCard/CardMargin/SplitHBox"]
+custom_minimum_size = Vector2(340, 0)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ThumbnailFrame" type="PanelContainer" parent="CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo"]
 clip_contents = true
-custom_minimum_size = Vector2(0, 180)
+custom_minimum_size = Vector2(0, 190)
 layout_mode = 2
 
-[node name="ThumbnailTexture" type="TextureRect" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/ThumbnailFrame"]
+[node name="ThumbnailTexture" type="TextureRect" parent="CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo/ThumbnailFrame"]
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 6
 mouse_filter = 2
 
-[node name="PlaceholderIcon" type="Label" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/ThumbnailFrame"]
+[node name="PlaceholderIcon" type="Label" parent="CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo/ThumbnailFrame"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -100,69 +100,82 @@ text = "🎬"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SceneTitleLabel" type="Label" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
+[node name="SceneTitleLabel" type="Label" parent="CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 18
 text = "Scene: Museum Mix-up"
-horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="CharacterPreviewLabel" type="Label" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
+[node name="CharacterPreviewLabel" type="Label" parent="CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.45, 0.55, 1)
 theme_override_font_sizes/font_size = 13
 text = "Characters: Character 1, Character 2"
-horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="GameModeTitleLabel" type="Label" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
+[node name="LeftSpacer" type="Control" parent="CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EditSceneButton" type="Button" parent="CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "✏️  Edit Timeline & Boxes"
+
+[node name="RightControls" type="VBoxContainer" parent="CenterArea/SetupCard/CardMargin/SplitHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="GameModeTitleLabel" type="Label" parent="CenterArea/SetupCard/CardMargin/SplitHBox/RightControls"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
 text = "Game Mode:"
 
-[node name="GameModeOption" type="OptionButton" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
+[node name="GameModeOption" type="OptionButton" parent="CenterArea/SetupCard/CardMargin/SplitHBox/RightControls"]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 
-[node name="PlayerNamesTitleLabel" type="Label" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
+[node name="PlayerNamesTitleLabel" type="Label" parent="CenterArea/SetupCard/CardMargin/SplitHBox/RightControls"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
 text = "Player 1 Name:"
 
-[node name="Player1Input" type="LineEdit" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
-custom_minimum_size = Vector2(0, 42)
+[node name="Player1Input" type="LineEdit" parent="CenterArea/SetupCard/CardMargin/SplitHBox/RightControls"]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 placeholder_text = "What is your name?"
 text = "Player 1"
 
-[node name="Player2Label" type="Label" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
+[node name="Player2Label" type="Label" parent="CenterArea/SetupCard/CardMargin/SplitHBox/RightControls"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
 text = "Player 2 Name:"
 
-[node name="Player2Input" type="LineEdit" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
-custom_minimum_size = Vector2(0, 42)
+[node name="Player2Input" type="LineEdit" parent="CenterArea/SetupCard/CardMargin/SplitHBox/RightControls"]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 placeholder_text = "Player 2 name"
 text = "Player 2"
 
-[node name="ErrorLabel" type="Label" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
+[node name="ErrorLabel" type="Label" parent="CenterArea/SetupCard/CardMargin/SplitHBox/RightControls"]
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
 
-[node name="StartRoundButton" type="Button" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
+[node name="RightSpacer" type="Control" parent="CenterArea/SetupCard/CardMargin/SplitHBox/RightControls"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StartRoundButton" type="Button" parent="CenterArea/SetupCard/CardMargin/SplitHBox/RightControls"]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 17
 text = "🎙   START RECORDING!"
-
-[node name="EditSceneButton" type="Button" parent="ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer"]
-custom_minimum_size = Vector2(0, 42)
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "✏️  Edit Scene Timeline & Dialogue"

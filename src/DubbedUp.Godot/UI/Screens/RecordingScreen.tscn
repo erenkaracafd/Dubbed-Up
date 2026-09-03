@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/RecordingScreen.cs" id="1_recording"]
 [ext_resource type="Script" path="res://UI/Controls/WaveformVisualizer.cs" id="2_waveform"]
+[ext_resource type="Script" path="res://UI/Controls/MenuBackgroundVisuals.cs" id="3_bg_visuals"]
 
 [node name="RecordingScreen" type="Control"]
 layout_mode = 3
@@ -12,7 +13,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_recording")
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="MenuBackgroundVisuals" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_bg_visuals")
+
+[node name="CenterArea" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,140 +30,155 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterArea"]
+custom_minimum_size = Vector2(700, 0)
 layout_mode = 2
-custom_minimum_size = Vector2(850, 0)
+theme_override_constants/separation = 8
+alignment = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
+[node name="TopInfoHBox" type="HBoxContainer" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="CenterArea/VBoxContainer/TopInfoHBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "🎙️ Voice Dubbing Studio"
-horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 20
+text = "🎙️ DUBBING STUDIO"
 
-[node name="VideoContainer" type="AspectRatioContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(640, 360)
+[node name="Spacer" type="Control" parent="CenterArea/VBoxContainer/TopInfoHBox"]
 layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SlotInfoLabel" type="Label" parent="CenterArea/VBoxContainer/TopInfoHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.561, 0.396, 0.973, 1)
+theme_override_font_sizes/font_size = 14
+text = "Line 1/3 | Character: 🎭 Suspect | 4.0s"
+
+[node name="VideoContainer" type="AspectRatioContainer" parent="CenterArea/VBoxContainer"]
+custom_minimum_size = Vector2(512, 288)
+layout_mode = 2
+size_flags_horizontal = 4
 ratio = 1.77778
 alignment_horizontal = 1
 alignment_vertical = 1
 
-[node name="VideoPanel" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoContainer"]
+[node name="VideoPanel" type="PanelContainer" parent="CenterArea/VBoxContainer/VideoContainer"]
+clip_contents = true
 layout_mode = 2
 
-[node name="VideoPlayer" type="VideoStreamPlayer" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoContainer/VideoPanel"]
+[node name="VideoPlayer" type="VideoStreamPlayer" parent="CenterArea/VBoxContainer/VideoContainer/VideoPanel"]
 layout_mode = 2
 expand = true
 
-[node name="SlotInfoLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="PromptSubtitleLabel" type="Label" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 0.9, 1, 1)
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 16
-text = "Line 1/3 | Character: 🎭 Suspect | Duration: 4.0s"
-horizontal_alignment = 1
-
-[node name="PromptSubtitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.95, 0.3, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 18
 text = "💬 \"Please Speed I need this, my mom is kinda homeless!\""
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="CountdownLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="CountdownLabel" type="Label" parent="CenterArea/VBoxContainer"]
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
-theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 0.243, 0.514, 1)
+theme_override_font_sizes/font_size = 22
 text = "🎙 Recording in: 2..."
 horizontal_alignment = 1
 
-[node name="WaveformVisualizer" type="Control" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(560, 90)
+[node name="WaveformVisualizer" type="Control" parent="CenterArea/VBoxContainer"]
+custom_minimum_size = Vector2(512, 58)
 layout_mode = 2
+size_flags_horizontal = 4
 script = ExtResource("2_waveform")
 
-[node name="SyncScoreLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="SyncScoreLabel" type="Label" parent="CenterArea/VBoxContainer"]
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 1, 0.5, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0, 0.65, 0.35, 1)
+theme_override_font_sizes/font_size = 14
 text = "⭐ Timing & Rhythm Match: 95%"
 horizontal_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 1)
+theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
 theme_override_font_sizes/font_size = 13
-text = "Ready. Press 'Listen to Original' or 'Start Recording'."
+text = "Ready. Press 'Listen to Reference' or 'Start Recording'."
 horizontal_alignment = 1
 
-[node name="ErrorLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="ErrorLabel" type="Label" parent="CenterArea/VBoxContainer"]
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_colors/font_color = Color(1, 0.2, 0.3, 1)
 theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
 
-[node name="StudioActions" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="StudioActions" type="HBoxContainer" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
 alignment = 1
-theme_override_constants/separation = 12
+theme_override_constants/separation = 14
 
-[node name="PreviewOriginalButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/StudioActions"]
-custom_minimum_size = Vector2(240, 42)
+[node name="PreviewOriginalButton" type="Button" parent="CenterArea/VBoxContainer/StudioActions"]
+custom_minimum_size = Vector2(230, 42)
 layout_mode = 2
-text = "🎧 Listen to Original Reference"
+theme_override_font_sizes/font_size = 14
+text = "🎧 Listen Reference"
 
-[node name="RecordButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/StudioActions"]
-custom_minimum_size = Vector2(240, 42)
+[node name="RecordButton" type="Button" parent="CenterArea/VBoxContainer/StudioActions"]
+custom_minimum_size = Vector2(230, 42)
 layout_mode = 2
-text = "🎙️ Start Recording (3-2-1)"
+theme_override_font_sizes/font_size = 14
+text = "🎙️ Start Recording"
 
-[node name="ReviewActions" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="ReviewActions" type="HBoxContainer" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 10
 
-[node name="PreviewTakeButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ReviewActions"]
+[node name="PreviewTakeButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
-custom_minimum_size = Vector2(170, 38)
+custom_minimum_size = Vector2(160, 38)
 layout_mode = 2
-text = "▶ Listen to My Take"
+theme_override_font_sizes/font_size = 13
+text = "▶ Listen Take"
 
-[node name="ReRecordButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ReviewActions"]
-visible = false
-custom_minimum_size = Vector2(150, 38)
-layout_mode = 2
-text = "🔄 Re-Record"
-
-[node name="PrevSlotButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ReviewActions"]
+[node name="ReRecordButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(140, 38)
 layout_mode = 2
-text = "← Previous Line"
+theme_override_font_sizes/font_size = 13
+text = "🔄 Re-Record"
 
-[node name="NextSlotButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ReviewActions"]
+[node name="PrevSlotButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
-custom_minimum_size = Vector2(180, 38)
+custom_minimum_size = Vector2(130, 38)
 layout_mode = 2
-text = "⏭ Next Line →"
+theme_override_font_sizes/font_size = 13
+text = "← Prev Line"
 
-[node name="ProceedButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="NextSlotButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
-custom_minimum_size = Vector2(490, 44)
+custom_minimum_size = Vector2(150, 38)
 layout_mode = 2
-size_flags_horizontal = 4
-text = "🎬 All Lines Recorded — Watch Full Playback!"
+theme_override_font_sizes/font_size = 13
+text = "Next Line →"
 
-[node name="CancelButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(260, 36)
+[node name="FinishRecordingButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
+visible = false
+custom_minimum_size = Vector2(190, 38)
 layout_mode = 2
-size_flags_horizontal = 4
-text = "Return to Main Menu"
+theme_override_font_sizes/font_size = 13
+text = "🎬 Finish & Watch!"
+
+[node name="BottomRow" type="HBoxContainer" parent="CenterArea/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="CenterArea/VBoxContainer/BottomRow"]
+custom_minimum_size = Vector2(160, 34)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Cancel Session"

@@ -51,7 +51,7 @@ theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 20
 text = "🌐 MULTIPLAYER LOBBY"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="CenterArea" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -60,136 +60,131 @@ offset_top = 56.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterArea"]
+custom_minimum_size = Vector2(540, 0)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+theme_override_constants/separation = 16
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
-custom_minimum_size = Vector2(560, 0)
+[node name="StatusLabel" type="Label" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="StatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.22, 0.71, 1, 1)
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
 text = "Enter your details to host or join a lobby room."
 horizontal_alignment = 1
 
-[node name="ConnectionPanel" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="ConnectionPanel" type="PanelContainer" parent="CenterArea/VBoxContainer"]
 custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
 
-[node name="Margin" type="MarginContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel"]
+[node name="Margin" type="MarginContainer" parent="CenterArea/VBoxContainer/ConnectionPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 28
-theme_override_constants/margin_top = 24
+theme_override_constants/margin_top = 22
 theme_override_constants/margin_right = 28
-theme_override_constants/margin_bottom = 24
+theme_override_constants/margin_bottom = 22
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
-[node name="PlayerNameLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+[node name="PlayerNameLabel" type="Label" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "Your Display Name:"
 
-[node name="PlayerNameInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
-custom_minimum_size = Vector2(0, 42)
+[node name="PlayerNameInput" type="LineEdit" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 placeholder_text = "Your Display Name"
 text = "Player 1"
 
-[node name="AddressLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+[node name="AddressLabel" type="Label" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "Host IP Address (e.g. 192.168.1.35):"
 
-[node name="AddressInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
-custom_minimum_size = Vector2(0, 42)
+[node name="AddressInput" type="LineEdit" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 placeholder_text = "Host IP Address (e.g. 127.0.0.1)"
 text = "127.0.0.1"
 
-[node name="PortLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+[node name="PortLabel" type="Label" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "Port (Default 7777):"
 
-[node name="PortInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
-custom_minimum_size = Vector2(0, 42)
+[node name="PortInput" type="LineEdit" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 placeholder_text = "Port"
 text = "7777"
 
-[node name="ButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+[node name="ButtonsHBox" type="HBoxContainer" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="HostButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox"]
-custom_minimum_size = Vector2(0, 48)
+[node name="HostButton" type="Button" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 15
 text = "🏠  Host Room"
 
-[node name="JoinButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox"]
-custom_minimum_size = Vector2(0, 48)
+[node name="JoinButton" type="Button" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 15
 text = "🔗  Join Room"
 
-[node name="LobbyPanel" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="LobbyPanel" type="PanelContainer" parent="CenterArea/VBoxContainer"]
 visible = false
 custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
 
-[node name="Margin" type="MarginContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel"]
+[node name="Margin" type="MarginContainer" parent="CenterArea/VBoxContainer/LobbyPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 28
-theme_override_constants/margin_top = 24
+theme_override_constants/margin_top = 22
 theme_override_constants/margin_right = 28
-theme_override_constants/margin_bottom = 24
+theme_override_constants/margin_bottom = 22
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="LobbyHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 18
-text = "Connected Players in Room:"
-
-[node name="PlayersListContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="ActionsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterArea/VBoxContainer/LobbyPanel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="ReadyButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
+[node name="LobbyHeading" type="Label" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 17
+text = "Connected Players in Room:"
+
+[node name="PlayersListContainer" type="VBoxContainer" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ActionsHBox" type="HBoxContainer" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="ReadyButton" type="Button" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
 custom_minimum_size = Vector2(130, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Set Ready"
 
-[node name="StartButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
+[node name="StartButton" type="Button" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 15
 text = "🚀  Start Game"
 
-[node name="LeaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
+[node name="LeaveButton" type="Button" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
 custom_minimum_size = Vector2(130, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14

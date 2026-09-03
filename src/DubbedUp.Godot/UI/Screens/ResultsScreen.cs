@@ -22,36 +22,107 @@ public partial class ResultsScreen : BaseScreen
 
     public override void _Ready()
     {
-        _winnerLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/WinnerLabel");
-        _tallyLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/TallyLabel");
-        _standingsLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/StandingsLabel");
-        _errorLabel = GetNodeOrNull<Label>("CenterContainer/VBoxContainer/ErrorLabel");
-        _exportButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ExportButton");
-        _nextRoundButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/NextRoundButton");
-        _replayButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/ReplayRoundButton");
-        _menuButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/MenuButton");
+        _winnerLabel = GetNodeOrNull<Label>("CenterArea/ResultsCard/CardMargin/VBoxContainer/WinnerLabel");
+        _tallyLabel = GetNodeOrNull<Label>("CenterArea/ResultsCard/CardMargin/VBoxContainer/TallyLabel");
+        _standingsLabel = GetNodeOrNull<Label>("CenterArea/ResultsCard/CardMargin/VBoxContainer/StandingsLabel");
+        _errorLabel = GetNodeOrNull<Label>("CenterArea/ResultsCard/CardMargin/VBoxContainer/ErrorLabel");
+        _nextRoundButton = GetNodeOrNull<Button>("CenterArea/ResultsCard/CardMargin/VBoxContainer/ActionsGrid/NextRoundButton");
+        _replayButton = GetNodeOrNull<Button>("CenterArea/ResultsCard/CardMargin/VBoxContainer/ActionsGrid/ReplayRoundButton");
+        _exportButton = GetNodeOrNull<Button>("CenterArea/ResultsCard/CardMargin/VBoxContainer/BottomRow/ExportButton");
+        _menuButton = GetNodeOrNull<Button>("CenterArea/ResultsCard/CardMargin/VBoxContainer/BottomRow/MenuButton");
 
-        if (_exportButton is not null)
-        {
-            _exportButton.Pressed += OnExportPressed;
-        }
+        ApplyStyling();
 
         if (_nextRoundButton is not null)
         {
             _nextRoundButton.Pressed += OnNextRoundPressed;
+            AudioPlayback.UiSoundManager.Attach(_nextRoundButton);
         }
 
         if (_replayButton is not null)
         {
             _replayButton.Pressed += OnReplayRoundPressed;
+            AudioPlayback.UiSoundManager.Attach(_replayButton);
+        }
+
+        if (_exportButton is not null)
+        {
+            _exportButton.Pressed += OnExportPressed;
+            AudioPlayback.UiSoundManager.Attach(_exportButton);
         }
 
         if (_menuButton is not null)
         {
             _menuButton.Pressed += OnMenuPressed;
+            AudioPlayback.UiSoundManager.Attach(_menuButton);
         }
 
         PopulateResults();
+    }
+
+    private void ApplyStyling()
+    {
+        var card = GetNodeOrNull<PanelContainer>("CenterArea/ResultsCard");
+        if (card is not null)
+        {
+            var cardStyle = new StyleBoxFlat
+            {
+                BgColor = Colors.White,
+                BorderWidthLeft = 2,
+                BorderWidthTop = 2,
+                BorderWidthRight = 2,
+                BorderWidthBottom = 2,
+                BorderColor = new Color(0.886f, 0.902f, 0.941f),
+                CornerRadiusTopLeft = 24,
+                CornerRadiusTopRight = 24,
+                CornerRadiusBottomLeft = 24,
+                CornerRadiusBottomRight = 24,
+                ShadowColor = new Color(0.12f, 0.11f, 0.30f, 0.08f),
+                ShadowSize = 18,
+                ShadowOffset = new Vector2(0, 6)
+            };
+            card.AddThemeStyleboxOverride("panel", cardStyle);
+        }
+
+        if (_nextRoundButton is not null)
+        {
+            var normal = new StyleBoxFlat { BgColor = new Color(1.0f, 0.243f, 0.514f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22, ShadowSize = 8, ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.35f) };
+            var hover = new StyleBoxFlat { BgColor = new Color(1.0f, 0.360f, 0.600f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22, ShadowSize = 12, ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.45f) };
+            _nextRoundButton.AddThemeStyleboxOverride("normal", normal);
+            _nextRoundButton.AddThemeStyleboxOverride("hover", hover);
+            _nextRoundButton.AddThemeStyleboxOverride("focus", hover);
+            _nextRoundButton.AddThemeColorOverride("font_color", Colors.White);
+        }
+
+        if (_replayButton is not null)
+        {
+            var normal = new StyleBoxFlat { BgColor = new Color(0.220f, 0.714f, 1.000f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22 };
+            var hover = new StyleBoxFlat { BgColor = new Color(0.350f, 0.780f, 1.000f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22 };
+            _replayButton.AddThemeStyleboxOverride("normal", normal);
+            _replayButton.AddThemeStyleboxOverride("hover", hover);
+            _replayButton.AddThemeStyleboxOverride("focus", hover);
+            _replayButton.AddThemeColorOverride("font_color", Colors.White);
+        }
+
+        if (_exportButton is not null)
+        {
+            var normal = new StyleBoxFlat { BgColor = new Color(0.561f, 0.396f, 0.973f), CornerRadiusTopLeft = 20, CornerRadiusTopRight = 20, CornerRadiusBottomLeft = 20, CornerRadiusBottomRight = 20 };
+            var hover = new StyleBoxFlat { BgColor = new Color(0.660f, 0.520f, 1.000f), CornerRadiusTopLeft = 20, CornerRadiusTopRight = 20, CornerRadiusBottomLeft = 20, CornerRadiusBottomRight = 20 };
+            _exportButton.AddThemeStyleboxOverride("normal", normal);
+            _exportButton.AddThemeStyleboxOverride("hover", hover);
+            _exportButton.AddThemeStyleboxOverride("focus", hover);
+            _exportButton.AddThemeColorOverride("font_color", Colors.White);
+        }
+
+        if (_menuButton is not null)
+        {
+            var normal = new StyleBoxFlat { BgColor = Colors.White, BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.886f, 0.902f, 0.941f), CornerRadiusTopLeft = 20, CornerRadiusTopRight = 20, CornerRadiusBottomLeft = 20, CornerRadiusBottomRight = 20 };
+            var hover = new StyleBoxFlat { BgColor = new Color(0.95f, 0.97f, 1.0f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = 20, CornerRadiusTopRight = 20, CornerRadiusBottomLeft = 20, CornerRadiusBottomRight = 20 };
+            _menuButton.AddThemeStyleboxOverride("normal", normal);
+            _menuButton.AddThemeStyleboxOverride("hover", hover);
+            _menuButton.AddThemeStyleboxOverride("focus", hover);
+            _menuButton.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
+        }
     }
 
     private void PopulateResults()

@@ -36,19 +36,20 @@ public partial class SetupScreen : BaseScreen
     {
         _topBar = GetNodeOrNull<PanelContainer>("TopBar");
         _backButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/BackButton");
-        _setupCard = GetNodeOrNull<PanelContainer>("ScrollContainer/CenterContainer/SetupCard");
-        _thumbnailFrame = GetNodeOrNull<PanelContainer>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/ThumbnailFrame");
-        _thumbnailTexture = GetNodeOrNull<TextureRect>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/ThumbnailFrame/ThumbnailTexture");
-        _placeholderIcon = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/ThumbnailFrame/PlaceholderIcon");
-        _sceneTitleLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/SceneTitleLabel");
-        _characterPreviewLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/CharacterPreviewLabel");
-        _player1Input = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/Player1Input");
-        _player2Label = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/Player2Label");
-        _player2Input = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/Player2Input");
-        _gameModeOption = GetNodeOrNull<OptionButton>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/GameModeOption");
-        _errorLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/ErrorLabel");
-        _startRoundButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/StartRoundButton");
-        _editSceneButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/SetupCard/Margin/VBoxContainer/EditSceneButton");
+        _setupCard = GetNodeOrNull<PanelContainer>("CenterArea/SetupCard");
+        _thumbnailFrame = GetNodeOrNull<PanelContainer>("CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo/ThumbnailFrame");
+        _thumbnailTexture = GetNodeOrNull<TextureRect>("CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo/ThumbnailFrame/ThumbnailTexture");
+        _placeholderIcon = GetNodeOrNull<Label>("CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo/ThumbnailFrame/PlaceholderIcon");
+        _sceneTitleLabel = GetNodeOrNull<Label>("CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo/SceneTitleLabel");
+        _characterPreviewLabel = GetNodeOrNull<Label>("CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo/CharacterPreviewLabel");
+        _editSceneButton = GetNodeOrNull<Button>("CenterArea/SetupCard/CardMargin/SplitHBox/LeftSceneInfo/EditSceneButton");
+
+        _gameModeOption = GetNodeOrNull<OptionButton>("CenterArea/SetupCard/CardMargin/SplitHBox/RightControls/GameModeOption");
+        _player1Input = GetNodeOrNull<LineEdit>("CenterArea/SetupCard/CardMargin/SplitHBox/RightControls/Player1Input");
+        _player2Label = GetNodeOrNull<Label>("CenterArea/SetupCard/CardMargin/SplitHBox/RightControls/Player2Label");
+        _player2Input = GetNodeOrNull<LineEdit>("CenterArea/SetupCard/CardMargin/SplitHBox/RightControls/Player2Input");
+        _errorLabel = GetNodeOrNull<Label>("CenterArea/SetupCard/CardMargin/SplitHBox/RightControls/ErrorLabel");
+        _startRoundButton = GetNodeOrNull<Button>("CenterArea/SetupCard/CardMargin/SplitHBox/RightControls/StartRoundButton");
 
         ApplyStyling();
         UpdateSetupInfo();
