@@ -28,6 +28,7 @@ public partial class ScenePickerScreen : BaseScreen
     private Label? _slotsBadge;
     private Label? _categoryBadge;
     private Label? _charactersLabel;
+    private Label? _linesPreviewLabel;
     private Button? _playSelectedButton;
     private Button? _editTimelineButton;
     private Button? _deleteSceneButton;
@@ -54,10 +55,7 @@ public partial class ScenePickerScreen : BaseScreen
     {
         _topBar = GetNodeOrNull<PanelContainer>("TopBar");
         _backButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/BackButton");
-        _createSceneButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/ActionsContainer/CreateSceneButton");
-        _openFolderButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/ActionsContainer/OpenFolderButton");
-        _refreshButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/ActionsContainer/RefreshButton");
-        _workshopButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/ActionsContainer/WorkshopButton");
+        _createSceneButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/CreateSceneButton");
 
         _showcasePanel = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel");
         _thumbnailFrame = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame");
@@ -68,19 +66,20 @@ public partial class ScenePickerScreen : BaseScreen
         _slotsBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/BadgesHBox/SlotsBadge");
         _categoryBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/BadgesHBox/CategoryBadge");
         _charactersLabel = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/CharactersLabel");
+        _linesPreviewLabel = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/LinesPreviewLabel");
         _playSelectedButton = GetNodeOrNull<Button>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseActionsHBox/PlaySelectedButton");
         _editTimelineButton = GetNodeOrNull<Button>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseActionsHBox/EditTimelineButton");
         _deleteSceneButton = GetNodeOrNull<Button>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseActionsHBox/DeleteSceneButton");
 
         _searchInput = GetNodeOrNull<LineEdit>("MainLayoutMargin/SplitHBox/CarouselVBox/SearchHBox/SearchInput");
         _statusLabel = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/CarouselVBox/StatusLabel");
-        _scenesListContainer = GetNodeOrNull<VBoxContainer>("MainLayoutMargin/SplitHBox/CarouselVBox/ScrollContainer/ScenesListContainer");
+        _scenesListContainer = GetNodeOrNull<VBoxContainer>("MainLayoutMargin/SplitHBox/CarouselVBox/ScrollContainer/ScenesListMargin/ScenesListContainer");
 
         _deleteConfirmModal = GetNodeOrNull<Control>("DeleteConfirmModal");
-        _dialogPanel = GetNodeOrNull<PanelContainer>("DeleteConfirmModal/CenterContainer/DialogPanel");
-        _confirmMessageLabel = GetNodeOrNull<Label>("DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ConfirmMessage");
-        _confirmDeleteButton = GetNodeOrNull<Button>("DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ConfirmButtonsHBox/ConfirmDeleteButton");
-        _cancelDeleteButton = GetNodeOrNull<Button>("DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ConfirmButtonsHBox/CancelDeleteButton");
+        _dialogPanel = GetNodeOrNull<PanelContainer>("DeleteConfirmModal/CenterContainer/ModalCard");
+        _confirmMessageLabel = GetNodeOrNull<Label>("DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin/ModalVBox/ModalDescription");
+        _confirmDeleteButton = GetNodeOrNull<Button>("DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin/ModalVBox/ModalButtonsHBox/ConfirmDeleteButton");
+        _cancelDeleteButton = GetNodeOrNull<Button>("DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin/ModalVBox/ModalButtonsHBox/CancelDeleteButton");
 
         ApplyStyling();
 
@@ -300,34 +299,58 @@ public partial class ScenePickerScreen : BaseScreen
 
         foreach (var package in filtered)
         {
-            var card = CreateOsuBeatmapCard(package);
+            var holder = CreateOsuBeatmapCard(package, out var card);
             _cardNodes[package] = card;
-            _scenesListContainer.AddChild(card);
+            _scenesListContainer.AddChild(holder);
         }
 
         HighlightSelectedCard();
     }
 
-    private PanelContainer CreateOsuBeatmapCard(ScenePackage package)
+    private Control CreateOsuBeatmapCard(ScenePackage package, out PanelContainer card)
     {
-        var card = new PanelContainer
+        var isSelected = package == _selectedPackage;
+
+        // Outer holder handles the 56px step in ScenesListContainer
+        var holder = new Control
         {
-            CustomMinimumSize = new Vector2(0, 76),
+            CustomMinimumSize = new Vector2(0, 56),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            MouseFilter = Control.MouseFilterEnum.Stop
+            MouseFilter = Control.MouseFilterEnum.Pass
         };
 
-        var isSelected = package == _selectedPackage;
+        // Inner card is 78px high, overlapping the card below it by 22px
+        card = new PanelContainer
+        {
+            CustomMinimumSize = new Vector2(0, 78),
+            AnchorsPreset = (int)Control.LayoutPreset.TopWide,
+            AnchorRight = 1.0f,
+            OffsetLeft = isSelected ? 12 : 32,
+            OffsetRight = 0,
+            OffsetTop = 0,
+            OffsetBottom = 78,
+            MouseFilter = Control.MouseFilterEnum.Stop,
+            ZIndex = isSelected ? 5 : 0,
+            PivotOffset = new Vector2(0, 39)
+        };
+        holder.AddChild(card);
+
         ApplyCardStyle(card, isSelected);
 
-        var margin = new MarginContainer();
+        var margin = new MarginContainer
+        {
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
         margin.AddThemeConstantOverride("margin_left", 14);
         margin.AddThemeConstantOverride("margin_right", 16);
         margin.AddThemeConstantOverride("margin_top", 10);
         margin.AddThemeConstantOverride("margin_bottom", 10);
         card.AddChild(margin);
 
-        var hbox = new HBoxContainer();
+        var hbox = new HBoxContainer
+        {
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
         hbox.AddThemeConstantOverride("separation", 14);
         margin.AddChild(hbox);
 
@@ -376,7 +399,8 @@ public partial class ScenePickerScreen : BaseScreen
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                SizeFlagsVertical = Control.SizeFlags.ExpandFill
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+                MouseFilter = Control.MouseFilterEnum.Ignore
             };
             iconLabel.AddThemeFontSizeOverride("font_size", 22);
             thumbFrame.AddChild(iconLabel);
@@ -386,15 +410,17 @@ public partial class ScenePickerScreen : BaseScreen
         var infoVBox = new VBoxContainer
         {
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            Alignment = BoxContainer.AlignmentMode.Center
+            Alignment = BoxContainer.AlignmentMode.Center,
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        infoVBox.AddThemeConstantOverride("separation", 3);
+        infoVBox.AddThemeConstantOverride("separation", 2);
         hbox.AddChild(infoVBox);
 
         var titleLabel = new Label
         {
             Text = package.Title,
-            ThemeTypeVariation = "HeaderSmall"
+            ThemeTypeVariation = "HeaderSmall",
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
         titleLabel.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
         titleLabel.AddThemeFontSizeOverride("font_size", 16);
@@ -403,16 +429,18 @@ public partial class ScenePickerScreen : BaseScreen
         var charsText = string.Join(", ", package.Document.Characters.Select(c => c.DisplayName));
         var charsLabel = new Label
         {
-            Text = string.IsNullOrEmpty(charsText) ? "No characters defined" : charsText
+            Text = string.IsNullOrEmpty(charsText) ? "No characters defined" : $"🎭 {charsText}",
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        charsLabel.AddThemeColorOverride("font_color", new Color(0.4f, 0.45f, 0.55f));
+        charsLabel.AddThemeColorOverride("font_color", new Color(0.35f, 0.38f, 0.50f));
         charsLabel.AddThemeFontSizeOverride("font_size", 12);
         infoVBox.AddChild(charsLabel);
 
         // Right side tags
         var rightVBox = new VBoxContainer
         {
-            Alignment = BoxContainer.AlignmentMode.Center
+            Alignment = BoxContainer.AlignmentMode.Center,
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
         rightVBox.AddThemeConstantOverride("separation", 4);
         hbox.AddChild(rightVBox);
@@ -421,41 +449,60 @@ public partial class ScenePickerScreen : BaseScreen
         var durLabel = new Label
         {
             Text = $"⏱️ {durSec:F1}s",
-            HorizontalAlignment = HorizontalAlignment.Right
+            HorizontalAlignment = HorizontalAlignment.Right,
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        durLabel.AddThemeColorOverride("font_color", new Color(0.35f, 0.4f, 0.5f));
+        durLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.40f));
         durLabel.AddThemeFontSizeOverride("font_size", 12);
         rightVBox.AddChild(durLabel);
 
         var isCustom = package.PackageDirectory is not null && !package.PackageDirectory.Contains("OfficialScenes");
         var badgeLabel = new Label
         {
-            Text = isCustom ? "Custom" : "Official",
-            HorizontalAlignment = HorizontalAlignment.Right
+            Text = isCustom ? "Custom" : $"{package.Document.VoiceSlots.Count} Lines",
+            HorizontalAlignment = HorizontalAlignment.Right,
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        badgeLabel.AddThemeColorOverride("font_color", isCustom ? new Color(0.561f, 0.396f, 0.973f) : new Color(0.22f, 0.71f, 1.0f));
+        badgeLabel.AddThemeColorOverride("font_color", isCustom ? new Color(0.561f, 0.396f, 0.973f) : new Color(1.0f, 0.243f, 0.514f));
         badgeLabel.AddThemeFontSizeOverride("font_size", 11);
         rightVBox.AddChild(badgeLabel);
 
-        // Hover and click interaction (osu! wedge slide)
-        card.MouseEntered += () =>
+        // Interactive Accordion Hover: pops out of the stack, slides left, updates left showcase preview!
+        var capturedCard = card;
+        capturedCard.MouseEntered += () =>
         {
             UiSoundManager.Instance.PlayHover();
-            var tween = card.CreateTween();
-            tween?.TweenProperty(card, "position:x", isSelected ? -14f : -8f, 0.12f)
+            capturedCard.ZIndex = 20; // Float on top of adjacent overlapping cards
+            var tween = capturedCard.CreateTween();
+            tween?.SetParallel(true);
+            tween?.TweenProperty(capturedCard, "offset_left", 0.0f, 0.12f)
                   .SetTrans(Tween.TransitionType.Back)
                   .SetEase(Tween.EaseType.Out);
+            tween?.TweenProperty(capturedCard, "scale", new Vector2(1.02f, 1.02f), 0.12f);
+
+            ApplyCardHoverStyle(capturedCard);
+            UpdateShowcase(package); // Live showcase preview on mouse hover!
         };
 
-        card.MouseExited += () =>
+        capturedCard.MouseExited += () =>
         {
-            var tween = card.CreateTween();
-            tween?.TweenProperty(card, "position:x", isSelected ? -8f : 0f, 0.10f)
+            var isCurSelected = package == _selectedPackage;
+            capturedCard.ZIndex = isCurSelected ? 5 : 0;
+            var tween = capturedCard.CreateTween();
+            tween?.SetParallel(true);
+            tween?.TweenProperty(capturedCard, "offset_left", isCurSelected ? 12.0f : 32.0f, 0.10f)
                   .SetTrans(Tween.TransitionType.Cubic)
                   .SetEase(Tween.EaseType.Out);
+            tween?.TweenProperty(capturedCard, "scale", new Vector2(1.0f, 1.0f), 0.10f);
+
+            ApplyCardStyle(capturedCard, isCurSelected);
+            if (!isCurSelected && _selectedPackage is not null)
+            {
+                UpdateShowcase(_selectedPackage); // Revert preview to selected if not hovered
+            }
         };
 
-        card.GuiInput += (@event) =>
+        capturedCard.GuiInput += (@event) =>
         {
             if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
             {
@@ -464,7 +511,7 @@ public partial class ScenePickerScreen : BaseScreen
             }
         };
 
-        return card;
+        return holder;
     }
 
     private static void ApplyCardStyle(PanelContainer card, bool isSelected)
@@ -473,17 +520,38 @@ public partial class ScenePickerScreen : BaseScreen
         {
             BgColor = isSelected ? new Color(1.0f, 0.96f, 0.98f) : Colors.White,
             BorderWidthLeft = isSelected ? 4 : 2,
-            BorderWidthTop = isSelected ? 3 : 1,
-            BorderWidthRight = isSelected ? 3 : 1,
-            BorderWidthBottom = isSelected ? 3 : 1,
+            BorderWidthTop = isSelected ? 2 : 1,
+            BorderWidthRight = isSelected ? 2 : 1,
+            BorderWidthBottom = isSelected ? 2 : 1,
             BorderColor = isSelected ? new Color(1.0f, 0.243f, 0.514f) : new Color(0.886f, 0.902f, 0.941f),
-            CornerRadiusTopLeft = 18,
-            CornerRadiusTopRight = 18,
-            CornerRadiusBottomLeft = 18,
-            CornerRadiusBottomRight = 18,
-            ShadowColor = isSelected ? new Color(1.0f, 0.243f, 0.514f, 0.20f) : new Color(0.1f, 0.1f, 0.2f, 0.04f),
-            ShadowSize = isSelected ? 12 : 4,
+            CornerRadiusTopLeft = 16,
+            CornerRadiusTopRight = 16,
+            CornerRadiusBottomLeft = 16,
+            CornerRadiusBottomRight = 16,
+            ShadowColor = isSelected ? new Color(1.0f, 0.243f, 0.514f, 0.25f) : new Color(0.1f, 0.1f, 0.2f, 0.04f),
+            ShadowSize = isSelected ? 10 : 3,
             ShadowOffset = new Vector2(0, 2)
+        };
+        card.AddThemeStyleboxOverride("panel", style);
+    }
+
+    private static void ApplyCardHoverStyle(PanelContainer card)
+    {
+        var style = new StyleBoxFlat
+        {
+            BgColor = new Color(1.0f, 0.97f, 0.99f),
+            BorderWidthLeft = 4,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(1.0f, 0.243f, 0.514f),
+            CornerRadiusTopLeft = 16,
+            CornerRadiusTopRight = 16,
+            CornerRadiusBottomLeft = 16,
+            CornerRadiusBottomRight = 16,
+            ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.35f),
+            ShadowSize = 14,
+            ShadowOffset = new Vector2(-2, 3)
         };
         card.AddThemeStyleboxOverride("panel", style);
     }
@@ -505,8 +573,13 @@ public partial class ScenePickerScreen : BaseScreen
         foreach (var (pkg, card) in _cardNodes)
         {
             var isSelected = pkg == _selectedPackage;
+            card.ZIndex = isSelected ? 5 : 0;
             ApplyCardStyle(card, isSelected);
-            card.Position = new Vector2(isSelected ? -8f : 0f, card.Position.Y);
+
+            var tween = card.CreateTween();
+            tween?.TweenProperty(card, "offset_left", isSelected ? 12.0f : 32.0f, 0.10f)
+                  .SetTrans(Tween.TransitionType.Cubic)
+                  .SetEase(Tween.EaseType.Out);
         }
     }
 
@@ -522,12 +595,12 @@ public partial class ScenePickerScreen : BaseScreen
         var durSec = package.Document.DurationMilliseconds / 1000.0;
         if (_durationBadge is not null)
         {
-            _durationBadge.Text = $"⏱️ {durSec:F1} Seconds";
+            _durationBadge.Text = $"⏱️ {durSec:F1}s";
         }
 
         if (_slotsBadge is not null)
         {
-            _slotsBadge.Text = $"🎙️ {package.Document.VoiceSlots.Count} Voice Lines";
+            _slotsBadge.Text = $"🎙️ {package.Document.VoiceSlots.Count} Dialogue Lines";
         }
 
         var isCustom = package.PackageDirectory is not null && !package.PackageDirectory.Contains("OfficialScenes");
@@ -543,6 +616,21 @@ public partial class ScenePickerScreen : BaseScreen
             _charactersLabel.Text = chars.Count > 0
                 ? $"Characters: {string.Join(", ", chars)}"
                 : "Characters: None defined";
+        }
+
+        if (_linesPreviewLabel is not null)
+        {
+            var sampleLines = package.Document.VoiceSlots
+                .Take(2)
+                .Select(s => $"• {s.Prompt}")
+                .ToList();
+            if (package.Document.VoiceSlots.Count > 2)
+            {
+                sampleLines.Add($"• (+{package.Document.VoiceSlots.Count - 2} more dialogue lines)");
+            }
+            _linesPreviewLabel.Text = sampleLines.Count > 0
+                ? $"Dialogue Lines:\n{string.Join("\n", sampleLines)}"
+                : "Dialogue Lines: No voice lines in this scene.";
         }
 
         if (_deleteSceneButton is not null)

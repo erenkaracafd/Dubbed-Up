@@ -49,43 +49,18 @@ text = "⬅️ Back"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 20
-text = "🎬 SELECT SCENE"
+text = "🎬 CHOOSE YOUR SCENE"
 
 [node name="Spacer" type="Control" parent="TopBar/TopMargin/TopHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ActionsContainer" type="HBoxContainer" parent="TopBar/TopMargin/TopHBox"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="CreateSceneButton" type="Button" parent="TopBar/TopMargin/TopHBox/ActionsContainer"]
+[node name="CreateSceneButton" type="Button" parent="TopBar/TopMargin/TopHBox"]
 custom_minimum_size = Vector2(160, 36)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 13
-text = "✨ Create Scene"
-
-[node name="OpenFolderButton" type="Button" parent="TopBar/TopMargin/TopHBox/ActionsContainer"]
-custom_minimum_size = Vector2(140, 36)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 13
-text = "📁 Open Folder"
-
-[node name="RefreshButton" type="Button" parent="TopBar/TopMargin/TopHBox/ActionsContainer"]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 13
-text = "🔄 Refresh"
-
-[node name="WorkshopButton" type="Button" parent="TopBar/TopMargin/TopHBox/ActionsContainer"]
-custom_minimum_size = Vector2(140, 36)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 13
-text = "🌐 Workshop"
+text = "➕ Import Custom Scene"
 
 [node name="MainLayoutMargin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -105,25 +80,24 @@ layout_mode = 2
 theme_override_constants/separation = 28
 
 [node name="ShowcasePanel" type="PanelContainer" parent="MainLayoutMargin/SplitHBox"]
-custom_minimum_size = Vector2(480, 0)
+custom_minimum_size = Vector2(450, 0)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.85
+size_flags_horizontal = 0
 
 [node name="ShowcaseMargin" type="MarginContainer" parent="MainLayoutMargin/SplitHBox/ShowcasePanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
 
 [node name="ShowcaseVBox" type="VBoxContainer" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 10
 
 [node name="ThumbnailFrame" type="PanelContainer" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
 clip_contents = true
-custom_minimum_size = Vector2(0, 185)
+custom_minimum_size = Vector2(0, 210)
 layout_mode = 2
 
 [node name="ThumbnailTexture" type="TextureRect" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame"]
@@ -142,12 +116,16 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="ShowcaseTitle" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 20
 text = "Scene Title"
+autowrap_mode = 3
+text_overrun_behavior = 3
 
 [node name="BadgesHBox" type="HBoxContainer" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
+custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 theme_override_constants/separation = 10
 
@@ -170,17 +148,29 @@ theme_override_font_sizes/font_size = 13
 text = "• Official Scene •"
 
 [node name="CharactersLabel" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.25, 0.28, 0.40, 1)
 theme_override_font_sizes/font_size = 13
 text = "Characters: Character 1, Character 2"
-autowrap_mode = 2
+autowrap_mode = 3
+text_overrun_behavior = 3
+
+[node name="LinesPreviewLabel" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.38, 0.50, 1)
+theme_override_font_sizes/font_size = 12
+text = "Dialogue Lines:\n• Prompt preview"
+autowrap_mode = 3
+text_overrun_behavior = 3
 
 [node name="ShowcaseSpacer" type="Control" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="ShowcaseActionsHBox" type="HBoxContainer" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 theme_override_constants/separation = 12
 
@@ -222,7 +212,7 @@ placeholder_text = "🔍 Search scenes..."
 
 [node name="StatusLabel" type="Label" parent="MainLayoutMargin/SplitHBox/CarouselVBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.45, 0.55, 1)
+theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
 theme_override_font_sizes/font_size = 13
 text = "Found 3 scenes"
 
@@ -231,10 +221,18 @@ layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="ScenesListContainer" type="VBoxContainer" parent="MainLayoutMargin/SplitHBox/CarouselVBox/ScrollContainer"]
+[node name="ScenesListMargin" type="MarginContainer" parent="MainLayoutMargin/SplitHBox/CarouselVBox/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
+theme_override_constants/margin_left = 34
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 44
+
+[node name="ScenesListContainer" type="VBoxContainer" parent="MainLayoutMargin/SplitHBox/CarouselVBox/ScrollContainer/ScenesListMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
 
 [node name="DeleteConfirmModal" type="ColorRect" parent="."]
 visible = false
@@ -255,45 +253,50 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="DialogPanel" type="PanelContainer" parent="DeleteConfirmModal/CenterContainer"]
-custom_minimum_size = Vector2(440, 180)
+[node name="ModalCard" type="PanelContainer" parent="DeleteConfirmModal/CenterContainer"]
+custom_minimum_size = Vector2(420, 0)
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="DeleteConfirmModal/CenterContainer/DialogPanel"]
+[node name="ModalMargin" type="MarginContainer" parent="DeleteConfirmModal/CenterContainer/ModalCard"]
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
 
-[node name="VBoxContainer" type="VBoxContainer" parent="DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer"]
+[node name="ModalVBox" type="VBoxContainer" parent="DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="DialogTitle" type="Label" parent="DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer"]
+[node name="ModalTitle" type="Label" parent="DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin/ModalVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 18
-text = "🗑️ Delete Scene?"
+text = "Delete Custom Scene?"
+horizontal_alignment = 1
 
-[node name="ConfirmMessage" type="Label" parent="DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer"]
+[node name="ModalDescription" type="Label" parent="DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin/ModalVBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
-theme_override_font_sizes/font_size = 14
-text = "Are you sure you want to permanently delete this custom scene?"
+theme_override_colors/font_color = Color(0.4, 0.45, 0.55, 1)
+theme_override_font_sizes/font_size = 13
+text = "Are you sure you want to permanently delete this custom scene package?"
 autowrap_mode = 2
+horizontal_alignment = 1
 
-[node name="ConfirmButtonsHBox" type="HBoxContainer" parent="DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer"]
+[node name="ModalButtonsHBox" type="HBoxContainer" parent="DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin/ModalVBox"]
 layout_mode = 2
 theme_override_constants/separation = 14
-alignment = 2
 
-[node name="CancelDeleteButton" type="Button" parent="DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ConfirmButtonsHBox"]
-custom_minimum_size = Vector2(100, 36)
+[node name="CancelDeleteButton" type="Button" parent="DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin/ModalVBox/ModalButtonsHBox"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
 text = "Cancel"
 
-[node name="ConfirmDeleteButton" type="Button" parent="DeleteConfirmModal/CenterContainer/DialogPanel/MarginContainer/VBoxContainer/ConfirmButtonsHBox"]
-custom_minimum_size = Vector2(120, 36)
+[node name="ConfirmDeleteButton" type="Button" parent="DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin/ModalVBox/ModalButtonsHBox"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
 text = "Delete"

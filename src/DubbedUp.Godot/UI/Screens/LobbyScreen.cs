@@ -48,11 +48,6 @@ public partial class LobbyScreen : BaseScreen
         _portInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PortInput");
         _hostButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/HostButton");
         _joinButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/JoinButton");
-
-        _connectionPanel = GetNodeOrNull<Control>("CenterArea/VBoxContainer/ConnectionPanel");
-        _lobbyPanel = GetNodeOrNull<Control>("CenterArea/VBoxContainer/LobbyPanel");
-        _playersListContainer = GetNodeOrNull<VBoxContainer>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/PlayersListContainer");
-        _statusLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/StatusLabel");
         _readyButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/ReadyButton");
         _startButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/StartButton");
         _leaveButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/LeaveButton");
@@ -61,13 +56,6 @@ public partial class LobbyScreen : BaseScreen
         ApplyStyling();
 
         if (_hostButton is not null) SetupButton(_hostButton, OnHostPressed);
-        if (_joinButton is not null) SetupButton(_joinButton, OnJoinPressed);
-        if (_leaveButton is not null) SetupButton(_leaveButton, OnLeavePressed);
-        if (_readyButton is not null) SetupButton(_readyButton, OnReadyPressed);
-        if (_startButton is not null) SetupButton(_startButton, OnStartPressed);
-        if (_backButton is not null) SetupButton(_backButton, OnBackPressed);
-
-        UpdatePanelsVisibility(false);
     }
 
     private void SetupButton(Button btn, Action action)

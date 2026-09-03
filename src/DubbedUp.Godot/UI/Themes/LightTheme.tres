@@ -15,3 +15,4 @@ CheckButton/colors/font_pressed_color = Color(0.118, 0.106, 0.294, 1)
 Button/colors/font_color = Color(0.118, 0.106, 0.294, 1)
 Button/colors/font_hover_color = Color(0.118, 0.106, 0.294, 1)
 Button/colors/font_pressed_color = Color(0.118, 0.106, 0.294, 1)
+
