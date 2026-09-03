@@ -54,7 +54,7 @@ horizontal_alignment = 1
 [node name="WinnerLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-theme_override_colors/font_color = Color(1, 0.243, 0.514, 1)
+theme_override_colors/font_color = Color(1, 0.54, 0.68, 1)
 text = "👑 Winner: ..."
 horizontal_alignment = 1
 

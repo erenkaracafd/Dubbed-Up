@@ -44,11 +44,11 @@ public partial class MenuBackgroundVisuals : Control
 
         var colors = new[]
         {
-            new Color(1.0f, 0.350f, 0.600f, 0.14f), // Sakura Pink
-            new Color(0.220f, 0.714f, 1.000f, 0.13f), // Sky Blue
-            new Color(0.600f, 0.400f, 0.980f, 0.12f), // Soft Lilac
-            new Color(1.0f, 0.500f, 0.750f, 0.10f), // Pale Magenta
-            new Color(0.400f, 0.850f, 1.000f, 0.11f)  // Cyan
+            new Color(1.0f, 0.580f, 0.720f, 0.16f), // Soft Blossom Pink
+            new Color(0.350f, 0.720f, 1.000f, 0.16f), // Soft Ice Sky Blue
+            new Color(0.650f, 0.520f, 0.980f, 0.14f), // Gentle Lilac
+            new Color(1.0f, 0.680f, 0.800f, 0.12f), // Cotton Candy Pink
+            new Color(0.480f, 0.840f, 0.980f, 0.15f)  // Soft Aqua
         };
 
         for (var i = 0; i < ParticleCount; i++)
@@ -116,8 +116,8 @@ public partial class MenuBackgroundVisuals : Control
     {
         var viewportSize = GetViewportRect().Size;
 
-        // Subtle soft corner vignettes / gradients
-        DrawRect(new Rect2(Vector2.Zero, viewportSize), new Color(0.973f, 0.976f, 0.992f, 1.0f));
+        // Soft Ice Sky Tint Background (cooler, soothing light sky tone)
+        DrawRect(new Rect2(Vector2.Zero, viewportSize), new Color(0.925f, 0.955f, 0.988f, 1.0f));
 
         foreach (var p in _particles)
         {

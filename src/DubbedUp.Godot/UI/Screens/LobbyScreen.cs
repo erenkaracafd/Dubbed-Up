@@ -84,17 +84,17 @@ public partial class LobbyScreen : BaseScreen
         // Panels
         var panelStyle = new StyleBoxFlat
         {
-            BgColor = Colors.White,
+            BgColor = new Color(0.965f, 0.980f, 1.000f),
             BorderWidthLeft = 2,
             BorderWidthTop = 2,
             BorderWidthRight = 2,
             BorderWidthBottom = 2,
-            BorderColor = new Color(0.886f, 0.902f, 0.941f),
+            BorderColor = new Color(0.780f, 0.850f, 0.950f),
             CornerRadiusTopLeft = 24,
             CornerRadiusTopRight = 24,
             CornerRadiusBottomLeft = 24,
             CornerRadiusBottomRight = 24,
-            ShadowColor = new Color(0.12f, 0.11f, 0.30f, 0.08f),
+            ShadowColor = new Color(0.12f, 0.18f, 0.35f, 0.10f),
             ShadowSize = 18,
             ShadowOffset = new Vector2(0, 6)
         };
@@ -103,10 +103,10 @@ public partial class LobbyScreen : BaseScreen
         if (_lobbyPanel is PanelContainer lp) lp.AddThemeStyleboxOverride("panel", panelStyle);
 
         // Buttons
-        if (_hostButton is not null) StyleActionPill(_hostButton, new Color(1.0f, 0.243f, 0.514f), 24);
-        if (_joinButton is not null) StyleActionPill(_joinButton, new Color(0.220f, 0.714f, 1.000f), 24);
-        if (_startButton is not null) StyleActionPill(_startButton, new Color(1.0f, 0.243f, 0.514f), 23);
-        if (_readyButton is not null) StyleActionPill(_readyButton, new Color(0.561f, 0.396f, 0.973f), 23);
+        if (_hostButton is not null) StyleActionPill(_hostButton, new Color(1.0f, 0.540f, 0.680f), 24);
+        if (_joinButton is not null) StyleActionPill(_joinButton, new Color(0.280f, 0.650f, 0.950f), 24);
+        if (_startButton is not null) StyleActionPill(_startButton, new Color(1.0f, 0.540f, 0.680f), 23);
+        if (_readyButton is not null) StyleActionPill(_readyButton, new Color(0.600f, 0.480f, 0.950f), 23);
         if (_leaveButton is not null) StyleOutlinePill(_leaveButton, 23);
         if (_backButton is not null) StyleOutlinePill(_backButton, 18);
 

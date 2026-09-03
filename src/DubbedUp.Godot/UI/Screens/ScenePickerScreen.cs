@@ -170,21 +170,21 @@ public partial class ScenePickerScreen : BaseScreen
         // Action Buttons Styling
         if (_playSelectedButton is not null)
         {
-            StyleButton(_playSelectedButton, new Color(1.0f, 0.243f, 0.514f), new Color(1.0f, 0.35f, 0.6f), new Color(0.88f, 0.15f, 0.42f), Colors.White, 26);
+            StyleButton(_playSelectedButton, new Color(1.0f, 0.540f, 0.680f), new Color(1.0f, 0.660f, 0.780f), new Color(0.900f, 0.420f, 0.560f), Colors.White, 26);
         }
         if (_editTimelineButton is not null)
         {
-            StyleButton(_editTimelineButton, new Color(0.561f, 0.396f, 0.973f), new Color(0.65f, 0.51f, 1.0f), new Color(0.47f, 0.29f, 0.92f), Colors.White, 26);
+            StyleButton(_editTimelineButton, new Color(0.600f, 0.480f, 0.950f), new Color(0.700f, 0.600f, 1.000f), new Color(0.500f, 0.360f, 0.880f), Colors.White, 26);
         }
         if (_deleteSceneButton is not null)
         {
-            StyleButton(_deleteSceneButton, new Color(1.0f, 0.42f, 0.42f), new Color(1.0f, 0.52f, 0.52f), new Color(0.88f, 0.32f, 0.32f), Colors.White, 26);
+            StyleButton(_deleteSceneButton, new Color(0.960f, 0.450f, 0.550f), new Color(0.980f, 0.550f, 0.650f), new Color(0.850f, 0.350f, 0.450f), Colors.White, 26);
         }
 
         // Create Scene button
         if (_createSceneButton is not null)
         {
-            StyleButton(_createSceneButton, new Color(0.561f, 0.396f, 0.973f), new Color(0.65f, 0.51f, 1.0f), new Color(0.47f, 0.29f, 0.92f), Colors.White, 18);
+            StyleButton(_createSceneButton, new Color(0.600f, 0.480f, 0.950f), new Color(0.700f, 0.600f, 1.000f), new Color(0.500f, 0.360f, 0.880f), Colors.White, 18);
         }
 
         // Outline buttons
@@ -198,12 +198,12 @@ public partial class ScenePickerScreen : BaseScreen
         {
             var searchBox = new StyleBoxFlat
             {
-                BgColor = Colors.White,
+                BgColor = new Color(0.955f, 0.975f, 1.0f),
                 BorderWidthLeft = 2,
                 BorderWidthTop = 2,
                 BorderWidthRight = 2,
                 BorderWidthBottom = 2,
-                BorderColor = new Color(0.886f, 0.902f, 0.941f, 1.0f),
+                BorderColor = new Color(0.780f, 0.850f, 0.950f),
                 CornerRadiusTopLeft = 16,
                 CornerRadiusTopRight = 16,
                 CornerRadiusBottomLeft = 16,
@@ -249,14 +249,14 @@ public partial class ScenePickerScreen : BaseScreen
 
     private static void StyleOutline(Button btn, int radius)
     {
-        var normal = new StyleBoxFlat { BgColor = Colors.White, BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.886f, 0.902f, 0.941f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
-        var hover = new StyleBoxFlat { BgColor = new Color(0.95f, 0.97f, 1.0f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+        var normal = new StyleBoxFlat { BgColor = new Color(0.955f, 0.975f, 1.0f), BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.780f, 0.850f, 0.950f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+        var hover = new StyleBoxFlat { BgColor = new Color(0.910f, 0.945f, 0.990f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
 
         btn.AddThemeStyleboxOverride("normal", normal);
         btn.AddThemeStyleboxOverride("hover", hover);
         btn.AddThemeStyleboxOverride("pressed", normal);
         btn.AddThemeStyleboxOverride("focus", hover);
-        btn.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
+        btn.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
         btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
     }
 
@@ -319,14 +319,14 @@ public partial class ScenePickerScreen : BaseScreen
 
     private static readonly Color[] CuratedPalette =
     [
-        new Color(1.0f, 0.243f, 0.514f), // Hot Pink (#FF3E83)
-        new Color(0.140f, 0.650f, 0.980f), // Sky Blue (#24A6FA)
-        new Color(0.561f, 0.396f, 0.973f), // Royal Violet (#8F65F8)
-        new Color(0.063f, 0.725f, 0.506f), // Emerald (#10B981)
-        new Color(0.961f, 0.580f, 0.100f), // Amber Orange (#F5941A)
-        new Color(0.925f, 0.282f, 0.600f), // Neon Rose (#EC4899)
-        new Color(0.388f, 0.400f, 0.945f), // Electric Indigo (#6366F1)
-        new Color(0.055f, 0.647f, 0.914f), // Ocean Teal (#0EA5E9)
+        new Color(1.0f, 0.540f, 0.680f), // Soft Blossom Pink (#FF8AAD)
+        new Color(0.280f, 0.650f, 0.950f), // Soft Sky Blue (#47A6F2)
+        new Color(0.620f, 0.480f, 0.960f), // Soft Lilac Violet (#9E7AF5)
+        new Color(0.180f, 0.750f, 0.620f), // Soft Mint Emerald (#2EC09E)
+        new Color(0.980f, 0.640f, 0.250f), // Soft Peach Amber (#FAA440)
+        new Color(0.960f, 0.450f, 0.650f), // Soft Rose Quartz (#F573A6)
+        new Color(0.420f, 0.500f, 0.950f), // Soft Periwinkle (#6B80F2)
+        new Color(0.180f, 0.720f, 0.900f), // Soft Aqua Teal (#2EB8E6)
     ];
 
     private Color GetSceneAccentColor(ScenePackage package)
@@ -671,38 +671,41 @@ public partial class ScenePickerScreen : BaseScreen
 
     private static void ApplyCardStyles(PanelContainer card, PanelContainer innerCard, Color accent, bool isSelected, bool isHovered)
     {
+        var skyBg = new Color(0.925f, 0.955f, 0.988f);
+        var iceWhite = new Color(0.965f, 0.980f, 1.000f);
+
         // 1. Dış Katman (Outer Box): Darker on the outside, rich cover accent border & shadow
         var outerStyle = new StyleBoxFlat
         {
             BgColor = isSelected
-                ? accent.Lerp(Colors.White, 0.74f)
-                : (isHovered ? accent.Lerp(Colors.White, 0.78f) : accent.Lerp(Colors.White, 0.85f)),
+                ? accent.Lerp(skyBg, 0.72f)
+                : (isHovered ? accent.Lerp(skyBg, 0.76f) : accent.Lerp(skyBg, 0.84f)),
             BorderWidthLeft = isSelected ? 6 : (isHovered ? 5 : 4),
             BorderWidthTop = 2,
             BorderWidthRight = 2,
             BorderWidthBottom = 3,
-            BorderColor = isHovered ? accent.Lightened(0.12f) : accent,
+            BorderColor = isHovered ? accent.Lightened(0.14f) : accent,
             CornerRadiusTopLeft = 14,
             CornerRadiusTopRight = 14,
             CornerRadiusBottomLeft = 14,
             CornerRadiusBottomRight = 14,
             ShadowColor = isHovered
-                ? new Color(accent.R, accent.G, accent.B, 0.45f)
-                : new Color(accent.R * 0.35f, accent.G * 0.35f, accent.B * 0.35f, isSelected ? 0.30f : 0.18f),
+                ? new Color(accent.R, accent.G, accent.B, 0.40f)
+                : new Color(accent.R * 0.35f, accent.G * 0.35f, accent.B * 0.35f, isSelected ? 0.28f : 0.16f),
             ShadowSize = isHovered ? 16 : (isSelected ? 12 : 8),
             ShadowOffset = new Vector2(0, 5)
         };
         card.AddThemeStyleboxOverride("panel", outerStyle);
 
-        // 2. İç Katman (Inner Box): Progressively lighter towards the inside (illuminated pure radiant surface)
+        // 2. İç Katman (Inner Box): Progressively lighter towards the inside (illuminated soft ice sky surface)
         var innerStyle = new StyleBoxFlat
         {
-            BgColor = isHovered ? Colors.White : (isSelected ? new Color(1.0f, 0.99f, 1.0f) : accent.Lerp(Colors.White, 0.95f)),
+            BgColor = isHovered ? new Color(0.985f, 0.992f, 1.000f) : (isSelected ? new Color(0.975f, 0.988f, 1.0f) : accent.Lerp(iceWhite, 0.95f)),
             BorderWidthLeft = 1,
             BorderWidthTop = 1,
             BorderWidthRight = 1,
             BorderWidthBottom = 1,
-            BorderColor = isHovered ? accent.Lerp(Colors.White, 0.55f) : accent.Lerp(Colors.White, 0.75f),
+            BorderColor = isHovered ? accent.Lerp(new Color(0.780f, 0.850f, 0.950f), 0.50f) : accent.Lerp(new Color(0.780f, 0.850f, 0.950f), 0.75f),
             CornerRadiusTopLeft = 10,
             CornerRadiusTopRight = 10,
             CornerRadiusBottomLeft = 10,
@@ -757,13 +760,15 @@ public partial class ScenePickerScreen : BaseScreen
     {
         if (package is null) return;
         var accent = GetSceneAccentColor(package);
+        var skyBg = new Color(0.925f, 0.955f, 0.988f);
+        var iceWhite = new Color(0.965f, 0.980f, 1.000f);
 
         // Showcase outer panel: cover accent border & soft tinted background
         if (_showcasePanel is not null)
         {
             var showcaseStyle = new StyleBoxFlat
             {
-                BgColor = accent.Lerp(Colors.White, 0.88f),
+                BgColor = accent.Lerp(skyBg, 0.85f),
                 BorderWidthLeft = 3,
                 BorderWidthTop = 3,
                 BorderWidthRight = 3,
@@ -773,25 +778,25 @@ public partial class ScenePickerScreen : BaseScreen
                 CornerRadiusTopRight = 24,
                 CornerRadiusBottomLeft = 24,
                 CornerRadiusBottomRight = 24,
-                ShadowColor = new Color(accent.R * 0.35f, accent.G * 0.35f, accent.B * 0.35f, 0.20f),
+                ShadowColor = new Color(accent.R * 0.35f, accent.G * 0.35f, accent.B * 0.35f, 0.18f),
                 ShadowSize = 18,
                 ShadowOffset = new Vector2(0, 6)
             };
             _showcasePanel.AddThemeStyleboxOverride("panel", showcaseStyle);
         }
 
-        // Showcase inner card: pure radiant white illuminated canvas
+        // Showcase inner card: pure radiant ice canvas
         var showcaseInnerCard = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard");
         if (showcaseInnerCard is not null)
         {
             var innerStyle = new StyleBoxFlat
             {
-                BgColor = Colors.White,
+                BgColor = iceWhite,
                 BorderWidthLeft = 1,
                 BorderWidthTop = 1,
                 BorderWidthRight = 1,
                 BorderWidthBottom = 1,
-                BorderColor = accent.Lerp(Colors.White, 0.78f),
+                BorderColor = accent.Lerp(new Color(0.780f, 0.850f, 0.950f), 0.75f),
                 CornerRadiusTopLeft = 18,
                 CornerRadiusTopRight = 18,
                 CornerRadiusBottomLeft = 18,

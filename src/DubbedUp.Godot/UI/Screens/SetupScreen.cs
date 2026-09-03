@@ -91,10 +91,10 @@ public partial class SetupScreen : BaseScreen
         {
             var topBarStyle = new StyleBoxFlat
             {
-                BgColor = new Color(1.0f, 1.0f, 1.0f, 0.90f),
+                BgColor = new Color(0.965f, 0.980f, 1.000f, 0.92f),
                 BorderWidthBottom = 1,
-                BorderColor = new Color(0.886f, 0.902f, 0.941f, 0.8f),
-                ShadowColor = new Color(0.1f, 0.1f, 0.2f, 0.04f),
+                BorderColor = new Color(0.780f, 0.850f, 0.950f, 0.8f),
+                ShadowColor = new Color(0.1f, 0.15f, 0.25f, 0.05f),
                 ShadowSize = 6
             };
             _topBar.AddThemeStyleboxOverride("panel", topBarStyle);
@@ -105,17 +105,17 @@ public partial class SetupScreen : BaseScreen
         {
             var cardStyle = new StyleBoxFlat
             {
-                BgColor = Colors.White,
+                BgColor = new Color(0.965f, 0.980f, 1.000f),
                 BorderWidthLeft = 2,
                 BorderWidthTop = 2,
                 BorderWidthRight = 2,
                 BorderWidthBottom = 2,
-                BorderColor = new Color(0.886f, 0.902f, 0.941f),
+                BorderColor = new Color(0.780f, 0.850f, 0.950f),
                 CornerRadiusTopLeft = 24,
                 CornerRadiusTopRight = 24,
                 CornerRadiusBottomLeft = 24,
                 CornerRadiusBottomRight = 24,
-                ShadowColor = new Color(0.12f, 0.11f, 0.30f, 0.08f),
+                ShadowColor = new Color(0.12f, 0.18f, 0.35f, 0.10f),
                 ShadowSize = 18,
                 ShadowOffset = new Vector2(0, 6)
             };
@@ -127,12 +127,12 @@ public partial class SetupScreen : BaseScreen
         {
             var frameBox = new StyleBoxFlat
             {
-                BgColor = new Color(0.94f, 0.96f, 0.99f),
+                BgColor = new Color(0.920f, 0.950f, 0.985f),
                 BorderWidthLeft = 2,
                 BorderWidthTop = 2,
                 BorderWidthRight = 2,
                 BorderWidthBottom = 2,
-                BorderColor = new Color(0.886f, 0.902f, 0.941f),
+                BorderColor = new Color(0.780f, 0.850f, 0.950f),
                 CornerRadiusTopLeft = 16,
                 CornerRadiusTopRight = 16,
                 CornerRadiusBottomLeft = 16,
@@ -144,9 +144,9 @@ public partial class SetupScreen : BaseScreen
         // Buttons
         if (_startRoundButton is not null)
         {
-            var normal = new StyleBoxFlat { BgColor = new Color(1.0f, 0.243f, 0.514f), CornerRadiusTopLeft = 26, CornerRadiusTopRight = 26, CornerRadiusBottomLeft = 26, CornerRadiusBottomRight = 26, ShadowSize = 8, ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.35f) };
-            var hover = new StyleBoxFlat { BgColor = new Color(1.0f, 0.360f, 0.600f), CornerRadiusTopLeft = 26, CornerRadiusTopRight = 26, CornerRadiusBottomLeft = 26, CornerRadiusBottomRight = 26, ShadowSize = 12, ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.45f) };
-            var pressed = new StyleBoxFlat { BgColor = new Color(0.870f, 0.140f, 0.410f), CornerRadiusTopLeft = 26, CornerRadiusTopRight = 26, CornerRadiusBottomLeft = 26, CornerRadiusBottomRight = 26, ShadowSize = 2 };
+            var normal = new StyleBoxFlat { BgColor = new Color(1.0f, 0.540f, 0.680f), CornerRadiusTopLeft = 26, CornerRadiusTopRight = 26, CornerRadiusBottomLeft = 26, CornerRadiusBottomRight = 26, ShadowSize = 8, ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.35f) };
+            var hover = new StyleBoxFlat { BgColor = new Color(1.0f, 0.660f, 0.780f), CornerRadiusTopLeft = 26, CornerRadiusTopRight = 26, CornerRadiusBottomLeft = 26, CornerRadiusBottomRight = 26, ShadowSize = 12, ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.45f) };
+            var pressed = new StyleBoxFlat { BgColor = new Color(0.900f, 0.420f, 0.560f), CornerRadiusTopLeft = 26, CornerRadiusTopRight = 26, CornerRadiusBottomLeft = 26, CornerRadiusBottomRight = 26, ShadowSize = 2 };
             _startRoundButton.AddThemeStyleboxOverride("normal", normal);
             _startRoundButton.AddThemeStyleboxOverride("hover", hover);
             _startRoundButton.AddThemeStyleboxOverride("pressed", pressed);
@@ -156,8 +156,8 @@ public partial class SetupScreen : BaseScreen
 
         if (_editSceneButton is not null)
         {
-            var normal = new StyleBoxFlat { BgColor = new Color(0.561f, 0.396f, 0.973f), CornerRadiusTopLeft = 21, CornerRadiusTopRight = 21, CornerRadiusBottomLeft = 21, CornerRadiusBottomRight = 21 };
-            var hover = new StyleBoxFlat { BgColor = new Color(0.660f, 0.520f, 1.000f), CornerRadiusTopLeft = 21, CornerRadiusTopRight = 21, CornerRadiusBottomLeft = 21, CornerRadiusBottomRight = 21 };
+            var normal = new StyleBoxFlat { BgColor = new Color(0.600f, 0.480f, 0.950f), CornerRadiusTopLeft = 21, CornerRadiusTopRight = 21, CornerRadiusBottomLeft = 21, CornerRadiusBottomRight = 21 };
+            var hover = new StyleBoxFlat { BgColor = new Color(0.700f, 0.600f, 1.000f), CornerRadiusTopLeft = 21, CornerRadiusTopRight = 21, CornerRadiusBottomLeft = 21, CornerRadiusBottomRight = 21 };
             _editSceneButton.AddThemeStyleboxOverride("normal", normal);
             _editSceneButton.AddThemeStyleboxOverride("hover", hover);
             _editSceneButton.AddThemeStyleboxOverride("focus", hover);
@@ -166,12 +166,12 @@ public partial class SetupScreen : BaseScreen
 
         if (_backButton is not null)
         {
-            var normal = new StyleBoxFlat { BgColor = Colors.White, BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.886f, 0.902f, 0.941f), CornerRadiusTopLeft = 18, CornerRadiusTopRight = 18, CornerRadiusBottomLeft = 18, CornerRadiusBottomRight = 18 };
-            var hover = new StyleBoxFlat { BgColor = new Color(0.95f, 0.97f, 1.0f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = 18, CornerRadiusTopRight = 18, CornerRadiusBottomLeft = 18, CornerRadiusBottomRight = 18 };
+            var normal = new StyleBoxFlat { BgColor = new Color(0.955f, 0.975f, 1.0f), BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.780f, 0.850f, 0.950f), CornerRadiusTopLeft = 18, CornerRadiusTopRight = 18, CornerRadiusBottomLeft = 18, CornerRadiusBottomRight = 18 };
+            var hover = new StyleBoxFlat { BgColor = new Color(0.910f, 0.945f, 0.990f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = 18, CornerRadiusTopRight = 18, CornerRadiusBottomLeft = 18, CornerRadiusBottomRight = 18 };
             _backButton.AddThemeStyleboxOverride("normal", normal);
             _backButton.AddThemeStyleboxOverride("hover", hover);
             _backButton.AddThemeStyleboxOverride("focus", hover);
-            _backButton.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
+            _backButton.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
         }
 
         // Inputs

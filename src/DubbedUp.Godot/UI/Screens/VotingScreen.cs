@@ -54,17 +54,17 @@ public partial class VotingScreen : BaseScreen
         {
             var cardStyle = new StyleBoxFlat
             {
-                BgColor = Colors.White,
+                BgColor = new Color(0.965f, 0.980f, 1.000f),
                 BorderWidthLeft = 2,
                 BorderWidthTop = 2,
                 BorderWidthRight = 2,
                 BorderWidthBottom = 2,
-                BorderColor = new Color(0.886f, 0.902f, 0.941f),
+                BorderColor = new Color(0.780f, 0.850f, 0.950f),
                 CornerRadiusTopLeft = 24,
                 CornerRadiusTopRight = 24,
                 CornerRadiusBottomLeft = 24,
                 CornerRadiusBottomRight = 24,
-                ShadowColor = new Color(0.12f, 0.11f, 0.30f, 0.08f),
+                ShadowColor = new Color(0.12f, 0.18f, 0.35f, 0.10f),
                 ShadowSize = 18,
                 ShadowOffset = new Vector2(0, 6)
             };
@@ -73,9 +73,9 @@ public partial class VotingScreen : BaseScreen
 
         if (_submitButton is not null)
         {
-            var normal = new StyleBoxFlat { BgColor = new Color(1.0f, 0.243f, 0.514f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 8, ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.35f) };
-            var hover = new StyleBoxFlat { BgColor = new Color(1.0f, 0.360f, 0.600f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 12, ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.45f) };
-            var pressed = new StyleBoxFlat { BgColor = new Color(0.870f, 0.140f, 0.410f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 2 };
+            var normal = new StyleBoxFlat { BgColor = new Color(1.0f, 0.540f, 0.680f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 8, ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.35f) };
+            var hover = new StyleBoxFlat { BgColor = new Color(1.0f, 0.660f, 0.780f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 12, ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.45f) };
+            var pressed = new StyleBoxFlat { BgColor = new Color(0.900f, 0.420f, 0.560f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 2 };
             _submitButton.AddThemeStyleboxOverride("normal", normal);
             _submitButton.AddThemeStyleboxOverride("hover", hover);
             _submitButton.AddThemeStyleboxOverride("pressed", pressed);
@@ -85,12 +85,12 @@ public partial class VotingScreen : BaseScreen
 
         if (_menuButton is not null)
         {
-            var normal = new StyleBoxFlat { BgColor = Colors.White, BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.886f, 0.902f, 0.941f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23 };
-            var hover = new StyleBoxFlat { BgColor = new Color(0.95f, 0.97f, 1.0f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23 };
+            var normal = new StyleBoxFlat { BgColor = new Color(0.955f, 0.975f, 1.0f), BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.780f, 0.850f, 0.950f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23 };
+            var hover = new StyleBoxFlat { BgColor = new Color(0.910f, 0.945f, 0.990f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23 };
             _menuButton.AddThemeStyleboxOverride("normal", normal);
             _menuButton.AddThemeStyleboxOverride("hover", hover);
             _menuButton.AddThemeStyleboxOverride("focus", hover);
-            _menuButton.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
+            _menuButton.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
         }
     }
 

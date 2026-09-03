@@ -306,15 +306,15 @@ public partial class PlaybackScreen : BaseScreen
                 BorderWidthTop = 2,
                 BorderWidthRight = 2,
                 BorderWidthBottom = 2,
-                BorderColor = new Color(0.886f, 0.902f, 0.941f)
+                BorderColor = new Color(0.780f, 0.850f, 0.950f)
             };
             viewport.AddThemeStyleboxOverride("panel", pBox);
         }
 
         if (_playPauseButton is not null) StyleOutlinePill(_playPauseButton, 16);
-        if (_replayButton is not null) StyleActionPill(_replayButton, new Color(0.220f, 0.714f, 1.000f), 16);
-        if (_exportButton is not null) StyleActionPill(_exportButton, new Color(0.561f, 0.396f, 0.973f), 16);
-        if (_proceedButton is not null) StyleActionPill(_proceedButton, new Color(1.0f, 0.243f, 0.514f), 20);
+        if (_replayButton is not null) StyleActionPill(_replayButton, new Color(0.280f, 0.650f, 0.950f), 16);
+        if (_exportButton is not null) StyleActionPill(_exportButton, new Color(0.600f, 0.480f, 0.950f), 16);
+        if (_proceedButton is not null) StyleActionPill(_proceedButton, new Color(1.0f, 0.540f, 0.680f), 20);
         if (_menuButton is not null) StyleOutlinePill(_menuButton, 16);
     }
 
@@ -334,13 +334,13 @@ public partial class PlaybackScreen : BaseScreen
 
     private static void StyleOutlinePill(Button btn, int radius)
     {
-        var normal = new StyleBoxFlat { BgColor = Colors.White, BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.886f, 0.902f, 0.941f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
-        var hover = new StyleBoxFlat { BgColor = new Color(0.95f, 0.97f, 1.0f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+        var normal = new StyleBoxFlat { BgColor = new Color(0.955f, 0.975f, 1.0f), BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.780f, 0.850f, 0.950f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+        var hover = new StyleBoxFlat { BgColor = new Color(0.910f, 0.945f, 0.990f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
 
         btn.AddThemeStyleboxOverride("normal", normal);
         btn.AddThemeStyleboxOverride("hover", hover);
         btn.AddThemeStyleboxOverride("focus", hover);
-        btn.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
+        btn.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
         btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
     }
 }

@@ -110,12 +110,12 @@ public partial class MainMenuScreen : BaseScreen
                 BorderWidthTop = 4,
                 BorderWidthRight = 4,
                 BorderWidthBottom = 4,
-                BorderColor = new Color(1.0f, 0.400f, 0.667f, 0.90f), // Hot Sakura Pink border
+                BorderColor = new Color(1.0f, 0.600f, 0.740f, 0.90f), // Soft Blossom Pink border
                 CornerRadiusTopLeft = 140,
                 CornerRadiusTopRight = 140,
                 CornerRadiusBottomLeft = 140,
                 CornerRadiusBottomRight = 140,
-                ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.22f), // Pink ambient glow
+                ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.22f), // Soft pink ambient glow
                 ShadowSize = 22,
                 ShadowOffset = new Vector2(0, 8),
                 ContentMarginLeft = 20,
@@ -126,57 +126,57 @@ public partial class MainMenuScreen : BaseScreen
             _heroEmblem.AddThemeStyleboxOverride("panel", cookieStyle);
         }
 
-        // 3. Play Party Button (Hot Pink #FF3E83)
+        // 3. Play Party Button (Soft Blossom Pink)
         if (_playButton is not null)
         {
             StyleActionPill(
                 _playButton,
-                normalColor: new Color(1.0f, 0.243f, 0.514f),
-                hoverColor: new Color(1.0f, 0.360f, 0.600f),
-                pressedColor: new Color(0.870f, 0.140f, 0.410f),
+                normalColor: new Color(1.0f, 0.540f, 0.680f),
+                hoverColor: new Color(1.0f, 0.660f, 0.780f),
+                pressedColor: new Color(0.900f, 0.420f, 0.560f),
                 textColor: Colors.White,
-                glowColor: new Color(1.0f, 0.243f, 0.514f, 0.35f),
+                glowColor: new Color(1.0f, 0.540f, 0.680f, 0.35f),
                 radius: 29
             );
         }
 
-        // 4. Online Multiplayer Button (Sky Blue #38B6FF)
+        // 4. Online Multiplayer Button (Soft Sky Blue)
         if (_onlinePlayButton is not null)
         {
             StyleActionPill(
                 _onlinePlayButton,
-                normalColor: new Color(0.220f, 0.714f, 1.000f),
-                hoverColor: new Color(0.380f, 0.780f, 1.000f),
-                pressedColor: new Color(0.120f, 0.630f, 0.940f),
+                normalColor: new Color(0.280f, 0.650f, 0.950f),
+                hoverColor: new Color(0.420f, 0.740f, 0.980f),
+                pressedColor: new Color(0.180f, 0.560f, 0.880f),
                 textColor: Colors.White,
-                glowColor: new Color(0.220f, 0.714f, 1.000f, 0.30f),
+                glowColor: new Color(0.280f, 0.650f, 0.950f, 0.30f),
                 radius: 27
             );
         }
 
-        // 5. Scene Studio Button (Pastel Violet #8F65F8)
+        // 5. Scene Studio Button (Soft Lavender Violet)
         if (_studioButton is not null)
         {
             StyleActionPill(
                 _studioButton,
-                normalColor: new Color(0.561f, 0.396f, 0.973f),
-                hoverColor: new Color(0.660f, 0.520f, 1.000f),
-                pressedColor: new Color(0.460f, 0.280f, 0.910f),
+                normalColor: new Color(0.600f, 0.480f, 0.950f),
+                hoverColor: new Color(0.700f, 0.600f, 1.000f),
+                pressedColor: new Color(0.500f, 0.360f, 0.880f),
                 textColor: Colors.White,
-                glowColor: new Color(0.561f, 0.396f, 0.973f, 0.25f),
+                glowColor: new Color(0.600f, 0.480f, 0.950f, 0.25f),
                 radius: 25
             );
         }
 
-        // 6. Settings Button (Crisp Porcelain White with Slate Border)
+        // 6. Settings Button (Soft Frosted Ice with Sky Border)
         if (_settingsButton is not null)
         {
             StyleOutlinePill(
                 _settingsButton,
-                normalBg: Colors.White,
-                hoverBg: new Color(0.940f, 0.955f, 0.985f),
-                pressedBg: new Color(0.890f, 0.920f, 0.970f),
-                borderColor: new Color(0.886f, 0.902f, 0.941f),
+                normalBg: new Color(0.955f, 0.975f, 1.0f),
+                hoverBg: new Color(0.910f, 0.945f, 0.990f),
+                pressedBg: new Color(0.860f, 0.910f, 0.975f),
+                borderColor: new Color(0.780f, 0.850f, 0.950f),
                 textColor: new Color(0.118f, 0.106f, 0.294f),
                 radius: 24
             );
@@ -185,17 +185,17 @@ public partial class MainMenuScreen : BaseScreen
         // 7. Quit Button (Minimal Ghost)
         if (_quitButton is not null)
         {
-            StyleGhostButton(_quitButton, new Color(0.549f, 0.576f, 0.682f), new Color(0.95f, 0.25f, 0.35f));
+            StyleGhostButton(_quitButton, new Color(0.45f, 0.50f, 0.65f), new Color(0.95f, 0.35f, 0.45f));
         }
 
         // 8. Top Controls
         if (_musicToggleButton is not null)
         {
-            StyleOutlinePill(_musicToggleButton, Colors.White, new Color(0.94f, 0.96f, 0.99f), new Color(0.9f, 0.93f, 0.98f), new Color(0.88f, 0.90f, 0.94f), new Color(0.294f, 0.322f, 0.439f), 16);
+            StyleOutlinePill(_musicToggleButton, new Color(0.955f, 0.975f, 1.0f), new Color(0.91f, 0.94f, 0.99f), new Color(0.86f, 0.91f, 0.97f), new Color(0.78f, 0.85f, 0.95f), new Color(0.25f, 0.28f, 0.42f), 16);
         }
         if (_fullscreenButton is not null)
         {
-            StyleOutlinePill(_fullscreenButton, Colors.White, new Color(0.94f, 0.96f, 0.99f), new Color(0.9f, 0.93f, 0.98f), new Color(0.88f, 0.90f, 0.94f), new Color(0.294f, 0.322f, 0.439f), 16);
+            StyleOutlinePill(_fullscreenButton, new Color(0.955f, 0.975f, 1.0f), new Color(0.91f, 0.94f, 0.99f), new Color(0.86f, 0.91f, 0.97f), new Color(0.78f, 0.85f, 0.95f), new Color(0.25f, 0.28f, 0.42f), 16);
         }
     }
 
