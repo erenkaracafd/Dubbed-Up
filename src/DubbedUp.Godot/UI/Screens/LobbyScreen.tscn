@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/LobbyScreen.cs" id="1_lobby"]
+[ext_resource type="Script" path="res://UI/Controls/MenuBackgroundVisuals.cs" id="2_bg_visuals"]
 
 [node name="LobbyScreen" type="Control"]
 layout_mode = 3
@@ -11,114 +12,185 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_lobby")
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="MenuBackgroundVisuals" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("2_bg_visuals")
 
-[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
+[node name="TopBar" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 56.0
+grow_horizontal = 2
+
+[node name="TopMargin" type="MarginContainer" parent="TopBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(800, 0)
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
+[node name="TopHBox" type="HBoxContainer" parent="TopBar/TopMargin"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="BackButton" type="Button" parent="TopBar/TopMargin/TopHBox"]
+custom_minimum_size = Vector2(110, 36)
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
-text = "Multiplayer Dubbing Lobby"
-horizontal_alignment = 1
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 14
+text = "⬅️ Back"
+
+[node name="ScreenTitle" type="Label" parent="TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 20
+text = "🌐 MULTIPLAYER LOBBY"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 56.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+theme_override_constants/separation = 18
 
 [node name="StatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.22, 0.71, 1, 1)
 theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.4, 0.9, 1, 1)
-text = "Enter your details to host or join a lobby."
+text = "Enter your details to host or join a lobby room."
 horizontal_alignment = 1
 
 [node name="ConnectionPanel" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(400, 0)
+custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel"]
+[node name="Margin" type="MarginContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
 
-[node name="PlayerNameInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="PlayerNameLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 14
+text = "Your Display Name:"
+
+[node name="PlayerNameInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 placeholder_text = "Your Display Name"
 text = "Player 1"
 
-[node name="AddressInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer"]
+[node name="AddressLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 14
+text = "Host IP Address (e.g. 192.168.1.35):"
+
+[node name="AddressInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 placeholder_text = "Host IP Address (e.g. 127.0.0.1)"
 text = "127.0.0.1"
 
-[node name="PortInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer"]
+[node name="PortLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 14
+text = "Port (Default 7777):"
+
+[node name="PortInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 placeholder_text = "Port"
 text = "7777"
 
-[node name="ButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer"]
+[node name="ButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 14
 
-[node name="HostButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer/ButtonsHBox"]
-custom_minimum_size = Vector2(180, 44)
+[node name="HostButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "🏠 Host Lobby"
+theme_override_font_sizes/font_size = 15
+text = "🏠  Host Room"
 
-[node name="JoinButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer/ButtonsHBox"]
-custom_minimum_size = Vector2(180, 44)
+[node name="JoinButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "🔗 Join Lobby"
+theme_override_font_sizes/font_size = 15
+text = "🔗  Join Room"
 
 [node name="LobbyPanel" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 visible = false
-custom_minimum_size = Vector2(500, 0)
+custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel"]
+[node name="Margin" type="MarginContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
 
-[node name="LobbyHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin"]
 layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="LobbyHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 18
 text = "Connected Players in Room:"
 
-[node name="PlayersListContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer"]
+[node name="PlayersListContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
-[node name="ActionsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer"]
+[node name="ActionsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 14
 
-[node name="ReadyButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer/ActionsHBox"]
-custom_minimum_size = Vector2(140, 44)
+[node name="ReadyButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
+custom_minimum_size = Vector2(130, 46)
 layout_mode = 2
+theme_override_font_sizes/font_size = 14
 text = "Set Ready"
 
-[node name="StartButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer/ActionsHBox"]
-custom_minimum_size = Vector2(180, 44)
+[node name="StartButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "🚀 Start Match"
+theme_override_font_sizes/font_size = 15
+text = "🚀  Start Game"
 
-[node name="LeaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer/ActionsHBox"]
-custom_minimum_size = Vector2(140, 44)
+[node name="LeaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
+custom_minimum_size = Vector2(130, 46)
 layout_mode = 2
+theme_override_font_sizes/font_size = 14
 text = "Leave Room"
-
-[node name="BackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(240, 44)
-layout_mode = 2
-text = "Back to Main Menu"
-

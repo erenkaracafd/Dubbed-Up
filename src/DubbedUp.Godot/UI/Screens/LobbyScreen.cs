@@ -1,5 +1,7 @@
+using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
 using DubbedUp.Godot.Network;
+using DubbedUp.Godot.Workshop;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -41,29 +43,139 @@ public partial class LobbyScreen : BaseScreen
 
     public override void _Ready()
     {
-        _playerNameInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer/PlayerNameInput");
-        _addressInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer/AddressInput");
-        _portInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer/PortInput");
-        _hostButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer/ButtonsHBox/HostButton");
-        _joinButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/VBoxContainer/ButtonsHBox/JoinButton");
+        _playerNameInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PlayerNameInput");
+        _addressInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/AddressInput");
+        _portInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PortInput");
+        _hostButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/HostButton");
+        _joinButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/JoinButton");
 
         _connectionPanel = GetNodeOrNull<Control>("ScrollContainer/CenterContainer/VBoxContainer/ConnectionPanel");
         _lobbyPanel = GetNodeOrNull<Control>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel");
-        _playersListContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer/PlayersListContainer");
+        _playersListContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/PlayersListContainer");
         _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
-        _readyButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer/ActionsHBox/ReadyButton");
-        _startButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer/ActionsHBox/StartButton");
-        _leaveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/VBoxContainer/ActionsHBox/LeaveButton");
-        _backButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/BackButton");
+        _readyButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/ReadyButton");
+        _startButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/StartButton");
+        _leaveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/LeaveButton");
+        _backButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/BackButton");
 
-        if (_hostButton is not null) _hostButton.Pressed += OnHostPressed;
-        if (_joinButton is not null) _joinButton.Pressed += OnJoinPressed;
-        if (_leaveButton is not null) _leaveButton.Pressed += OnLeavePressed;
-        if (_readyButton is not null) _readyButton.Pressed += OnReadyPressed;
-        if (_startButton is not null) _startButton.Pressed += OnStartPressed;
-        if (_backButton is not null) _backButton.Pressed += OnBackPressed;
+        ApplyStyling();
+
+        if (_hostButton is not null) SetupButton(_hostButton, OnHostPressed);
+        if (_joinButton is not null) SetupButton(_joinButton, OnJoinPressed);
+        if (_leaveButton is not null) SetupButton(_leaveButton, OnLeavePressed);
+        if (_readyButton is not null) SetupButton(_readyButton, OnReadyPressed);
+        if (_startButton is not null) SetupButton(_startButton, OnStartPressed);
+        if (_backButton is not null) SetupButton(_backButton, OnBackPressed);
 
         UpdatePanelsVisibility(false);
+    }
+
+    private void SetupButton(Button btn, Action action)
+    {
+        btn.Pressed += action;
+        UiSoundManager.Attach(btn);
+    }
+
+    private void ApplyStyling()
+    {
+        // Top bar
+        var topBar = GetNodeOrNull<PanelContainer>("TopBar");
+        if (topBar is not null)
+        {
+            var topBarStyle = new StyleBoxFlat
+            {
+                BgColor = new Color(1.0f, 1.0f, 1.0f, 0.90f),
+                BorderWidthBottom = 1,
+                BorderColor = new Color(0.886f, 0.902f, 0.941f, 0.8f),
+                ShadowColor = new Color(0.1f, 0.1f, 0.2f, 0.04f),
+                ShadowSize = 6
+            };
+            topBar.AddThemeStyleboxOverride("panel", topBarStyle);
+        }
+
+        // Panels
+        var panelStyle = new StyleBoxFlat
+        {
+            BgColor = Colors.White,
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.886f, 0.902f, 0.941f),
+            CornerRadiusTopLeft = 24,
+            CornerRadiusTopRight = 24,
+            CornerRadiusBottomLeft = 24,
+            CornerRadiusBottomRight = 24,
+            ShadowColor = new Color(0.12f, 0.11f, 0.30f, 0.08f),
+            ShadowSize = 18,
+            ShadowOffset = new Vector2(0, 6)
+        };
+
+        if (_connectionPanel is PanelContainer cp) cp.AddThemeStyleboxOverride("panel", panelStyle);
+        if (_lobbyPanel is PanelContainer lp) lp.AddThemeStyleboxOverride("panel", panelStyle);
+
+        // Buttons
+        if (_hostButton is not null) StyleActionPill(_hostButton, new Color(1.0f, 0.243f, 0.514f), 24);
+        if (_joinButton is not null) StyleActionPill(_joinButton, new Color(0.220f, 0.714f, 1.000f), 24);
+        if (_startButton is not null) StyleActionPill(_startButton, new Color(1.0f, 0.243f, 0.514f), 23);
+        if (_readyButton is not null) StyleActionPill(_readyButton, new Color(0.561f, 0.396f, 0.973f), 23);
+        if (_leaveButton is not null) StyleOutlinePill(_leaveButton, 23);
+        if (_backButton is not null) StyleOutlinePill(_backButton, 18);
+
+        // Inputs
+        StyleInput(_playerNameInput);
+        StyleInput(_addressInput);
+        StyleInput(_portInput);
+    }
+
+    private static void StyleInput(LineEdit? input)
+    {
+        if (input is null) return;
+        var box = new StyleBoxFlat
+        {
+            BgColor = new Color(0.97f, 0.98f, 1.0f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.886f, 0.902f, 0.941f),
+            CornerRadiusTopLeft = 14,
+            CornerRadiusTopRight = 14,
+            CornerRadiusBottomLeft = 14,
+            CornerRadiusBottomRight = 14,
+            ContentMarginLeft = 14,
+            ContentMarginRight = 14
+        };
+        input.AddThemeStyleboxOverride("normal", box);
+        input.AddThemeStyleboxOverride("focus", box);
+        input.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
+    }
+
+    private static void StyleActionPill(Button btn, Color color, int radius)
+    {
+        var normal = new StyleBoxFlat { BgColor = color, CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 6, ShadowColor = new Color(color.R, color.G, color.B, 0.3f) };
+        var hover = new StyleBoxFlat { BgColor = color.Lightened(0.15f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 10, ShadowColor = new Color(color.R, color.G, color.B, 0.4f) };
+        var pressed = new StyleBoxFlat { BgColor = color.Darkened(0.15f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 1 };
+
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", pressed);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", Colors.White);
+        btn.AddThemeColorOverride("font_hover_color", Colors.White);
+    }
+
+    private static void StyleOutlinePill(Button btn, int radius)
+    {
+        var normal = new StyleBoxFlat { BgColor = Colors.White, BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.886f, 0.902f, 0.941f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+        var hover = new StyleBoxFlat { BgColor = new Color(0.95f, 0.97f, 1.0f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", normal);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
+        btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
     }
 
     public override void _ExitTree()

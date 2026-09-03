@@ -37,6 +37,13 @@
 - **Selective Audio Composition**
   - Original movie audio is preserved outside speech boxes.
   - During speech boxes, original dialogue is ducked while background audio and the player's dub take are mixed together.
+- **UI Design System & osu!-Inspired Audio-Visual Experience**
+  - Comprehensive design system specified in `docs/UI_DESIGN_SYSTEM.md` establishing light-toned porcelain surfaces (`#F8F9FD`), vibrant Hot Pink (`#FF3E83`), Sky Blue (`#38B6FF`), and high-contrast Midnight Indigo typography (`#1E1B4B`).
+  - Tactile sound effects (`ui_hover.wav`, `ui_click.wav`, `ui_whoosh.wav`) synthesized and managed by `UiSoundManager.cs` for responsive, delightful micro-interactions across all buttons.
+  - Floating ambient geometric particle layer (`MenuBackgroundVisuals.cs`) drifting with smooth mouse parallax and pulsing to the music BPM.
+  - osu!-inspired Main Menu (`MainMenuScreen.cs`) featuring the central pulsing Hero Cookie emblem, Now Playing marquee, and spring-eased action pill wedges.
+  - osu! Beatmap Carousel-style Scene Picker (`ScenePickerScreen.cs`) featuring a 16:9 Left Showcase with live thumbnail previews, badges, and quick-dub controls alongside a right-side searchable card carousel.
+  - Global `MenuMusicController.cs` automatically loops `Dubbed Up.mp3` across all menus and strictly preserves audio separation invariants by fading to silence (`-80 dB`) during `Recording` and `Playback`.
 - **Localization**
   - Current in-game UI text is 100% English.
 - **Playtest Groundwork**

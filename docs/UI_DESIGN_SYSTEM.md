@@ -102,3 +102,4 @@ Nothing in Dubbed Up should appear statically or snap without feedback. "Juice" 
    - When entering `RecordingScreen` or `PlaybackScreen`, `MenuMusicController` **must smoothly fade out to -80 dB / silence** in `0.3s`.
    - Outside speech boxes during playback, original scene audio plays at `0 dB`. Inside speech boxes, original dialogue is muted (`-80 dB`) and background music plays cleanly.
    - When returning from recording or playback to any menu screen, `MenuMusicController` smoothly fades back in to normal volume.
+

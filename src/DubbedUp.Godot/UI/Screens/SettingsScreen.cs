@@ -1,4 +1,5 @@
 using Godot;
+using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -106,21 +107,25 @@ public partial class SettingsScreen : BaseScreen
 		if (_micTestButton is not null)
 		{
 			_micTestButton.Pressed += OnMicTestPressed;
+			UiSoundManager.Attach(_micTestButton);
 		}
 
 		if (_speakerTestButton is not null)
 		{
 			_speakerTestButton.Pressed += OnSpeakerTestPressed;
+			UiSoundManager.Attach(_speakerTestButton);
 		}
 
 		if (_saveButton is not null)
 		{
 			_saveButton.Pressed += OnSavePressed;
+			UiSoundManager.Attach(_saveButton);
 		}
 
 		if (_backButton is not null)
 		{
 			_backButton.Pressed += OnBackPressed;
+			UiSoundManager.Attach(_backButton);
 		}
 
 		Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
