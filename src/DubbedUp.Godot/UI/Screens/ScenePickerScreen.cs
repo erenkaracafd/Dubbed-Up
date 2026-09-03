@@ -49,7 +49,9 @@ public partial class ScenePickerScreen : BaseScreen
     private readonly SteamWorkshopService _workshopService = new();
     private readonly List<ScenePackage> _availableScenes = [];
     private ScenePackage? _selectedPackage;
+    private readonly Dictionary<ScenePackage, Control> _cardHolders = [];
     private readonly Dictionary<ScenePackage, PanelContainer> _cardNodes = [];
+    private readonly Dictionary<ScenePackage, Controls.MarqueeLabel> _marqueeLabels = [];
 
     public override void _Ready()
     {
@@ -281,11 +283,13 @@ public partial class ScenePickerScreen : BaseScreen
     {
         if (_scenesListContainer is null) return;
         _cardNodes.Clear();
-
         foreach (var child in _scenesListContainer.GetChildren())
         {
             child.QueueFree();
         }
+        _cardHolders.Clear();
+        _cardNodes.Clear();
+        _marqueeLabels.Clear();
 
         var filtered = string.IsNullOrWhiteSpace(filter)
             ? _availableScenes
@@ -297,41 +301,48 @@ public partial class ScenePickerScreen : BaseScreen
             _statusLabel.Text = $"Showing {filtered.Count} of {_availableScenes.Count} playable scenes";
         }
 
+        int index = 0;
+        int total = filtered.Count;
         foreach (var package in filtered)
         {
-            var holder = CreateOsuBeatmapCard(package, out var card);
+            var holder = CreateOsuBeatmapCard(package, index, total, out var card, out var marquee);
+            _cardHolders[package] = holder;
             _cardNodes[package] = card;
+            _marqueeLabels[package] = marquee;
             _scenesListContainer.AddChild(holder);
+            index++;
         }
 
         HighlightSelectedCard();
     }
 
-    private Control CreateOsuBeatmapCard(ScenePackage package, out PanelContainer card)
+    private Control CreateOsuBeatmapCard(ScenePackage package, int index, int total, out PanelContainer card, out Controls.MarqueeLabel marquee)
     {
         var isSelected = package == _selectedPackage;
+        int naturalZIndex = Math.Max(0, 50 - index);
 
-        // Outer holder handles the 56px step in ScenesListContainer
+        // Outer holder handles the 50px step in ScenesListContainer with descending natural ZIndex
         var holder = new Control
         {
-            CustomMinimumSize = new Vector2(0, 56),
+            CustomMinimumSize = new Vector2(0, 50),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            MouseFilter = Control.MouseFilterEnum.Pass
+            MouseFilter = Control.MouseFilterEnum.Pass,
+            ZIndex = isSelected ? 80 : naturalZIndex
         };
 
-        // Inner card is 78px high, overlapping the card below it by 22px
+        // Inner card is 72px high, overlapping the card below it by 22px
         card = new PanelContainer
         {
-            CustomMinimumSize = new Vector2(0, 78),
+            CustomMinimumSize = new Vector2(0, 72),
             AnchorsPreset = (int)Control.LayoutPreset.TopWide,
             AnchorRight = 1.0f,
-            OffsetLeft = isSelected ? 12 : 32,
+            OffsetLeft = isSelected ? 10 : 32,
             OffsetRight = 0,
             OffsetTop = 0,
-            OffsetBottom = 78,
+            OffsetBottom = 72,
             MouseFilter = Control.MouseFilterEnum.Stop,
-            ZIndex = isSelected ? 5 : 0,
-            PivotOffset = new Vector2(0, 39)
+            ZIndex = isSelected ? 80 : naturalZIndex,
+            PivotOffset = new Vector2(0, 36)
         };
         holder.AddChild(card);
 
@@ -341,23 +352,23 @@ public partial class ScenePickerScreen : BaseScreen
         {
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        margin.AddThemeConstantOverride("margin_left", 14);
-        margin.AddThemeConstantOverride("margin_right", 16);
-        margin.AddThemeConstantOverride("margin_top", 10);
-        margin.AddThemeConstantOverride("margin_bottom", 10);
+        margin.AddThemeConstantOverride("margin_left", 12);
+        margin.AddThemeConstantOverride("margin_right", 14);
+        margin.AddThemeConstantOverride("margin_top", 8);
+        margin.AddThemeConstantOverride("margin_bottom", 8);
         card.AddChild(margin);
 
         var hbox = new HBoxContainer
         {
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        hbox.AddThemeConstantOverride("separation", 14);
+        hbox.AddThemeConstantOverride("separation", 12);
         margin.AddChild(hbox);
 
         // Mini 16:9 Thumbnail Framed and Clipped
         var thumbFrame = new PanelContainer
         {
-            CustomMinimumSize = new Vector2(96, 54),
+            CustomMinimumSize = new Vector2(90, 50),
             ClipContents = true,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
@@ -416,21 +427,22 @@ public partial class ScenePickerScreen : BaseScreen
         infoVBox.AddThemeConstantOverride("separation", 2);
         hbox.AddChild(infoVBox);
 
-        var titleLabel = new Label
+        // Marquee title label: flows on hover if text is long!
+        marquee = new Controls.MarqueeLabel
         {
             Text = package.Title,
-            ThemeTypeVariation = "HeaderSmall",
-            MouseFilter = Control.MouseFilterEnum.Ignore
+            FontSize = 16,
+            FontColor = new Color(0.118f, 0.106f, 0.294f)
         };
-        titleLabel.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
-        titleLabel.AddThemeFontSizeOverride("font_size", 16);
-        infoVBox.AddChild(titleLabel);
+        infoVBox.AddChild(marquee);
 
         var charsText = string.Join(", ", package.Document.Characters.Select(c => c.DisplayName));
         var charsLabel = new Label
         {
             Text = string.IsNullOrEmpty(charsText) ? "No characters defined" : $"🎭 {charsText}",
-            MouseFilter = Control.MouseFilterEnum.Ignore
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
+            AutowrapMode = TextServer.AutowrapMode.Off
         };
         charsLabel.AddThemeColorOverride("font_color", new Color(0.35f, 0.38f, 0.50f));
         charsLabel.AddThemeFontSizeOverride("font_size", 12);
@@ -442,7 +454,7 @@ public partial class ScenePickerScreen : BaseScreen
             Alignment = BoxContainer.AlignmentMode.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        rightVBox.AddThemeConstantOverride("separation", 4);
+        rightVBox.AddThemeConstantOverride("separation", 3);
         hbox.AddChild(rightVBox);
 
         var durSec = package.Document.DurationMilliseconds / 1000.0;
@@ -467,38 +479,46 @@ public partial class ScenePickerScreen : BaseScreen
         badgeLabel.AddThemeFontSizeOverride("font_size", 11);
         rightVBox.AddChild(badgeLabel);
 
-        // Interactive Accordion Hover: pops out of the stack, slides left, updates left showcase preview!
+        // Interactive Accordion Hover: pops completely out of the overlap, casts glow, scrolls marquee!
         var capturedCard = card;
+        var capturedHolder = holder;
+        var capturedMarquee = marquee;
+
         capturedCard.MouseEntered += () =>
         {
             UiSoundManager.Instance.PlayHover();
-            capturedCard.ZIndex = 20; // Float on top of adjacent overlapping cards
+            capturedHolder.ZIndex = 150; // Pop holder above all other card rows
+            capturedCard.ZIndex = 150;
             var tween = capturedCard.CreateTween();
             tween?.SetParallel(true);
-            tween?.TweenProperty(capturedCard, "offset_left", 0.0f, 0.12f)
+            tween?.TweenProperty(capturedCard, "offset_left", -12.0f, 0.12f)
                   .SetTrans(Tween.TransitionType.Back)
                   .SetEase(Tween.EaseType.Out);
-            tween?.TweenProperty(capturedCard, "scale", new Vector2(1.02f, 1.02f), 0.12f);
+            tween?.TweenProperty(capturedCard, "scale", new Vector2(1.03f, 1.03f), 0.12f);
 
             ApplyCardHoverStyle(capturedCard);
-            UpdateShowcase(package); // Live showcase preview on mouse hover!
+            capturedMarquee.OnCardHovered(); // Flow long text!
+            UpdateShowcase(package);
         };
 
         capturedCard.MouseExited += () =>
         {
             var isCurSelected = package == _selectedPackage;
-            capturedCard.ZIndex = isCurSelected ? 5 : 0;
+            capturedHolder.ZIndex = isCurSelected ? 80 : naturalZIndex;
+            capturedCard.ZIndex = isCurSelected ? 80 : naturalZIndex;
             var tween = capturedCard.CreateTween();
             tween?.SetParallel(true);
-            tween?.TweenProperty(capturedCard, "offset_left", isCurSelected ? 12.0f : 32.0f, 0.10f)
+            tween?.TweenProperty(capturedCard, "offset_left", isCurSelected ? 10.0f : 32.0f, 0.10f)
                   .SetTrans(Tween.TransitionType.Cubic)
                   .SetEase(Tween.EaseType.Out);
             tween?.TweenProperty(capturedCard, "scale", new Vector2(1.0f, 1.0f), 0.10f);
 
             ApplyCardStyle(capturedCard, isCurSelected);
+            capturedMarquee.OnCardUnhovered(); // Reset marquee scroll!
+
             if (!isCurSelected && _selectedPackage is not null)
             {
-                UpdateShowcase(_selectedPackage); // Revert preview to selected if not hovered
+                UpdateShowcase(_selectedPackage);
             }
         };
 
@@ -518,19 +538,19 @@ public partial class ScenePickerScreen : BaseScreen
     {
         var style = new StyleBoxFlat
         {
-            BgColor = isSelected ? new Color(1.0f, 0.96f, 0.98f) : Colors.White,
+            BgColor = isSelected ? new Color(1.0f, 0.965f, 0.985f) : Colors.White,
             BorderWidthLeft = isSelected ? 4 : 2,
-            BorderWidthTop = isSelected ? 2 : 1,
-            BorderWidthRight = isSelected ? 2 : 1,
-            BorderWidthBottom = isSelected ? 2 : 1,
-            BorderColor = isSelected ? new Color(1.0f, 0.243f, 0.514f) : new Color(0.886f, 0.902f, 0.941f),
-            CornerRadiusTopLeft = 16,
-            CornerRadiusTopRight = 16,
-            CornerRadiusBottomLeft = 16,
-            CornerRadiusBottomRight = 16,
-            ShadowColor = isSelected ? new Color(1.0f, 0.243f, 0.514f, 0.25f) : new Color(0.1f, 0.1f, 0.2f, 0.04f),
-            ShadowSize = isSelected ? 10 : 3,
-            ShadowOffset = new Vector2(0, 2)
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 2,
+            BorderColor = isSelected ? new Color(1.0f, 0.243f, 0.514f) : new Color(0.86f, 0.88f, 0.93f),
+            CornerRadiusTopLeft = 14,
+            CornerRadiusTopRight = 14,
+            CornerRadiusBottomLeft = 14,
+            CornerRadiusBottomRight = 14,
+            ShadowColor = isSelected ? new Color(1.0f, 0.243f, 0.514f, 0.25f) : new Color(0.12f, 0.10f, 0.28f, 0.14f),
+            ShadowSize = isSelected ? 12 : 8,
+            ShadowOffset = new Vector2(0, 5)
         };
         card.AddThemeStyleboxOverride("panel", style);
     }
@@ -539,19 +559,19 @@ public partial class ScenePickerScreen : BaseScreen
     {
         var style = new StyleBoxFlat
         {
-            BgColor = new Color(1.0f, 0.97f, 0.99f),
+            BgColor = new Color(1.0f, 0.98f, 0.99f),
             BorderWidthLeft = 4,
             BorderWidthTop = 2,
             BorderWidthRight = 2,
-            BorderWidthBottom = 2,
+            BorderWidthBottom = 3,
             BorderColor = new Color(1.0f, 0.243f, 0.514f),
-            CornerRadiusTopLeft = 16,
-            CornerRadiusTopRight = 16,
-            CornerRadiusBottomLeft = 16,
-            CornerRadiusBottomRight = 16,
+            CornerRadiusTopLeft = 14,
+            CornerRadiusTopRight = 14,
+            CornerRadiusBottomLeft = 14,
+            CornerRadiusBottomRight = 14,
             ShadowColor = new Color(1.0f, 0.243f, 0.514f, 0.35f),
-            ShadowSize = 14,
-            ShadowOffset = new Vector2(-2, 3)
+            ShadowSize = 16,
+            ShadowOffset = new Vector2(-2, 6)
         };
         card.AddThemeStyleboxOverride("panel", style);
     }
@@ -570,16 +590,25 @@ public partial class ScenePickerScreen : BaseScreen
 
     private void HighlightSelectedCard()
     {
+        int index = 0;
         foreach (var (pkg, card) in _cardNodes)
         {
             var isSelected = pkg == _selectedPackage;
-            card.ZIndex = isSelected ? 5 : 0;
+            int naturalZIndex = Math.Max(0, 50 - index);
+
+            var holder = _cardHolders.TryGetValue(pkg, out var h) ? h : null;
+            if (holder is not null)
+            {
+                holder.ZIndex = isSelected ? 80 : naturalZIndex;
+            }
+            card.ZIndex = isSelected ? 80 : naturalZIndex;
             ApplyCardStyle(card, isSelected);
 
             var tween = card.CreateTween();
-            tween?.TweenProperty(card, "offset_left", isSelected ? 12.0f : 32.0f, 0.10f)
+            tween?.TweenProperty(card, "offset_left", isSelected ? 10.0f : 32.0f, 0.10f)
                   .SetTrans(Tween.TransitionType.Cubic)
                   .SetEase(Tween.EaseType.Out);
+            index++;
         }
     }
 
