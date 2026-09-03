@@ -106,7 +106,7 @@ public partial class MenuMusicController : Node
         var streamLen = _player.Stream?.GetLength() ?? 0.0;
         if (streamLen > 1.0 && _player.GetPlaybackPosition() >= streamLen - 0.1)
         {
-            _player.Seek(0.0);
+            _player.Seek(0.0f);
         }
 
         // Beat pulse calculation for UI animations
