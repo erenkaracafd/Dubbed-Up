@@ -370,24 +370,47 @@ public partial class MainMenuScreen : BaseScreen
         _bgVisuals?.TriggerBeatPulse();
     }
 
+    private void TriggerButtonPunch(Button? btn, Action action)
+    {
+        if (btn is null)
+        {
+            action();
+            return;
+        }
+
+        var tween = btn.CreateTween();
+        tween?.TweenProperty(btn, "scale", new Vector2(1.08f, 1.08f), 0.07f)
+              .SetTrans(Tween.TransitionType.Back)
+              .SetEase(Tween.EaseType.Out);
+
+        if (tween is not null)
+        {
+            tween.Finished += () => action();
+        }
+        else
+        {
+            action();
+        }
+    }
+
     private void OnPlayButtonPressed()
     {
-        Navigator?.NavigateTo(AppScreen.ScenePicker);
+        TriggerButtonPunch(_playButton, () => Navigator?.NavigateTo(AppScreen.ScenePicker));
     }
 
     private void OnOnlinePlayPressed()
     {
-        Navigator?.NavigateTo(AppScreen.Lobby);
+        TriggerButtonPunch(_onlinePlayButton, () => Navigator?.NavigateTo(AppScreen.Lobby));
     }
 
     private void OnStudioPressed()
     {
-        Navigator?.NavigateTo(AppScreen.ScenePicker);
+        TriggerButtonPunch(_studioButton, () => Navigator?.NavigateTo(AppScreen.ScenePicker));
     }
 
     private void OnSettingsPressed()
     {
-        Navigator?.NavigateTo(AppScreen.Settings);
+        TriggerButtonPunch(_settingsButton, () => Navigator?.NavigateTo(AppScreen.Settings));
     }
 
     private void OnQuitButtonPressed()

@@ -20,7 +20,9 @@ public partial class ScenePickerScreen : BaseScreen
 
     // Left Showcase Panel
     private PanelContainer? _showcasePanel;
+    private PanelContainer? _thumbnailFrame;
     private TextureRect? _thumbnailTexture;
+    private Label? _placeholderIcon;
     private Label? _showcaseTitle;
     private Label? _durationBadge;
     private Label? _slotsBadge;
@@ -58,7 +60,9 @@ public partial class ScenePickerScreen : BaseScreen
         _workshopButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/ActionsContainer/WorkshopButton");
 
         _showcasePanel = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel");
-        _thumbnailTexture = GetNodeOrNull<TextureRect>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailAspect/ThumbnailTexture");
+        _thumbnailFrame = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame");
+        _thumbnailTexture = GetNodeOrNull<TextureRect>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame/ThumbnailTexture");
+        _placeholderIcon = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame/PlaceholderIcon");
         _showcaseTitle = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ShowcaseTitle");
         _durationBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/BadgesHBox/DurationBadge");
         _slotsBadge = GetNodeOrNull<Label>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/BadgesHBox/SlotsBadge");
@@ -140,6 +144,25 @@ public partial class ScenePickerScreen : BaseScreen
                 ShadowOffset = new Vector2(0, 6)
             };
             _showcasePanel.AddThemeStyleboxOverride("panel", showcaseStyle);
+        }
+
+        // Thumbnail Frame styling (Clipped rounded frame)
+        if (_thumbnailFrame is not null)
+        {
+            var frameBox = new StyleBoxFlat
+            {
+                BgColor = new Color(0.94f, 0.96f, 0.99f),
+                BorderWidthLeft = 2,
+                BorderWidthTop = 2,
+                BorderWidthRight = 2,
+                BorderWidthBottom = 2,
+                BorderColor = new Color(0.886f, 0.902f, 0.941f),
+                CornerRadiusTopLeft = 16,
+                CornerRadiusTopRight = 16,
+                CornerRadiusBottomLeft = 16,
+                CornerRadiusBottomRight = 16
+            };
+            _thumbnailFrame.AddThemeStyleboxOverride("panel", frameBox);
         }
 
         // Action Buttons Styling
@@ -308,16 +331,30 @@ public partial class ScenePickerScreen : BaseScreen
         hbox.AddThemeConstantOverride("separation", 14);
         margin.AddChild(hbox);
 
-        // Mini 16:9 Thumbnail
-        var aspect = new AspectRatioContainer
+        // Mini 16:9 Thumbnail Framed and Clipped
+        var thumbFrame = new PanelContainer
         {
-            Ratio = 16.0f / 9.0f,
-            CustomMinimumSize = new Vector2(92, 52),
-            StretchMode = AspectRatioContainer.StretchModeEnum.Fit
+            CustomMinimumSize = new Vector2(96, 54),
+            ClipContents = true,
+            MouseFilter = Control.MouseFilterEnum.Ignore
         };
-        hbox.AddChild(aspect);
+        var thumbStyle = new StyleBoxFlat
+        {
+            BgColor = new Color(0.93f, 0.95f, 0.98f),
+            CornerRadiusTopLeft = 10,
+            CornerRadiusTopRight = 10,
+            CornerRadiusBottomLeft = 10,
+            CornerRadiusBottomRight = 10,
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.886f, 0.902f, 0.941f)
+        };
+        thumbFrame.AddThemeStyleboxOverride("panel", thumbStyle);
+        hbox.AddChild(thumbFrame);
 
-        var thumb = VideoPlayback.VideoThumbnailHelper.GetOrExtractThumbnail(package.PackageDirectory);
+        var thumb = VideoPlayback.VideoThumbnailHelper.GetOrExtractThumbnail(package.PackageDirectory ?? string.Empty);
         if (thumb is not null)
         {
             var texRect = new TextureRect
@@ -325,9 +362,11 @@ public partial class ScenePickerScreen : BaseScreen
                 Texture = thumb,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                CustomMinimumSize = new Vector2(92, 52)
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+                MouseFilter = Control.MouseFilterEnum.Ignore
             };
-            aspect.AddChild(texRect);
+            thumbFrame.AddChild(texRect);
         }
         else
         {
@@ -335,10 +374,12 @@ public partial class ScenePickerScreen : BaseScreen
             {
                 Text = "🎬",
                 HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill
             };
-            iconLabel.AddThemeFontSizeOverride("font_size", 24);
-            aspect.AddChild(iconLabel);
+            iconLabel.AddThemeFontSizeOverride("font_size", 22);
+            thumbFrame.AddChild(iconLabel);
         }
 
         // Info VBox
@@ -514,6 +555,11 @@ public partial class ScenePickerScreen : BaseScreen
         {
             var thumb = VideoPlayback.VideoThumbnailHelper.GetOrExtractThumbnail(package.PackageDirectory ?? string.Empty);
             _thumbnailTexture.Texture = thumb;
+            _thumbnailTexture.Visible = thumb is not null;
+            if (_placeholderIcon is not null)
+            {
+                _placeholderIcon.Visible = thumb is null;
+            }
         }
     }
 

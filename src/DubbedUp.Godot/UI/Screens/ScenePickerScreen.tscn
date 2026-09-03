@@ -121,15 +121,25 @@ theme_override_constants/margin_bottom = 20
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="ThumbnailAspect" type="AspectRatioContainer" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
-custom_minimum_size = Vector2(0, 240)
+[node name="ThumbnailFrame" type="PanelContainer" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
+clip_contents = true
+custom_minimum_size = Vector2(0, 230)
 layout_mode = 2
-ratio = 1.77778
 
-[node name="ThumbnailTexture" type="TextureRect" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailAspect"]
+[node name="ThumbnailTexture" type="TextureRect" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame"]
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 6
+mouse_filter = 2
+
+[node name="PlaceholderIcon" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox/ThumbnailFrame"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 54
+text = "🎬"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ShowcaseTitle" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseVBox"]
 layout_mode = 2

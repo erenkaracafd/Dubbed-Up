@@ -144,3 +144,4 @@ public partial class MenuBackgroundVisuals : Control
         }
     }
 }
+
