@@ -1,6 +1,5 @@
 using DubbedUp.Godot.LocalSession;
 using DubbedUp.Godot.Network;
-using DubbedUp.Godot.Workshop;
 using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
@@ -229,20 +228,6 @@ public partial class LobbyScreen : BaseScreen
 
     private void OnGameStarted(string sceneId)
     {
-        if (Coordinator is not null)
-        {
-            if (Coordinator.SelectedScenePackage is null || !Coordinator.SelectedScenePackage.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase))
-            {
-                var workshop = new SteamWorkshopService();
-                var all = workshop.GetAvailableScenes();
-                var match = all.FirstOrDefault(p => p.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
-                if (match is not null)
-                {
-                    Coordinator.SelectedScenePackage = match;
-                }
-            }
-        }
-
         // Transition to Recording screen when host starts the match
         var playerNames = _lobbyManager?.Players.Values.Select(p => p.PlayerName) ?? ["Host", "Guest"];
         var sceneDoc = Coordinator?.SelectedScenePackage?.Document;

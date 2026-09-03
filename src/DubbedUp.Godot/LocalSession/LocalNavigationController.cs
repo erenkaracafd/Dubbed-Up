@@ -30,6 +30,8 @@ public partial class LocalNavigationController : Node, IScreenNavigator
 
     public Network.NetworkLobbyManager LobbyManager { get; } = new();
 
+    public AudioPlayback.MenuMusicController MusicManager { get; } = new();
+
     public AppScreen CurrentScreen { get; private set; } = AppScreen.MainMenu;
 
     public void Initialize(Control screenContainer)
@@ -38,6 +40,10 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         if (LobbyManager.GetParent() is null)
         {
             AddChild(LobbyManager);
+        }
+        if (MusicManager.GetParent() is null)
+        {
+            AddChild(MusicManager);
         }
 
         // Initialize microphone service early so it's ready when Recording/Settings screens open
@@ -120,6 +126,7 @@ public partial class LocalNavigationController : Node, IScreenNavigator
             },
             sceneTitle);
 
+        MusicManager.OnScreenChanged(screen);
         EmitSignal(SignalName.ScreenChanged, (int)screen);
     }
 

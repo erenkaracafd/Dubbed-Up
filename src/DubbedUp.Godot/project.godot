@@ -34,4 +34,4 @@ project/assembly_name="DubbedUp.Godot"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-environment/defaults/default_clear_color=Color(0.035, 0.039, 0.055, 1)
+environment/defaults/default_clear_color=Color(0.973, 0.976, 0.992, 1)
