@@ -22,25 +22,76 @@ public partial class VotingScreen : BaseScreen
 
     public override void _Ready()
     {
-        _titleLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/TitleLabel");
-        _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
-        _errorLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/ErrorLabel");
-        _voterContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/VoterContainer");
-        _submitButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/SubmitButton");
-        _menuButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/MenuButton");
+        _titleLabel = GetNodeOrNull<Label>("CenterArea/VotingCard/CardMargin/VBoxContainer/TitleLabel");
+        _statusLabel = GetNodeOrNull<Label>("CenterArea/VotingCard/CardMargin/VBoxContainer/StatusLabel");
+        _errorLabel = GetNodeOrNull<Label>("CenterArea/VotingCard/CardMargin/VBoxContainer/ErrorLabel");
+        _voterContainer = GetNodeOrNull<VBoxContainer>("CenterArea/VotingCard/CardMargin/VBoxContainer/VoterContainer");
+        _submitButton = GetNodeOrNull<Button>("CenterArea/VotingCard/CardMargin/VBoxContainer/ActionsHBox/SubmitButton");
+        _menuButton = GetNodeOrNull<Button>("CenterArea/VotingCard/CardMargin/VBoxContainer/ActionsHBox/MenuButton");
+
+        ApplyStyling();
 
         if (_submitButton is not null)
         {
             _submitButton.Pressed += OnSubmitPressed;
             _submitButton.Disabled = true;
+            AudioPlayback.UiSoundManager.Attach(_submitButton);
         }
 
         if (_menuButton is not null)
         {
             _menuButton.Pressed += OnMenuPressed;
+            AudioPlayback.UiSoundManager.Attach(_menuButton);
         }
 
         BuildVotingUi();
+    }
+
+    private void ApplyStyling()
+    {
+        var card = GetNodeOrNull<PanelContainer>("CenterArea/VotingCard");
+        if (card is not null)
+        {
+            var cardStyle = new StyleBoxFlat
+            {
+                BgColor = new Color(0.965f, 0.980f, 1.000f),
+                BorderWidthLeft = 2,
+                BorderWidthTop = 2,
+                BorderWidthRight = 2,
+                BorderWidthBottom = 2,
+                BorderColor = new Color(0.780f, 0.850f, 0.950f),
+                CornerRadiusTopLeft = 24,
+                CornerRadiusTopRight = 24,
+                CornerRadiusBottomLeft = 24,
+                CornerRadiusBottomRight = 24,
+                ShadowColor = new Color(0.12f, 0.18f, 0.35f, 0.10f),
+                ShadowSize = 18,
+                ShadowOffset = new Vector2(0, 6)
+            };
+            card.AddThemeStyleboxOverride("panel", cardStyle);
+        }
+
+        if (_submitButton is not null)
+        {
+            var normal = new StyleBoxFlat { BgColor = new Color(1.0f, 0.540f, 0.680f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 8, ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.35f) };
+            var hover = new StyleBoxFlat { BgColor = new Color(1.0f, 0.660f, 0.780f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 12, ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.45f) };
+            var pressed = new StyleBoxFlat { BgColor = new Color(0.900f, 0.420f, 0.560f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23, ShadowSize = 2 };
+            _submitButton.AddThemeStyleboxOverride("normal", normal);
+            _submitButton.AddThemeStyleboxOverride("hover", hover);
+            _submitButton.AddThemeStyleboxOverride("pressed", pressed);
+            _submitButton.AddThemeStyleboxOverride("focus", hover);
+            _submitButton.AddThemeColorOverride("font_color", Colors.White);
+        }
+
+        if (_menuButton is not null)
+        {
+            var normal = new StyleBoxFlat { BgColor = new Color(0.955f, 0.975f, 1.0f), BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.780f, 0.850f, 0.950f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23 };
+            var hover = new StyleBoxFlat { BgColor = new Color(0.910f, 0.945f, 0.990f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = 23, CornerRadiusTopRight = 23, CornerRadiusBottomLeft = 23, CornerRadiusBottomRight = 23 };
+            _menuButton.AddThemeStyleboxOverride("normal", normal);
+            _menuButton.AddThemeStyleboxOverride("hover", hover);
+            _menuButton.AddThemeStyleboxOverride("focus", hover);
+            _menuButton.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
+        }
     }
 
     private void BuildVotingUi()

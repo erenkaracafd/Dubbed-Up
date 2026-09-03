@@ -14,6 +14,10 @@ namespace DubbedUp.Godot.UI.Screens;
 
 public partial class SceneCreatorScreen : BaseScreen
 {
+    private PanelContainer? _topBar;
+    private Button? _backButton;
+    private PanelContainer? _creatorCard;
+
     private Button? _openFolderButton;
     private Button? _refreshMediaButton;
     private Label? _noVideosLabel;
@@ -34,25 +38,42 @@ public partial class SceneCreatorScreen : BaseScreen
 
     public override void _Ready()
     {
-        _openFolderButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/OpenFolderButton");
-        _refreshMediaButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/RefreshMediaButton");
-        _noVideosLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/NoVideosLabel");
-        _videoCardsGrid = GetNodeOrNull<HFlowContainer>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/VideoCardsScroll/VideoCardsGrid");
+        _topBar = GetNodeOrNull<PanelContainer>("TopBar");
+        _backButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/BackButton");
+        _creatorCard = GetNodeOrNull<PanelContainer>("ScrollContainer/CenterContainer/CardPadding/CreatorCard");
 
-        _titleInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/TitleInput");
-        _sceneIdInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/SceneIdInput");
-        _statusInfoLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusInfoLabel");
+        _openFolderButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/OpenFolderButton")
+            ?? GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/OpenFolderButton");
+        _refreshMediaButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/RefreshMediaButton")
+            ?? GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox/RefreshMediaButton");
+        _noVideosLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer/NoVideosLabel")
+            ?? GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/NoVideosLabel");
+        _videoCardsGrid = GetNodeOrNull<HFlowContainer>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer/VideoCardsScroll/VideoCardsGrid")
+            ?? GetNodeOrNull<HFlowContainer>("ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/VideoCardsScroll/VideoCardsGrid");
 
-        _errorLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/ErrorLabel");
-        _saveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox/SaveButton");
-        _cancelButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox/CancelButton");
+        _titleInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FormContainer/TitleInput")
+            ?? GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/TitleInput");
+        _sceneIdInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FormContainer/SceneIdInput")
+            ?? GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/FormContainer/SceneIdInput");
+        _statusInfoLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/StatusInfoLabel")
+            ?? GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusInfoLabel");
 
-        if (_openFolderButton is not null) _openFolderButton.Pressed += OnOpenFolderPressed;
-        if (_refreshMediaButton is not null) _refreshMediaButton.Pressed += ScanMediaFiles;
+        _errorLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/ErrorLabel")
+            ?? GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/ErrorLabel");
+        _saveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/ButtonsHBox/SaveButton")
+            ?? GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox/SaveButton");
+        _cancelButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/ButtonsHBox/CancelButton")
+            ?? GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox/CancelButton");
+
+        ApplyStyling();
+
+        if (_backButton is not null) SetupButton(_backButton, OnCancelPressed);
+        if (_openFolderButton is not null) SetupButton(_openFolderButton, OnOpenFolderPressed);
+        if (_refreshMediaButton is not null) SetupButton(_refreshMediaButton, ScanMediaFiles);
 
         if (_titleInput is not null) _titleInput.TextChanged += OnTitleChanged;
-        if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
-        if (_cancelButton is not null) _cancelButton.Pressed += OnCancelPressed;
+        if (_saveButton is not null) SetupButton(_saveButton, OnSavePressed);
+        if (_cancelButton is not null) SetupButton(_cancelButton, OnCancelPressed);
 
         EnsureCustomVideosDirectoryExists();
         ScanMediaFiles();
@@ -210,7 +231,7 @@ public partial class SceneCreatorScreen : BaseScreen
             HorizontalAlignment = HorizontalAlignment.Center,
         };
         titleLabel.AddThemeFontSizeOverride("font_size", 13);
-        titleLabel.AddThemeColorOverride("font_color", new Color(0.95f, 0.95f, 1.0f));
+        titleLabel.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
         vbox.AddChild(titleLabel);
 
         // Details HBox (Duration & File Size)
@@ -220,13 +241,13 @@ public partial class SceneCreatorScreen : BaseScreen
         vbox.AddChild(detailsHBox);
 
         var durationSec = AudioWaveformLoader.GetAudioDurationSeconds(videoPath);
-        var durText = durationSec > 0 ? $"⏱ {durationSec:F1}s" : "🎬 Video";
+        var durText = durationSec > 0 ? $"{durationSec:F1}s" : "Video";
         var durLabel = new Label
         {
             Text = durText,
         };
         durLabel.AddThemeFontSizeOverride("font_size", 11);
-        durLabel.AddThemeColorOverride("font_color", new Color(0.3f, 0.9f, 1.0f));
+        durLabel.AddThemeColorOverride("font_color", new Color(0.38f, 0.32f, 0.85f));
         detailsHBox.AddChild(durLabel);
 
         try
@@ -235,10 +256,10 @@ public partial class SceneCreatorScreen : BaseScreen
             var sizeMb = fileInfo.Length / (1024.0 * 1024.0);
             var sizeLabel = new Label
             {
-                Text = $"📁 {sizeMb:F1} MB",
+                Text = $"{sizeMb:F1} MB",
             };
             sizeLabel.AddThemeFontSizeOverride("font_size", 11);
-            sizeLabel.AddThemeColorOverride("font_color", new Color(0.7f, 0.75f, 0.85f));
+            sizeLabel.AddThemeColorOverride("font_color", new Color(0.45f, 0.48f, 0.60f));
             detailsHBox.AddChild(sizeLabel);
         }
         catch
@@ -252,6 +273,25 @@ public partial class SceneCreatorScreen : BaseScreen
             if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
             {
                 SelectVideoCard(videoPath, card);
+            }
+        };
+
+        // Hover scale feedback
+        card.MouseEntered += () =>
+        {
+            if (card != _selectedCardPanel)
+            {
+                var hoverStyle = CreateCardStyleBox(false);
+                hoverStyle.BorderColor = new Color(0.55f, 0.46f, 0.98f);
+                hoverStyle.ShadowSize = 8;
+                card.AddThemeStyleboxOverride("panel", hoverStyle);
+            }
+        };
+        card.MouseExited += () =>
+        {
+            if (card != _selectedCardPanel)
+            {
+                card.AddThemeStyleboxOverride("panel", CreateCardStyleBox(false));
             }
         };
 
@@ -283,16 +323,19 @@ public partial class SceneCreatorScreen : BaseScreen
     {
         var sb = new StyleBoxFlat
         {
-            BgColor = isSelected ? new Color(0.12f, 0.18f, 0.28f, 1.0f) : new Color(0.08f, 0.10f, 0.15f, 0.9f),
-            BorderColor = isSelected ? new Color(0.0f, 0.9f, 1.0f, 1.0f) : new Color(0.2f, 0.25f, 0.35f, 0.7f),
-            BorderWidthLeft = isSelected ? 3 : 1,
-            BorderWidthRight = isSelected ? 3 : 1,
-            BorderWidthTop = isSelected ? 3 : 1,
-            BorderWidthBottom = isSelected ? 3 : 1,
-            CornerRadiusTopLeft = 8,
-            CornerRadiusTopRight = 8,
-            CornerRadiusBottomLeft = 8,
-            CornerRadiusBottomRight = 8,
+            BgColor = isSelected ? new Color(0.940f, 0.930f, 1.000f) : new Color(0.975f, 0.985f, 1.000f),
+            BorderColor = isSelected ? new Color(0.420f, 0.360f, 0.920f) : new Color(0.820f, 0.860f, 0.930f),
+            BorderWidthLeft = isSelected ? 2 : 1,
+            BorderWidthRight = isSelected ? 2 : 1,
+            BorderWidthTop = isSelected ? 2 : 1,
+            BorderWidthBottom = isSelected ? 2 : 1,
+            CornerRadiusTopLeft = 12,
+            CornerRadiusTopRight = 12,
+            CornerRadiusBottomLeft = 12,
+            CornerRadiusBottomRight = 12,
+            ShadowSize = isSelected ? 12 : 4,
+            ShadowColor = isSelected ? new Color(0.42f, 0.36f, 0.92f, 0.25f) : new Color(0.1f, 0.15f, 0.3f, 0.05f),
+            ShadowOffset = isSelected ? new Vector2(0, 3) : new Vector2(0, 1),
             ContentMarginLeft = 8,
             ContentMarginRight = 8,
             ContentMarginTop = 8,
@@ -346,11 +389,11 @@ public partial class SceneCreatorScreen : BaseScreen
         if (_saveButton is not null)
         {
             _saveButton.Disabled = true;
-            _saveButton.Text = "⏳ Transcoding Video & Separating Stems...";
+            _saveButton.Text = "Transcoding Video & Separating Stems...";
         }
         if (_statusInfoLabel is not null)
         {
-            _statusInfoLabel.Text = "⏳ Transcoding video & separating vocals... Please wait.";
+            _statusInfoLabel.Text = "Transcoding video & separating vocals... Please wait.";
         }
 
         try
@@ -454,6 +497,232 @@ public partial class SceneCreatorScreen : BaseScreen
             _errorLabel.Text = message;
             _errorLabel.Visible = true;
         }
+    }
+
+    private void SetupButton(Button btn, Action action)
+    {
+        btn.Pressed += action;
+        UiSoundManager.Attach(btn);
+    }
+
+    private void ApplyStyling()
+    {
+        // TopBar styling
+        if (_topBar is not null)
+        {
+            var barStyle = new StyleBoxFlat
+            {
+                BgColor = new Color(1.0f, 1.0f, 1.0f, 0.92f),
+                BorderWidthBottom = 1,
+                BorderColor = new Color(0.886f, 0.902f, 0.941f, 0.8f),
+                ShadowColor = new Color(0.1f, 0.1f, 0.2f, 0.04f),
+                ShadowSize = 6
+            };
+            _topBar.AddThemeStyleboxOverride("panel", barStyle);
+        }
+
+        // CreatorCard styling (elevated tangible white surface)
+        if (_creatorCard is not null)
+        {
+            var cardStyle = new StyleBoxFlat
+            {
+                BgColor = Colors.White,
+                BorderWidthLeft = 2,
+                BorderWidthTop = 2,
+                BorderWidthRight = 2,
+                BorderWidthBottom = 2,
+                BorderColor = new Color(0.886f, 0.902f, 0.941f, 1.0f),
+                CornerRadiusTopLeft = 24,
+                CornerRadiusTopRight = 24,
+                CornerRadiusBottomLeft = 24,
+                CornerRadiusBottomRight = 24,
+                ShadowColor = new Color(0.12f, 0.15f, 0.30f, 0.10f),
+                ShadowSize = 24,
+                ShadowOffset = new Vector2(0, 4)
+            };
+            _creatorCard.AddThemeStyleboxOverride("panel", cardStyle);
+        }
+
+        // Input Fields Styling
+        StyleInput(_titleInput);
+        StyleInput(_sceneIdInput);
+
+        // Buttons Styling
+        if (_openFolderButton is not null) StyleOutline(_openFolderButton, 12);
+        if (_refreshMediaButton is not null) StyleOutline(_refreshMediaButton, 12);
+        if (_cancelButton is not null) StyleOutline(_cancelButton, 14);
+        if (_backButton is not null) StyleOutline(_backButton, 14);
+
+        if (_saveButton is not null)
+        {
+            StyleSaveButton(_saveButton);
+        }
+    }
+
+    private static void StyleInput(LineEdit? input)
+    {
+        if (input is null) return;
+        var normal = new StyleBoxFlat
+        {
+            BgColor = new Color(0.970f, 0.980f, 0.995f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.820f, 0.860f, 0.920f),
+            CornerRadiusTopLeft = 10,
+            CornerRadiusTopRight = 10,
+            CornerRadiusBottomLeft = 10,
+            CornerRadiusBottomRight = 10,
+            ContentMarginLeft = 14,
+            ContentMarginRight = 14
+        };
+        var focus = new StyleBoxFlat
+        {
+            BgColor = Colors.White,
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.460f, 0.380f, 0.920f),
+            CornerRadiusTopLeft = 10,
+            CornerRadiusTopRight = 10,
+            CornerRadiusBottomLeft = 10,
+            CornerRadiusBottomRight = 10,
+            ContentMarginLeft = 14,
+            ContentMarginRight = 14
+        };
+        input.AddThemeStyleboxOverride("normal", normal);
+        input.AddThemeStyleboxOverride("focus", focus);
+        input.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
+        input.AddThemeColorOverride("font_placeholder_color", new Color(0.58f, 0.62f, 0.72f));
+    }
+
+    private static void StyleOutline(Button btn, int radius)
+    {
+        var normal = new StyleBoxFlat
+        {
+            BgColor = new Color(0.955f, 0.975f, 1.0f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.780f, 0.850f, 0.950f),
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomLeft = radius,
+            CornerRadiusBottomRight = radius
+        };
+        var hover = new StyleBoxFlat
+        {
+            BgColor = new Color(0.910f, 0.945f, 0.990f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.38f, 0.71f, 1.0f),
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomLeft = radius,
+            CornerRadiusBottomRight = radius
+        };
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", normal);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
+        btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+    }
+
+    private static void StyleSaveButton(Button btn)
+    {
+        var normal = new StyleBoxFlat
+        {
+            BgColor = new Color(0.460f, 0.380f, 0.920f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.760f, 0.700f, 1.000f),
+            CornerRadiusTopLeft = 21,
+            CornerRadiusTopRight = 21,
+            CornerRadiusBottomLeft = 21,
+            CornerRadiusBottomRight = 21,
+            ShadowSize = 8,
+            ShadowColor = new Color(0.35f, 0.25f, 0.75f, 0.35f),
+            ShadowOffset = new Vector2(0, 3),
+            ContentMarginLeft = 24,
+            ContentMarginRight = 24,
+            ContentMarginTop = 4,
+            ContentMarginBottom = 4
+        };
+        var hover = new StyleBoxFlat
+        {
+            BgColor = new Color(0.550f, 0.460f, 0.980f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = Colors.White,
+            CornerRadiusTopLeft = 21,
+            CornerRadiusTopRight = 21,
+            CornerRadiusBottomLeft = 21,
+            CornerRadiusBottomRight = 21,
+            ShadowSize = 14,
+            ShadowColor = new Color(0.45f, 0.35f, 0.95f, 0.50f),
+            ShadowOffset = new Vector2(0, 4),
+            ContentMarginLeft = 24,
+            ContentMarginRight = 24,
+            ContentMarginTop = 4,
+            ContentMarginBottom = 4
+        };
+        var pressed = new StyleBoxFlat
+        {
+            BgColor = new Color(0.360f, 0.280f, 0.800f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.650f, 0.580f, 0.950f),
+            CornerRadiusTopLeft = 21,
+            CornerRadiusTopRight = 21,
+            CornerRadiusBottomLeft = 21,
+            CornerRadiusBottomRight = 21,
+            ShadowSize = 2,
+            ShadowColor = new Color(0.25f, 0.15f, 0.60f, 0.30f),
+            ShadowOffset = new Vector2(0, 1),
+            ContentMarginLeft = 24,
+            ContentMarginRight = 24,
+            ContentMarginTop = 5,
+            ContentMarginBottom = 3
+        };
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", pressed);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", Colors.White);
+        btn.AddThemeColorOverride("font_hover_color", Colors.White);
+        btn.AddThemeColorOverride("font_pressed_color", new Color(0.95f, 0.95f, 1.0f));
+        btn.AddThemeColorOverride("font_shadow_color", new Color(0.15f, 0.10f, 0.40f, 0.45f));
+        btn.AddThemeConstantOverride("shadow_offset_y", 1);
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+        btn.PivotOffset = new Vector2(130, 23);
+
+        btn.MouseEntered += () =>
+        {
+            var tween = btn.CreateTween();
+            tween.TweenProperty(btn, "scale", new Vector2(1.04f, 1.04f), 0.12)
+                .SetTrans(Tween.TransitionType.Back)
+                .SetEase(Tween.EaseType.Out);
+        };
+        btn.MouseExited += () =>
+        {
+            var tween = btn.CreateTween();
+            tween.TweenProperty(btn, "scale", Vector2.One, 0.10)
+                .SetTrans(Tween.TransitionType.Quad)
+                .SetEase(Tween.EaseType.Out);
+        };
     }
 
     private void OnCancelPressed()

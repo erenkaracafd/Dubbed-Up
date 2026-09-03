@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/MainMenuScreen.cs" id="1_main_menu"]
+[ext_resource type="Script" path="res://UI/Controls/MenuBackgroundVisuals.cs" id="2_bg_visuals"]
 
 [node name="MainMenuScreen" type="Control"]
 layout_mode = 3
@@ -11,46 +12,210 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main_menu")
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="MenuBackgroundVisuals" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("2_bg_visuals")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
-layout_mode = 2
-theme_override_constants/separation = 14
+[node name="TopBar" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 56.0
+grow_horizontal = 2
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="TopMargin" type="MarginContainer" parent="TopBar"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 48
-text = "Dubbed Up"
-horizontal_alignment = 1
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
 
-[node name="SubtitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="TopHBox" type="HBoxContainer" parent="TopBar/TopMargin"]
 layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="LogoHBox" type="HBoxContainer" parent="TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BrandIcon" type="Label" parent="TopBar/TopMargin/TopHBox/LogoHBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "🎙️"
+
+[node name="BrandTitle" type="Label" parent="TopBar/TopMargin/TopHBox/LogoHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 18
-text = "Desktop Comedy Party Game"
+text = "DUBBED UP"
+
+[node name="Spacer" type="Control" parent="TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NowPlayingHBox" type="HBoxContainer" parent="TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="NowPlayingIcon" type="Label" parent="TopBar/TopMargin/TopHBox/NowPlayingHBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🎵"
+
+[node name="NowPlayingLabel" type="Label" parent="TopBar/TopMargin/TopHBox/NowPlayingHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
+theme_override_font_sizes/font_size = 13
+text = "Now Playing: Dubbed Up Theme [128 BPM]"
+
+[node name="MusicToggleButton" type="Button" parent="TopBar/TopMargin/TopHBox"]
+custom_minimum_size = Vector2(110, 32)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 13
+text = "Sound: ON"
+
+[node name="FullscreenButton" type="Button" parent="TopBar/TopMargin/TopHBox"]
+custom_minimum_size = Vector2(90, 32)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 13
+text = "Fullscreen"
+
+[node name="CenterArea" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 56.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainHBox" type="HBoxContainer" parent="CenterArea"]
+layout_mode = 2
+theme_override_constants/separation = 60
+alignment = 1
+
+[node name="LeftHeroContainer" type="VBoxContainer" parent="CenterArea/MainHBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="HeroEmblem" type="PanelContainer" parent="CenterArea/MainHBox/LeftHeroContainer"]
+custom_minimum_size = Vector2(280, 280)
+layout_mode = 2
+size_flags_horizontal = 4
+pivot_offset = Vector2(140, 140)
+
+[node name="HeroVBox" type="VBoxContainer" parent="CenterArea/MainHBox/LeftHeroContainer/HeroEmblem"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="HeroIcon" type="Label" parent="CenterArea/MainHBox/LeftHeroContainer/HeroEmblem/HeroVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "🎙️"
 horizontal_alignment = 1
 
-[node name="PlayButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 48)
+[node name="HeroTitle" type="Label" parent="CenterArea/MainHBox/LeftHeroContainer/HeroEmblem/HeroVBox"]
 layout_mode = 2
-text = "🎮 Play Local Game"
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 32
+text = "DUBBED UP"
+horizontal_alignment = 1
 
-[node name="OnlinePlayButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 48)
+[node name="HeroBadge" type="Label" parent="CenterArea/MainHBox/LeftHeroContainer/HeroEmblem/HeroVBox"]
 layout_mode = 2
-text = "🌐 Online Multiplayer Lobby"
+theme_override_colors/font_color = Color(1, 0.54, 0.68, 1)
+theme_override_font_sizes/font_size = 12
+text = "• COMEDY PARTY GAME •"
+horizontal_alignment = 1
 
-[node name="SettingsButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 44)
+[node name="HeroTagline" type="Label" parent="CenterArea/MainHBox/LeftHeroContainer"]
 layout_mode = 2
-text = "⚙ Audio & Mic Settings"
+theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
+theme_override_font_sizes/font_size = 14
+text = "Grab the mic & dub funny clips!"
+horizontal_alignment = 1
 
-[node name="QuitButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(280, 44)
+[node name="RightMenuContainer" type="VBoxContainer" parent="CenterArea/MainHBox"]
+custom_minimum_size = Vector2(380, 0)
 layout_mode = 2
-text = "Quit Game"
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="PlayButton" type="Button" parent="CenterArea/MainHBox/RightMenuContainer"]
+custom_minimum_size = Vector2(380, 58)
+layout_mode = 2
+pivot_offset = Vector2(190, 29)
+theme_override_font_sizes/font_size = 18
+text = "PLAY PARTY"
+
+[node name="OnlinePlayButton" type="Button" parent="CenterArea/MainHBox/RightMenuContainer"]
+custom_minimum_size = Vector2(380, 54)
+layout_mode = 2
+pivot_offset = Vector2(190, 27)
+theme_override_font_sizes/font_size = 16
+text = "ONLINE MULTIPLAYER"
+
+[node name="StudioButton" type="Button" parent="CenterArea/MainHBox/RightMenuContainer"]
+custom_minimum_size = Vector2(380, 50)
+layout_mode = 2
+pivot_offset = Vector2(190, 25)
+theme_override_font_sizes/font_size = 15
+text = "SCENE STUDIO"
+
+[node name="SettingsButton" type="Button" parent="CenterArea/MainHBox/RightMenuContainer"]
+custom_minimum_size = Vector2(380, 48)
+layout_mode = 2
+pivot_offset = Vector2(190, 24)
+theme_override_font_sizes/font_size = 15
+text = "SETTINGS & MIC"
+
+[node name="QuitButton" type="Button" parent="CenterArea/MainHBox/RightMenuContainer"]
+custom_minimum_size = Vector2(380, 42)
+layout_mode = 2
+pivot_offset = Vector2(190, 21)
+theme_override_font_sizes/font_size = 14
+text = "QUIT GAME"
+
+[node name="BottomBar" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -46.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="BottomMargin" type="MarginContainer" parent="BottomBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+
+[node name="BottomHBox" type="HBoxContainer" parent="BottomBar/BottomMargin"]
+layout_mode = 2
+
+[node name="VersionLabel" type="Label" parent="BottomBar/BottomMargin/BottomHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.247, 0.278, 0.396, 1)
+theme_override_font_sizes/font_size = 12
+text = "Dubbed Up v1.0.0-beta • Steam Build"
+
+[node name="Spacer" type="Control" parent="BottomBar/BottomMargin/BottomHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShortcutHint" type="Label" parent="BottomBar/BottomMargin/BottomHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.247, 0.278, 0.396, 1)
+theme_override_font_sizes/font_size = 12
+text = "💡 Tip: Press F11 for Fullscreen • C to cut audio slots in Studio"

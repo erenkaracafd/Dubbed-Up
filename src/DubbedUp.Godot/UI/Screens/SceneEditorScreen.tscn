@@ -83,22 +83,22 @@ theme_override_constants/separation = 12
 [node name="SeekBackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
 custom_minimum_size = Vector2(100, 38)
 layout_mode = 2
-text = "⏪ -5s"
+text = "-5s"
 
 [node name="PlayPauseButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
 custom_minimum_size = Vector2(160, 38)
 layout_mode = 2
-text = "▶ Play"
+text = "Play"
 
 [node name="SeekForwardButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
 custom_minimum_size = Vector2(100, 38)
 layout_mode = 2
-text = "⏩ +5s"
+text = "+5s"
 
 [node name="StopButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
 custom_minimum_size = Vector2(110, 38)
 layout_mode = 2
-text = "⏹ Reset"
+text = "Reset"
 
 [node name="VideoTimeLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
 custom_minimum_size = Vector2(160, 0)
@@ -132,24 +132,24 @@ theme_override_constants/separation = 12
 custom_minimum_size = Vector2(230, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.9, 1, 1)
-text = "✨ Auto-Detect Subtitles (AI)"
+text = "Auto-Detect Subtitles (AI)"
 
 [node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(180, 40)
 layout_mode = 2
-text = "➕ Add Speech Box"
+text = "Add Speech Box"
 
 [node name="CutBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(180, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-text = "✂️ Cut Box (C)"
+text = "Cut Box (C)"
 
 [node name="DeleteBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(170, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
-text = "🗑️ Delete Selected"
+text = "Delete Selected"
 
 [node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -175,14 +175,14 @@ theme_override_constants/separation = 16
 [node name="SaveAndProceedButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
-text = "✅ Save & Go to Scene Selection"
+text = "Save & Go to Scene Selection"
 
 [node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(180, 44)
 layout_mode = 2
-text = "💾 Save Changes"
+text = "Save Changes"
 
 [node name="BackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(160, 44)
 layout_mode = 2
-text = "🔙 Back"
+text = "Back"

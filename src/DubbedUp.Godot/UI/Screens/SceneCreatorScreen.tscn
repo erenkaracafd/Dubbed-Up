@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/SceneCreatorScreen.cs" id="1_creator"]
+[ext_resource type="Script" path="res://UI/Controls/MenuBackgroundVisuals.cs" id="2_bg_visuals"]
 
 [node name="SceneCreatorScreen" type="Control"]
 layout_mode = 3
@@ -11,142 +12,208 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_creator")
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="MenuBackgroundVisuals" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("2_bg_visuals")
+
+[node name="TopBar" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 56.0
+grow_horizontal = 2
+
+[node name="TopMargin" type="MarginContainer" parent="TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+
+[node name="TopHBox" type="HBoxContainer" parent="TopBar/TopMargin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="BackButton" type="Button" parent="TopBar/TopMargin/TopHBox"]
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 14
+text = "Back"
+
+[node name="ScreenTitle" type="Label" parent="TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 20
+text = "CREATE CUSTOM SCENE"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 56.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
 
 [node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
 layout_mode = 2
-custom_minimum_size = Vector2(850, 0)
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
+[node name="CardPadding" type="MarginContainer" parent="ScrollContainer/CenterContainer"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 32
 
-[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="CreatorCard" type="PanelContainer" parent="ScrollContainer/CenterContainer/CardPadding"]
+custom_minimum_size = Vector2(820, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "✨ Create New Scene Package"
+
+[node name="CardMargin" type="MarginContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 28
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 24
+text = "Create Custom Scene"
 horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="SubtitleLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.38, 0.42, 0.54, 1)
+theme_override_font_sizes/font_size = 13
 text = "Import video or audio clips to create a custom playable dubbing scene."
 horizontal_alignment = 1
 
-[node name="FolderInfoContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(720, 0)
+[node name="FolderInfoContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
+custom_minimum_size = Vector2(756, 0)
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="FolderHeaderLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
+[node name="FolderHeaderLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 16
-text = "📁 Step 1: Drop Raw Videos into Videos Folder (.mp4 / .webm / .mov)"
+theme_override_colors/font_color = Color(0.18, 0.16, 0.38, 1)
+theme_override_font_sizes/font_size = 15
+text = "Step 1: Choose Video File (.mp4, .webm, .mov, .mkv)"
 
-[node name="FolderButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
+[node name="FolderButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="OpenFolderButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox"]
-custom_minimum_size = Vector2(240, 42)
+[node name="OpenFolderButton" type="Button" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer/FolderButtonsHBox"]
+custom_minimum_size = Vector2(200, 40)
 layout_mode = 2
-text = "📂 Open Videos Folder"
+theme_override_font_sizes/font_size = 13
+text = "Open Videos Folder"
 
-[node name="RefreshMediaButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/FolderButtonsHBox"]
-custom_minimum_size = Vector2(180, 42)
+[node name="RefreshMediaButton" type="Button" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer/FolderButtonsHBox"]
+custom_minimum_size = Vector2(160, 40)
 layout_mode = 2
-text = "🔄 Refresh Videos"
+theme_override_font_sizes/font_size = 13
+text = "Refresh Videos"
 
-[node name="SelectMediaLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
+[node name="SelectMediaLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_colors/font_color = Color(0.38, 0.42, 0.54, 1)
 theme_override_font_sizes/font_size = 13
 text = "Click a video card below to select it:"
 
-[node name="NoVideosLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
+[node name="NoVideosLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer"]
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.75, 0.3, 1)
-theme_override_font_sizes/font_size = 14
-text = "⚠️ No videos found in custom_videos folder. Click 'Open Videos Folder' and drop your video files (.mp4 / .webm / .mov / .mkv) there!"
+theme_override_colors/font_color = Color(0.85, 0.45, 0.2, 1)
+theme_override_font_sizes/font_size = 13
+text = "No videos found in custom_videos folder. Click 'Open Videos Folder' and drop your video files (.mp4 / .webm / .mov / .mkv) there."
 autowrap_mode = 2
 
-[node name="VideoCardsScroll" type="ScrollContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer"]
-custom_minimum_size = Vector2(720, 220)
+[node name="VideoCardsScroll" type="ScrollContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer"]
+custom_minimum_size = Vector2(756, 210)
 layout_mode = 2
 horizontal_scroll_mode = 0
 
-[node name="VideoCardsGrid" type="HFlowContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/FolderInfoContainer/VideoCardsScroll"]
-custom_minimum_size = Vector2(700, 0)
+[node name="VideoCardsGrid" type="HFlowContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer/VideoCardsScroll"]
+custom_minimum_size = Vector2(736, 0)
 layout_mode = 2
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 16
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
 
-[node name="Separator" type="HSeparator" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="Separator" type="HSeparator" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
 layout_mode = 2
 
-[node name="FormContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(620, 0)
+[node name="FormContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
-[node name="TitleHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+[node name="TitleHeading" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FormContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "🎬 Scene Title:"
-
-[node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
+theme_override_colors/font_color = Color(0.18, 0.16, 0.38, 1)
 theme_override_font_sizes/font_size = 15
+text = "Step 2: Scene Title"
+
+[node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FormContainer"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
 placeholder_text = "e.g. Kurtlar Vadisi Sahnesi"
 text = "My Custom Scene"
 
-[node name="SceneIdHeading" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+[node name="SceneIdHeading" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FormContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_colors/font_color = Color(0.45, 0.48, 0.6, 1)
 theme_override_font_sizes/font_size = 13
 text = "Folder / Package ID (auto-generated):"
 
-[node name="SceneIdInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/FormContainer"]
+[node name="SceneIdInput" type="LineEdit" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FormContainer"]
 custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 placeholder_text = "my-custom-scene"
 text = "my-custom-scene"
 
-[node name="StatusInfoLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="StatusInfoLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.85, 1, 1)
+theme_override_colors/font_color = Color(0.38, 0.42, 0.54, 1)
 theme_override_font_sizes/font_size = 13
-text = "💡 Characters, voice lines, and dialogue boxes will be customized on the next screen (Scene Editor)."
+text = "Characters, voice lines, and dialogue boxes will be customized on the next screen (Scene Editor)."
 horizontal_alignment = 1
 
-[node name="ErrorLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="ErrorLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_colors/font_color = Color(0.9, 0.25, 0.3, 1)
 theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 
-[node name="ButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+[node name="ButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
 layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 16
 
-[node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox"]
-custom_minimum_size = Vector2(280, 48)
+[node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(260, 46)
 layout_mode = 2
-text = "✨ Create Scene & Open Editor"
+theme_override_font_sizes/font_size = 14
+text = "Create Scene & Open Editor"
 
-[node name="CancelButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox"]
-custom_minimum_size = Vector2(160, 48)
+[node name="CancelButton" type="Button" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/ButtonsHBox"]
+custom_minimum_size = Vector2(140, 46)
 layout_mode = 2
+theme_override_font_sizes/font_size = 14
 text = "Cancel"
 

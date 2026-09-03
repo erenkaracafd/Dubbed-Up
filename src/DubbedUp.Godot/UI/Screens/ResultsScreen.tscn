@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/ResultsScreen.cs" id="1_results"]
+[ext_resource type="Script" path="res://UI/Controls/MenuBackgroundVisuals.cs" id="2_bg_visuals"]
 
 [node name="ResultsScreen" type="Control"]
 layout_mode = 3
@@ -11,7 +12,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_results")
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="MenuBackgroundVisuals" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_bg_visuals")
+
+[node name="CenterArea" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,58 +29,90 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+[node name="ResultsCard" type="PanelContainer" parent="CenterArea"]
+custom_minimum_size = Vector2(620, 0)
 layout_mode = 2
-theme_override_constants/separation = 14
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="CardMargin" type="MarginContainer" parent="CenterArea/ResultsCard"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
-text = "Results & Scores"
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 28
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterArea/ResultsCard/CardMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 26
+text = "🎉 RESULTS & SCORES"
 horizontal_alignment = 1
 
-[node name="WinnerLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="WinnerLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-theme_override_colors/font_color = Color(0.2, 1.0, 0.4, 1)
-text = "Winner: ..."
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0.54, 0.68, 1)
+text = "👑 Winner: ..."
 horizontal_alignment = 1
 
-[node name="TallyLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="TallyLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.18, 0.20, 0.32, 1)
+theme_override_font_sizes/font_size = 14
 text = "Vote Tallies:"
 horizontal_alignment = 0
 
-[node name="StandingsLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="StandingsLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.18, 0.20, 0.32, 1)
+theme_override_font_sizes/font_size = 14
 text = "Cumulative Standings:"
 horizontal_alignment = 0
 
-[node name="ErrorLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="ErrorLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.2, 0.3, 1)
+theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
 
-[node name="NextRoundButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(300, 44)
+[node name="ActionsGrid" type="HBoxContainer" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-text = "Play Next Round"
+alignment = 1
+theme_override_constants/separation = 12
 
-[node name="ReplayRoundButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(300, 44)
+[node name="NextRoundButton" type="Button" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer/ActionsGrid"]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-text = "Replay This Dub"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "Next Round"
 
-[node name="ExportButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(300, 44)
+[node name="ReplayRoundButton" type="Button" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer/ActionsGrid"]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-text = "💾 Export Dub Audio Package"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "Replay Dub"
 
-[node name="MenuButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(300, 40)
+[node name="BottomRow" type="HBoxContainer" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
-text = "Return to Main Menu"
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="ExportButton" type="Button" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer/BottomRow"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "Export Package"
+
+[node name="MenuButton" type="Button" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer/BottomRow"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "Main Menu"

@@ -399,7 +399,7 @@ public partial class SceneEditorScreen : BaseScreen
             _videoPlayer.Play();
         }
 
-        if (_playPauseButton is not null) _playPauseButton.Text = "⏸ Pause";
+        if (_playPauseButton is not null) _playPauseButton.Text = "Pause";
     }
 
     private void PauseVideo()
@@ -408,7 +408,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         _isPlaying = false;
         _videoPlayer.Paused = true;
-        if (_playPauseButton is not null) _playPauseButton.Text = "▶ Play";
+        if (_playPauseButton is not null) _playPauseButton.Text = "Play";
     }
 
     private void OnStopPressed()
@@ -775,7 +775,7 @@ public partial class SceneEditorScreen : BaseScreen
 
             var previewBtn = new Button
             {
-                Text = "🎧 Preview Line",
+                Text = "Preview Line",
                 CustomMinimumSize = new Vector2(120, 32)
             };
             previewBtn.Pressed += () => PreviewSlot(slot);
@@ -783,7 +783,7 @@ public partial class SceneEditorScreen : BaseScreen
 
             var deleteBtn = new Button
             {
-                Text = "🗑️ Delete",
+                Text = "Delete",
                 CustomMinimumSize = new Vector2(70, 32)
             };
             deleteBtn.AddThemeColorOverride("font_color", new Color(1.0f, 0.4f, 0.4f));

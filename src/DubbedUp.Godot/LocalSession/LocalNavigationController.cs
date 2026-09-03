@@ -1,3 +1,4 @@
+using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.UI;
 using Godot;
 
@@ -25,10 +26,13 @@ public partial class LocalNavigationController : Node, IScreenNavigator
 
     private Control? _screenContainer;
     private BaseScreen? _currentScreenInstance;
+    private bool _isTransitioning = false;
 
     public LocalSessionCoordinator Coordinator { get; } = new();
 
     public Network.NetworkLobbyManager LobbyManager { get; } = new();
+
+    public AudioPlayback.MenuMusicController MusicManager { get; } = new();
 
     public AppScreen CurrentScreen { get; private set; } = AppScreen.MainMenu;
 
@@ -38,6 +42,10 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         if (LobbyManager.GetParent() is null)
         {
             AddChild(LobbyManager);
+        }
+        if (MusicManager.GetParent() is null)
+        {
+            AddChild(MusicManager);
         }
 
         // Initialize microphone service early so it's ready when Recording/Settings screens open
@@ -69,6 +77,8 @@ public partial class LocalNavigationController : Node, IScreenNavigator
             return;
         }
 
+        if (_isTransitioning) return;
+
         if (!ScreenScenePaths.TryGetValue(screen, out var scenePath))
         {
             GD.PrintErr($"LocalNavigationController: No scene path registered for screen '{screen}'.");
@@ -82,12 +92,6 @@ public partial class LocalNavigationController : Node, IScreenNavigator
             return;
         }
 
-        if (_currentScreenInstance is not null)
-        {
-            _currentScreenInstance.QueueFree();
-            _currentScreenInstance = null;
-        }
-
         var instance = scene.Instantiate();
         if (instance is not BaseScreen screenNode)
         {
@@ -96,10 +100,68 @@ public partial class LocalNavigationController : Node, IScreenNavigator
             return;
         }
 
-        _screenContainer.AddChild(screenNode);
+        UiSoundManager.Instance.PlayWhoosh();
+
+        if (_currentScreenInstance is not null)
+        {
+            _isTransitioning = true;
+            var oldScreen = _currentScreenInstance;
+
+            var outTween = CreateTween();
+            outTween?.SetParallel(true);
+            outTween?.TweenProperty(oldScreen, "modulate:a", 0.0f, 0.09f);
+            outTween?.TweenProperty(oldScreen, "scale", new Vector2(1.02f, 1.02f), 0.09f);
+
+            if (outTween is not null)
+            {
+                outTween.Finished += () =>
+                {
+                    oldScreen.QueueFree();
+                    AttachAndAnimateNewScreen(screenNode, screen, scenePath);
+                };
+            }
+            else
+            {
+                oldScreen.QueueFree();
+                AttachAndAnimateNewScreen(screenNode, screen, scenePath);
+            }
+        }
+        else
+        {
+            AttachAndAnimateNewScreen(screenNode, screen, scenePath);
+        }
+    }
+
+    private void AttachAndAnimateNewScreen(BaseScreen screenNode, AppScreen screen, string scenePath)
+    {
+        _screenContainer?.AddChild(screenNode);
         screenNode.Initialize(this, Coordinator);
         _currentScreenInstance = screenNode;
         CurrentScreen = screen;
+
+        // Start with 0 opacity and slight zoom-in
+        screenNode.Modulate = new Color(1, 1, 1, 0);
+        screenNode.Scale = new Vector2(0.97f, 0.97f);
+        screenNode.PivotOffset = screenNode.GetViewportRect().Size * 0.5f;
+
+        var inTween = screenNode.CreateTween();
+        inTween?.SetParallel(true);
+        inTween?.TweenProperty(screenNode, "modulate:a", 1.0f, 0.15f);
+        inTween?.TweenProperty(screenNode, "scale", Vector2.One, 0.15f)
+               .SetTrans(Tween.TransitionType.Cubic)
+               .SetEase(Tween.EaseType.Out);
+
+        if (inTween is not null)
+        {
+            inTween.Finished += () =>
+            {
+                _isTransitioning = false;
+            };
+        }
+        else
+        {
+            _isTransitioning = false;
+        }
 
         // Update Steam Rich Presence status
         var sceneTitle = Coordinator.CurrentScene?.Title;
@@ -120,6 +182,7 @@ public partial class LocalNavigationController : Node, IScreenNavigator
             },
             sceneTitle);
 
+        MusicManager.OnScreenChanged(screen);
         EmitSignal(SignalName.ScreenChanged, (int)screen);
     }
 

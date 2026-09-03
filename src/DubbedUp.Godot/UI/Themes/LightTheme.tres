@@ -1,0 +1,18 @@
+[gd_resource type="Theme" format=3]
+
+[resource]
+default_font_size = 14
+Label/colors/font_color = Color(0.118, 0.106, 0.294, 1)
+Label/colors/font_shadow_color = Color(0, 0, 0, 0)
+LineEdit/colors/font_color = Color(0.118, 0.106, 0.294, 1)
+LineEdit/colors/font_placeholder_color = Color(0.55, 0.58, 0.68, 0.8)
+OptionButton/colors/font_color = Color(0.118, 0.106, 0.294, 1)
+OptionButton/colors/font_hover_color = Color(0.118, 0.106, 0.294, 1)
+OptionButton/colors/font_pressed_color = Color(0.118, 0.106, 0.294, 1)
+CheckButton/colors/font_color = Color(0.118, 0.106, 0.294, 1)
+CheckButton/colors/font_hover_color = Color(0.118, 0.106, 0.294, 1)
+CheckButton/colors/font_pressed_color = Color(0.118, 0.106, 0.294, 1)
+Button/colors/font_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_color = Color(1, 1, 1, 1)
+Button/colors/font_pressed_color = Color(1, 1, 1, 1)
+Button/colors/font_focus_color = Color(1, 1, 1, 1)

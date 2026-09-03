@@ -1,4 +1,5 @@
 using DubbedUp.Core.VoiceTakes;
+using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
 using DubbedUp.Godot.Network;
 using DubbedUp.Godot.UI.Controls;
@@ -89,25 +90,27 @@ public partial class RecordingScreen : BaseScreen
 
     public override void _Ready()
     {
-        _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
-        _slotInfoLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/SlotInfoLabel");
-        _promptSubtitleLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/PromptSubtitleLabel");
-        _countdownLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/CountdownLabel");
-        _syncScoreLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/SyncScoreLabel");
-        _errorLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/ErrorLabel");
+        _statusLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/StatusLabel");
+        _slotInfoLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/TopInfoHBox/SlotInfoLabel");
+        _promptSubtitleLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/PromptSubtitleLabel");
+        _countdownLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/CountdownLabel");
+        _syncScoreLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/SyncScoreLabel");
+        _errorLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/ErrorLabel");
 
-        _videoContainer = GetNodeOrNull<AspectRatioContainer>("ScrollContainer/CenterContainer/VBoxContainer/VideoContainer");
-        _videoPlayer = GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoContainer/VideoPanel/VideoPlayer") ?? GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoPanel/VideoPlayer");
-        _waveformVisualizer = GetNodeOrNull<WaveformVisualizer>("ScrollContainer/CenterContainer/VBoxContainer/WaveformVisualizer");
+        _videoContainer = GetNodeOrNull<AspectRatioContainer>("CenterArea/VBoxContainer/VideoContainer");
+        _videoPlayer = GetNodeOrNull<VideoStreamPlayer>("CenterArea/VBoxContainer/VideoContainer/VideoPanel/VideoPlayer");
+        _waveformVisualizer = GetNodeOrNull<WaveformVisualizer>("CenterArea/VBoxContainer/WaveformVisualizer");
 
-        _previewOriginalButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/StudioActions/PreviewOriginalButton");
-        _recordButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/StudioActions/RecordButton");
-        _previewTakeButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/PreviewTakeButton");
-        _reRecordButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/ReRecordButton");
-        _prevSlotButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/PrevSlotButton");
-        _nextSlotButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ReviewActions/NextSlotButton");
-        _proceedButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ProceedButton");
-        _cancelButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/CancelButton");
+        _previewOriginalButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/StudioActions/PreviewOriginalButton");
+        _recordButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/StudioActions/RecordButton");
+        _previewTakeButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ReviewActions/PreviewTakeButton");
+        _reRecordButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ReviewActions/ReRecordButton");
+        _prevSlotButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ReviewActions/PrevSlotButton");
+        _nextSlotButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ReviewActions/NextSlotButton");
+        _proceedButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ReviewActions/FinishRecordingButton");
+        _cancelButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/BottomRow/CancelButton");
+
+        ApplyStyling();
 
         _previewPlayer = new AudioStreamPlayer();
         AddChild(_previewPlayer);
@@ -121,18 +124,81 @@ public partial class RecordingScreen : BaseScreen
             }
         }
 
-        if (_previewOriginalButton is not null) _previewOriginalButton.Pressed += OnPreviewOriginalPressed;
-        if (_recordButton is not null) _recordButton.Pressed += OnRecordButtonPressed;
-        if (_previewTakeButton is not null) _previewTakeButton.Pressed += OnPreviewTakePressed;
-        if (_reRecordButton is not null) _reRecordButton.Pressed += OnReRecordPressed;
-        if (_prevSlotButton is not null) _prevSlotButton.Pressed += OnPrevSlotPressed;
-        if (_nextSlotButton is not null) _nextSlotButton.Pressed += OnNextSlotPressed;
-        if (_proceedButton is not null) _proceedButton.Pressed += OnProceedPressed;
-        if (_cancelButton is not null) _cancelButton.Pressed += OnCancelPressed;
+        if (_previewOriginalButton is not null) SetupButton(_previewOriginalButton, OnPreviewOriginalPressed);
+        if (_recordButton is not null) SetupButton(_recordButton, OnRecordButtonPressed);
+        if (_previewTakeButton is not null) SetupButton(_previewTakeButton, OnPreviewTakePressed);
+        if (_reRecordButton is not null) SetupButton(_reRecordButton, OnReRecordPressed);
+        if (_prevSlotButton is not null) SetupButton(_prevSlotButton, OnPrevSlotPressed);
+        if (_nextSlotButton is not null) SetupButton(_nextSlotButton, OnNextSlotPressed);
+        if (_proceedButton is not null) SetupButton(_proceedButton, OnProceedPressed);
+        if (_cancelButton is not null) SetupButton(_cancelButton, OnCancelPressed);
 
         Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
         LoadSceneVideo();
         UpdateUiState();
+    }
+
+    private void SetupButton(Button btn, Action action)
+    {
+        btn.Pressed += action;
+        UiSoundManager.Attach(btn);
+    }
+
+    private void ApplyStyling()
+    {
+        var panel = GetNodeOrNull<PanelContainer>("CenterArea/VBoxContainer/VideoContainer/VideoPanel");
+        if (panel is not null)
+        {
+            var pBox = new StyleBoxFlat
+            {
+                BgColor = Colors.Black,
+                CornerRadiusTopLeft = 14,
+                CornerRadiusTopRight = 14,
+                CornerRadiusBottomLeft = 14,
+                CornerRadiusBottomRight = 14,
+                BorderWidthLeft = 2,
+                BorderWidthTop = 2,
+                BorderWidthRight = 2,
+                BorderWidthBottom = 2,
+                BorderColor = new Color(0.780f, 0.850f, 0.950f)
+            };
+            panel.AddThemeStyleboxOverride("panel", pBox);
+        }
+
+        if (_previewOriginalButton is not null) StyleActionPill(_previewOriginalButton, new Color(0.280f, 0.650f, 0.950f), 21);
+        if (_recordButton is not null) StyleActionPill(_recordButton, new Color(1.0f, 0.540f, 0.680f), 21);
+        if (_proceedButton is not null) StyleActionPill(_proceedButton, new Color(1.0f, 0.540f, 0.680f), 20);
+        if (_previewTakeButton is not null) StyleOutlinePill(_previewTakeButton, 18);
+        if (_reRecordButton is not null) StyleOutlinePill(_reRecordButton, 18);
+        if (_prevSlotButton is not null) StyleOutlinePill(_prevSlotButton, 18);
+        if (_nextSlotButton is not null) StyleOutlinePill(_nextSlotButton, 18);
+        if (_cancelButton is not null) StyleOutlinePill(_cancelButton, 16);
+    }
+
+    private static void StyleActionPill(Button btn, Color color, int radius)
+    {
+        var normal = new StyleBoxFlat { BgColor = color, CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 6, ShadowColor = new Color(color.R, color.G, color.B, 0.3f) };
+        var hover = new StyleBoxFlat { BgColor = color.Lightened(0.15f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 10, ShadowColor = new Color(color.R, color.G, color.B, 0.4f) };
+        var pressed = new StyleBoxFlat { BgColor = color.Darkened(0.15f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 1 };
+
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", pressed);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", Colors.White);
+        btn.AddThemeColorOverride("font_hover_color", Colors.White);
+    }
+
+    private static void StyleOutlinePill(Button btn, int radius)
+    {
+        var normal = new StyleBoxFlat { BgColor = new Color(0.955f, 0.975f, 1.0f), BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.780f, 0.850f, 0.950f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+        var hover = new StyleBoxFlat { BgColor = new Color(0.910f, 0.945f, 0.990f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
+
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
+        btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
     }
 
     public override void _ExitTree()
@@ -271,7 +337,7 @@ public partial class RecordingScreen : BaseScreen
                 _isPreviewingOriginal = false;
                 _previewOriginalDuration = 0.0;
                 _waveformVisualizer?.SetPlayhead(0, false);
-                if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Listen to Original Reference";
+                if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Listen to Original Reference";
                 if (_statusLabel is not null) _statusLabel.Text = "Ready. Press 'Listen to Original' or 'Start Recording'.";
             }
             return;
@@ -299,7 +365,7 @@ public partial class RecordingScreen : BaseScreen
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
 
         _waveformVisualizer?.SetPlayhead(0.0, false);
-        if (_previewTakeButton is not null) _previewTakeButton.Text = "▶ Listen to My Take";
+        if (_previewTakeButton is not null) _previewTakeButton.Text = "Listen to My Take";
         if (_statusLabel is not null) _statusLabel.Text = "Take preview finished.";
     }
 
@@ -361,13 +427,13 @@ public partial class RecordingScreen : BaseScreen
         {
             if (isRecorded)
             {
-                _recordButton.Text = "🎙️ Re-Record (Overwrite)";
+                _recordButton.Text = "Re-Record (Overwrite)";
             }
             else
             {
                 _recordButton.Text = _settingCountdownSeconds > 0
-                    ? $"🎙️ Start Recording ({_settingCountdownSeconds:F0}s Countdown)"
-                    : "🎙️ Start Recording";
+                    ? $"Start Recording ({_settingCountdownSeconds:F0}s Countdown)"
+                    : "Start Recording";
             }
         }
         if (_previewTakeButton is not null) _previewTakeButton.Visible = isRecorded;
@@ -385,7 +451,7 @@ public partial class RecordingScreen : BaseScreen
         if (_proceedButton is not null)
         {
             _proceedButton.Visible = allDone;
-            _proceedButton.Text = "🎬 All Lines Recorded — Watch Full Playback!";
+            _proceedButton.Text = "All Lines Recorded — Watch Full Playback!";
         }
 
         if (_statusLabel is not null)
@@ -530,7 +596,7 @@ public partial class RecordingScreen : BaseScreen
         {
             _videoPlayer.Stop();
             _isPreviewingOriginal = false;
-            if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Listen to Original Reference";
+            if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Listen to Original Reference";
             return;
         }
 
@@ -545,7 +611,7 @@ public partial class RecordingScreen : BaseScreen
         _videoPlayer.Play();
         _videoPlayer.StreamPosition = _leadInStartSec;
 
-        if (_previewOriginalButton is not null) _previewOriginalButton.Text = "⏹ Stop Playing";
+        if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Stop Playing";
         if (_statusLabel is not null) _statusLabel.Text = $"🎧 Playing clip with {_leadInSec:F1}s context lead-in ({_leadInStartSec:F1}s → {_slotEndSec:F1}s)...";
     }
 
@@ -618,7 +684,7 @@ public partial class RecordingScreen : BaseScreen
                 _videoPlayer.StreamPosition = _leadInStartSec;
             }
 
-            if (_recordButton is not null) _recordButton.Text = "⏹ Cancel Recording";
+            if (_recordButton is not null) _recordButton.Text = "Cancel Recording";
             if (_countdownLabel is not null)
             {
                 _countdownLabel.Text = _leadInSec > 0 ? $"⏳ PRE-ROLL LEAD-IN: {_leadInSec:F1}s" : "🔴 RECORDING LIVE — SPEAK NOW!";
@@ -756,7 +822,7 @@ public partial class RecordingScreen : BaseScreen
                     _previewTakeDuration = 0.0;
                     _waveformVisualizer?.SetPlayhead(0.0, false);
 
-                    if (_previewTakeButton is not null) _previewTakeButton.Text = "⏹ Stop Preview";
+                    if (_previewTakeButton is not null) _previewTakeButton.Text = "Stop Preview";
                     if (_statusLabel is not null) _statusLabel.Text = "▶ Playing your take in sync with video...";
                 }
             }
