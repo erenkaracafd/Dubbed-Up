@@ -239,7 +239,7 @@ public partial class SettingsScreen : BaseScreen
 
 		if (_micTestButton is not null)
 		{
-			_micTestButton.Text = _isTestingMic ? "⏹ Stop Microphone Test" : "🎙 Test Microphone Level";
+			_micTestButton.Text = _isTestingMic ? "Stop Microphone Test" : "Test Microphone Level";
 		}
 
 		if (_statusLabel is not null)

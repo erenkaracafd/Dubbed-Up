@@ -337,7 +337,7 @@ public partial class RecordingScreen : BaseScreen
                 _isPreviewingOriginal = false;
                 _previewOriginalDuration = 0.0;
                 _waveformVisualizer?.SetPlayhead(0, false);
-                if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Listen to Original Reference";
+                if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Listen to Original Reference";
                 if (_statusLabel is not null) _statusLabel.Text = "Ready. Press 'Listen to Original' or 'Start Recording'.";
             }
             return;
@@ -365,7 +365,7 @@ public partial class RecordingScreen : BaseScreen
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
 
         _waveformVisualizer?.SetPlayhead(0.0, false);
-        if (_previewTakeButton is not null) _previewTakeButton.Text = "▶ Listen to My Take";
+        if (_previewTakeButton is not null) _previewTakeButton.Text = "Listen to My Take";
         if (_statusLabel is not null) _statusLabel.Text = "Take preview finished.";
     }
 
@@ -427,13 +427,13 @@ public partial class RecordingScreen : BaseScreen
         {
             if (isRecorded)
             {
-                _recordButton.Text = "🎙️ Re-Record (Overwrite)";
+                _recordButton.Text = "Re-Record (Overwrite)";
             }
             else
             {
                 _recordButton.Text = _settingCountdownSeconds > 0
-                    ? $"🎙️ Start Recording ({_settingCountdownSeconds:F0}s Countdown)"
-                    : "🎙️ Start Recording";
+                    ? $"Start Recording ({_settingCountdownSeconds:F0}s Countdown)"
+                    : "Start Recording";
             }
         }
         if (_previewTakeButton is not null) _previewTakeButton.Visible = isRecorded;
@@ -451,7 +451,7 @@ public partial class RecordingScreen : BaseScreen
         if (_proceedButton is not null)
         {
             _proceedButton.Visible = allDone;
-            _proceedButton.Text = "🎬 All Lines Recorded — Watch Full Playback!";
+            _proceedButton.Text = "All Lines Recorded — Watch Full Playback!";
         }
 
         if (_statusLabel is not null)
@@ -596,7 +596,7 @@ public partial class RecordingScreen : BaseScreen
         {
             _videoPlayer.Stop();
             _isPreviewingOriginal = false;
-            if (_previewOriginalButton is not null) _previewOriginalButton.Text = "🎧 Listen to Original Reference";
+            if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Listen to Original Reference";
             return;
         }
 
@@ -611,7 +611,7 @@ public partial class RecordingScreen : BaseScreen
         _videoPlayer.Play();
         _videoPlayer.StreamPosition = _leadInStartSec;
 
-        if (_previewOriginalButton is not null) _previewOriginalButton.Text = "⏹ Stop Playing";
+        if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Stop Playing";
         if (_statusLabel is not null) _statusLabel.Text = $"🎧 Playing clip with {_leadInSec:F1}s context lead-in ({_leadInStartSec:F1}s → {_slotEndSec:F1}s)...";
     }
 
@@ -684,7 +684,7 @@ public partial class RecordingScreen : BaseScreen
                 _videoPlayer.StreamPosition = _leadInStartSec;
             }
 
-            if (_recordButton is not null) _recordButton.Text = "⏹ Cancel Recording";
+            if (_recordButton is not null) _recordButton.Text = "Cancel Recording";
             if (_countdownLabel is not null)
             {
                 _countdownLabel.Text = _leadInSec > 0 ? $"⏳ PRE-ROLL LEAD-IN: {_leadInSec:F1}s" : "🔴 RECORDING LIVE — SPEAK NOW!";
@@ -822,7 +822,7 @@ public partial class RecordingScreen : BaseScreen
                     _previewTakeDuration = 0.0;
                     _waveformVisualizer?.SetPlayhead(0.0, false);
 
-                    if (_previewTakeButton is not null) _previewTakeButton.Text = "⏹ Stop Preview";
+                    if (_previewTakeButton is not null) _previewTakeButton.Text = "Stop Preview";
                     if (_statusLabel is not null) _statusLabel.Text = "▶ Playing your take in sync with video...";
                 }
             }

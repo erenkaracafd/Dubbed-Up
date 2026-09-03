@@ -437,7 +437,7 @@ public partial class MainMenuScreen : BaseScreen
     {
         if (_musicToggleButton is not null && _musicManager is not null)
         {
-            _musicToggleButton.Text = _musicManager.IsMuted ? "🔇 Music: OFF" : "🔊 Music: ON";
+            _musicToggleButton.Text = _musicManager.IsMuted ? "Music: OFF" : "Music: ON";
         }
     }
 }

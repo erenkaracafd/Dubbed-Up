@@ -221,7 +221,7 @@ public partial class ResultsScreen : BaseScreen
         if (_exportButton is not null)
         {
             _exportButton.Disabled = true;
-            _exportButton.Text = "⏳ Rendering MP4...";
+            _exportButton.Text = "Rendering MP4...";
         }
 
         SetStandings("🎬 Rendering & mixing dubbed MP4 video with FFmpeg...");
@@ -241,7 +241,7 @@ public partial class ResultsScreen : BaseScreen
             if (_exportButton is not null)
             {
                 _exportButton.Disabled = false;
-                _exportButton.Text = "🎬 Export Dubbed Video (.mp4)";
+                _exportButton.Text = "Export Dubbed Video (.mp4)";
             }
 
             if (!string.IsNullOrEmpty(exportedFile) && System.IO.File.Exists(exportedFile))
@@ -260,7 +260,7 @@ public partial class ResultsScreen : BaseScreen
             if (_exportButton is not null)
             {
                 _exportButton.Disabled = false;
-                _exportButton.Text = "🎬 Export Dubbed Video (.mp4)";
+                _exportButton.Text = "Export Dubbed Video (.mp4)";
             }
         }
     }

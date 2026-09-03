@@ -89,14 +89,14 @@ custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
-text = "▶️ Next Round"
+text = "Next Round"
 
 [node name="ReplayRoundButton" type="Button" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer/ActionsGrid"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
-text = "🔄 Replay Dub"
+text = "Replay Dub"
 
 [node name="BottomRow" type="HBoxContainer" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
@@ -108,7 +108,7 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 13
-text = "💾 Export Package"
+text = "Export Package"
 
 [node name="MenuButton" type="Button" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer/BottomRow"]
 custom_minimum_size = Vector2(0, 40)

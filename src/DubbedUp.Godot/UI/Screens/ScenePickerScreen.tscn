@@ -39,11 +39,11 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="BackButton" type="Button" parent="TopBar/TopMargin/TopHBox"]
-custom_minimum_size = Vector2(110, 36)
+custom_minimum_size = Vector2(100, 36)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 14
-text = "⬅️ Back"
+text = "Back"
 
 [node name="ScreenTitle" type="Label" parent="TopBar/TopMargin/TopHBox"]
 layout_mode = 2
@@ -51,16 +51,16 @@ theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 20
 text = "🎬 CHOOSE YOUR SCENE"
 
-[node name="Spacer" type="Control" parent="TopBar/TopMargin/TopHBox"]
+[node name="CenterContainer" type="CenterContainer" parent="TopBar"]
 layout_mode = 2
-size_flags_horizontal = 3
+mouse_filter = 2
 
-[node name="CreateSceneButton" type="Button" parent="TopBar/TopMargin/TopHBox"]
-custom_minimum_size = Vector2(160, 36)
+[node name="CreateSceneButton" type="Button" parent="TopBar/CenterContainer"]
+custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 13
-text = "➕ Import Custom Scene"
+mouse_filter = 0
+theme_override_font_sizes/font_size = 14
+text = "+ Import Custom Scene"
 
 [node name="MainLayoutMargin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -189,20 +189,20 @@ custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
-text = "▶️   DUB SCENE"
+text = "DUB SCENE"
 
 [node name="EditTimelineButton" type="Button" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ShowcaseActionsHBox"]
 custom_minimum_size = Vector2(130, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "✂️ Edit Box"
+text = "Edit Box"
 
 [node name="DeleteSceneButton" type="Button" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ShowcaseActionsHBox"]
 visible = false
 custom_minimum_size = Vector2(46, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "🗑️"
+text = "Delete"
 
 [node name="CarouselVBox" type="VBoxContainer" parent="MainLayoutMargin/SplitHBox"]
 layout_mode = 2

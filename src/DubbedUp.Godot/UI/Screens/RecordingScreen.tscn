@@ -125,13 +125,13 @@ theme_override_constants/separation = 14
 custom_minimum_size = Vector2(230, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "🎧 Listen Reference"
+text = "Listen Reference"
 
 [node name="RecordButton" type="Button" parent="CenterArea/VBoxContainer/StudioActions"]
 custom_minimum_size = Vector2(230, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "🎙️ Start Recording"
+text = "Start Recording"
 
 [node name="ReviewActions" type="HBoxContainer" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
@@ -143,35 +143,35 @@ visible = false
 custom_minimum_size = Vector2(160, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "▶ Listen Take"
+text = "Listen Take"
 
 [node name="ReRecordButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(140, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "🔄 Re-Record"
+text = "Re-Record"
 
 [node name="PrevSlotButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(130, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "← Prev Line"
+text = "Prev Line"
 
 [node name="NextSlotButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(150, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Next Line →"
+text = "Next Line"
 
 [node name="FinishRecordingButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(190, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "🎬 Finish & Watch!"
+text = "Finish & Watch!"
 
 [node name="BottomRow" type="HBoxContainer" parent="CenterArea/VBoxContainer"]
 layout_mode = 2

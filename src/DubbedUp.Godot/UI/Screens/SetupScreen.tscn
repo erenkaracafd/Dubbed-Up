@@ -43,7 +43,7 @@ custom_minimum_size = Vector2(120, 36)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 14
-text = "⬅️ Back"
+text = "Back"
 
 [node name="ScreenTitle" type="Label" parent="TopBar/TopMargin/TopHBox"]
 layout_mode = 2
@@ -122,7 +122,7 @@ size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "✏️  Edit Timeline & Boxes"
+text = "Edit Timeline & Boxes"
 
 [node name="RightControls" type="VBoxContainer" parent="CenterArea/SetupCard/CardMargin/SplitHBox"]
 layout_mode = 2
@@ -178,4 +178,4 @@ size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 17
-text = "🎙   START RECORDING!"
+text = "START RECORDING!"

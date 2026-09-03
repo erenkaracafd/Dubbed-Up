@@ -77,14 +77,14 @@ custom_minimum_size = Vector2(110, 32)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 13
-text = "🔊 Sound: ON"
+text = "Sound: ON"
 
 [node name="FullscreenButton" type="Button" parent="TopBar/TopMargin/TopHBox"]
 custom_minimum_size = Vector2(90, 32)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 13
-text = "⛶ Fullscreen"
+text = "Fullscreen"
 
 [node name="CenterArea" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -155,28 +155,28 @@ custom_minimum_size = Vector2(380, 58)
 layout_mode = 2
 pivot_offset = Vector2(190, 29)
 theme_override_font_sizes/font_size = 18
-text = "🎮   PLAY PARTY"
+text = "PLAY PARTY"
 
 [node name="OnlinePlayButton" type="Button" parent="CenterArea/MainHBox/RightMenuContainer"]
 custom_minimum_size = Vector2(380, 54)
 layout_mode = 2
 pivot_offset = Vector2(190, 27)
 theme_override_font_sizes/font_size = 16
-text = "🌐   ONLINE MULTIPLAYER"
+text = "ONLINE MULTIPLAYER"
 
 [node name="StudioButton" type="Button" parent="CenterArea/MainHBox/RightMenuContainer"]
 custom_minimum_size = Vector2(380, 50)
 layout_mode = 2
 pivot_offset = Vector2(190, 25)
 theme_override_font_sizes/font_size = 15
-text = "🎬   SCENE STUDIO"
+text = "SCENE STUDIO"
 
 [node name="SettingsButton" type="Button" parent="CenterArea/MainHBox/RightMenuContainer"]
 custom_minimum_size = Vector2(380, 48)
 layout_mode = 2
 pivot_offset = Vector2(190, 24)
 theme_override_font_sizes/font_size = 15
-text = "⚙️   SETTINGS & MIC"
+text = "SETTINGS & MIC"
 
 [node name="QuitButton" type="Button" parent="CenterArea/MainHBox/RightMenuContainer"]
 custom_minimum_size = Vector2(380, 42)

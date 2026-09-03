@@ -257,7 +257,7 @@ public partial class LobbyScreen : BaseScreen
         _lobbyManager?.SetReadyState(_isLocalReady);
         if (_readyButton is not null)
         {
-            _readyButton.Text = _isLocalReady ? "✅ Ready!" : "Set Ready";
+            _readyButton.Text = _isLocalReady ? "Ready!" : "Set Ready";
         }
     }
 

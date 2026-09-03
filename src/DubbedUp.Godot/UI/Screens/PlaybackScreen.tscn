@@ -102,26 +102,26 @@ theme_override_constants/separation = 12
 [node name="PlayPauseButton" type="Button" parent="CenterContainer/VBoxContainer/ControlsContainer"]
 custom_minimum_size = Vector2(100, 38)
 layout_mode = 2
-text = "⏸️ Pause"
+text = "Pause"
 
 [node name="ReplayButton" type="Button" parent="CenterContainer/VBoxContainer/ControlsContainer"]
 custom_minimum_size = Vector2(120, 38)
 layout_mode = 2
-text = "🔄 Replay"
+text = "Replay"
 
 [node name="ExportButton" type="Button" parent="CenterContainer/VBoxContainer/ControlsContainer"]
 custom_minimum_size = Vector2(180, 38)
 layout_mode = 2
-text = "🎬 Export Video (.mp4)"
+text = "Export Video (.mp4)"
 
 [node name="ProceedButton" type="Button" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(260, 44)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Proceed to Voting →"
+text = "Proceed to Voting"
 
 [node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(180, 36)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "⬅️ Back to Main Menu"
+text = "Back to Main Menu"

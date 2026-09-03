@@ -245,7 +245,7 @@ public partial class PlaybackScreen : BaseScreen
         if (_exportButton is not null)
         {
             _exportButton.Disabled = true;
-            _exportButton.Text = "⏳ Exporting...";
+            _exportButton.Text = "Exporting...";
         }
 
         UpdateStatusText("🎬 Mixing audio tracks and rendering MP4...");
@@ -263,7 +263,7 @@ public partial class PlaybackScreen : BaseScreen
         if (_exportButton is not null)
         {
             _exportButton.Disabled = false;
-            _exportButton.Text = "🎬 Export Video (.mp4)";
+            _exportButton.Text = "Export Video (.mp4)";
         }
 
         if (!string.IsNullOrEmpty(exportedFile) && System.IO.File.Exists(exportedFile))

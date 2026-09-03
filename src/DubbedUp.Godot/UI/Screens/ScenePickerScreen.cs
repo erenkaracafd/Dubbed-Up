@@ -58,7 +58,8 @@ public partial class ScenePickerScreen : BaseScreen
     {
         _topBar = GetNodeOrNull<PanelContainer>("TopBar");
         _backButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/BackButton");
-        _createSceneButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/CreateSceneButton");
+        _createSceneButton = GetNodeOrNull<Button>("TopBar/CenterContainer/CreateSceneButton")
+            ?? GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/CreateSceneButton");
 
         _showcasePanel = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel");
         _thumbnailFrame = GetNodeOrNull<PanelContainer>("MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ThumbnailFrame");
@@ -181,10 +182,10 @@ public partial class ScenePickerScreen : BaseScreen
             StyleButton(_deleteSceneButton, new Color(0.960f, 0.450f, 0.550f), new Color(0.980f, 0.550f, 0.650f), new Color(0.850f, 0.350f, 0.450f), Colors.White, 26);
         }
 
-        // Create Scene button
+        // Create Scene button (Centered tactile 3D pill)
         if (_createSceneButton is not null)
         {
-            StyleButton(_createSceneButton, new Color(0.600f, 0.480f, 0.950f), new Color(0.700f, 0.600f, 1.000f), new Color(0.500f, 0.360f, 0.880f), Colors.White, 18);
+            StyleCreateSceneButton(_createSceneButton);
         }
 
         // Outline buttons
@@ -245,6 +246,99 @@ public partial class ScenePickerScreen : BaseScreen
         btn.AddThemeStyleboxOverride("focus", sHover);
         btn.AddThemeColorOverride("font_color", textColor);
         btn.AddThemeColorOverride("font_hover_color", textColor);
+    }
+
+    private static void StyleCreateSceneButton(Button btn)
+    {
+        var normal = new StyleBoxFlat
+        {
+            BgColor = new Color(0.460f, 0.380f, 0.920f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.760f, 0.700f, 1.000f),
+            CornerRadiusTopLeft = 21,
+            CornerRadiusTopRight = 21,
+            CornerRadiusBottomLeft = 21,
+            CornerRadiusBottomRight = 21,
+            ShadowSize = 8,
+            ShadowColor = new Color(0.35f, 0.25f, 0.75f, 0.35f),
+            ShadowOffset = new Vector2(0, 3),
+            ContentMarginLeft = 24,
+            ContentMarginRight = 24,
+            ContentMarginTop = 4,
+            ContentMarginBottom = 4
+        };
+
+        var hover = new StyleBoxFlat
+        {
+            BgColor = new Color(0.550f, 0.460f, 0.980f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = Colors.White,
+            CornerRadiusTopLeft = 21,
+            CornerRadiusTopRight = 21,
+            CornerRadiusBottomLeft = 21,
+            CornerRadiusBottomRight = 21,
+            ShadowSize = 14,
+            ShadowColor = new Color(0.45f, 0.35f, 0.95f, 0.50f),
+            ShadowOffset = new Vector2(0, 4),
+            ContentMarginLeft = 24,
+            ContentMarginRight = 24,
+            ContentMarginTop = 4,
+            ContentMarginBottom = 4
+        };
+
+        var pressed = new StyleBoxFlat
+        {
+            BgColor = new Color(0.360f, 0.280f, 0.800f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.650f, 0.580f, 0.950f),
+            CornerRadiusTopLeft = 21,
+            CornerRadiusTopRight = 21,
+            CornerRadiusBottomLeft = 21,
+            CornerRadiusBottomRight = 21,
+            ShadowSize = 2,
+            ShadowColor = new Color(0.25f, 0.15f, 0.60f, 0.30f),
+            ShadowOffset = new Vector2(0, 1),
+            ContentMarginLeft = 24,
+            ContentMarginRight = 24,
+            ContentMarginTop = 5,
+            ContentMarginBottom = 3
+        };
+
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", pressed);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", Colors.White);
+        btn.AddThemeColorOverride("font_hover_color", Colors.White);
+        btn.AddThemeColorOverride("font_pressed_color", new Color(0.95f, 0.95f, 1.0f));
+        btn.AddThemeColorOverride("font_shadow_color", new Color(0.15f, 0.10f, 0.40f, 0.45f));
+        btn.AddThemeConstantOverride("shadow_offset_y", 1);
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+        btn.PivotOffset = new Vector2(125, 21);
+
+        btn.MouseEntered += () =>
+        {
+            var tween = btn.CreateTween();
+            tween.TweenProperty(btn, "scale", new Vector2(1.04f, 1.04f), 0.12)
+                .SetTrans(Tween.TransitionType.Back)
+                .SetEase(Tween.EaseType.Out);
+        };
+        btn.MouseExited += () =>
+        {
+            var tween = btn.CreateTween();
+            tween.TweenProperty(btn, "scale", Vector2.One, 0.10)
+                .SetTrans(Tween.TransitionType.Quad)
+                .SetEase(Tween.EaseType.Out);
+        };
     }
 
     private static void StyleOutline(Button btn, int radius)

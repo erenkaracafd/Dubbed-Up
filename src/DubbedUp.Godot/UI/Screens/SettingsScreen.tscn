@@ -100,7 +100,7 @@ text = "100%"
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "🔊 Test Speaker Output (Beep)"
+text = "Test Speaker Output (Beep)"
 
 [node name="LeadInLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
@@ -220,7 +220,7 @@ text = "-150ms"
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "🎙 Test Microphone Level"
+text = "Test Microphone Level"
 
 [node name="TestMeterBar" type="ProgressBar" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
 visible = false
@@ -244,10 +244,10 @@ text = "Configure audio, mic sync, and display."
 custom_minimum_size = Vector2(170, 44)
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
-text = "💾 Save Settings"
+text = "Save Settings"
 
 [node name="BackButton" type="Button" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow"]
 custom_minimum_size = Vector2(140, 44)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "⬅️ Back"
+text = "Back"

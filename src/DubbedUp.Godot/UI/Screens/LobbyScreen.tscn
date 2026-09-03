@@ -43,7 +43,7 @@ custom_minimum_size = Vector2(110, 36)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 14
-text = "⬅️ Back"
+text = "Back"
 
 [node name="ScreenTitle" type="Label" parent="TopBar/TopMargin/TopHBox"]
 layout_mode = 2
@@ -132,14 +132,14 @@ custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 15
-text = "🏠  Host Room"
+text = "Host Room"
 
 [node name="JoinButton" type="Button" parent="CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox"]
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 15
-text = "🔗  Join Room"
+text = "Join Room"
 
 [node name="LobbyPanel" type="PanelContainer" parent="CenterArea/VBoxContainer"]
 visible = false
@@ -182,7 +182,7 @@ custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 15
-text = "🚀  Start Game"
+text = "Start Game"
 
 [node name="LeaveButton" type="Button" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox"]
 custom_minimum_size = Vector2(130, 46)
