@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using DubbedUp.Core.ProjectFormat;
 using DubbedUp.Core.Scenes;
 using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
@@ -29,6 +31,7 @@ public partial class LobbyScreen : BaseScreen
     private OptionButton? _sceneOptionButton;
     private Label? _guestSceneLabel;
     private Label? _sceneNoticeLabel;
+    private HFlowContainer? _characterListContainer;
     private IReadOnlyList<ScenePackage> _availableScenes = [];
 
     private NetworkLobbyManager? _lobbyManager;
@@ -72,6 +75,7 @@ public partial class LobbyScreen : BaseScreen
         _sceneOptionButton = GetNodeOrNull<OptionButton>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection/SceneOptionButton");
         _guestSceneLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection/GuestSceneLabel");
         _sceneNoticeLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection/SceneNoticeLabel");
+        _characterListContainer = GetNodeOrNull<HFlowContainer>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/CharacterSection/CharacterListContainer");
 
         if (_sceneOptionButton is not null)
         {
@@ -283,13 +287,15 @@ public partial class LobbyScreen : BaseScreen
                 var selectedScene = GetCurrentSelectedScene();
                 if (selectedScene is not null)
                 {
-                    _lobbyManager.SetSelectedScene(selectedScene.SceneId, selectedScene.Title, selectedScene.Checksum);
+                    var sceneJson = ProjectJsonSerializer.SerializeScene(selectedScene.Document);
+                    _lobbyManager.SetSelectedScene(selectedScene.SceneId, selectedScene.Title, selectedScene.Checksum, sceneJson);
                     if (Coordinator is not null)
                     {
                         Coordinator.SelectedScenePackage = selectedScene;
                     }
                 }
 
+                PopulateCharacterList();
                 UpdatePanelsVisibility(true);
                 if (_statusLabel is not null)
                 {
@@ -391,6 +397,31 @@ public partial class LobbyScreen : BaseScreen
             return;
         }
 
+        // Check if all characters with lines in the scene are claimed
+        var players = _lobbyManager.Players.Values.ToList();
+        var requiredCharIds = Coordinator?.SelectedScenePackage?.Document.VoiceSlots
+            .Select(v => v.CharacterId)
+            .Distinct(StringComparer.Ordinal)
+            .ToList() ?? [];
+        var allClaimedCharIds = players.SelectMany(p => p.AssignedCharacterIds).ToHashSet(StringComparer.Ordinal);
+        var unassignedChars = requiredCharIds.Where(cId => !allClaimedCharIds.Contains(cId)).ToList();
+
+        if (unassignedChars.Count > 0)
+        {
+            var sceneChars = Coordinator?.SelectedScenePackage?.Document.Characters ?? [];
+            var unassignedNames = unassignedChars.Select(id => sceneChars.FirstOrDefault(c => c.CharacterId == id)?.DisplayName ?? id);
+            var notice = $"Cannot start: Unassigned character(s): {string.Join(", ", unassignedNames)}. All characters must be claimed before starting.";
+
+            if (_statusLabel is not null) _statusLabel.Text = notice;
+            if (_sceneNoticeLabel is not null)
+            {
+                _sceneNoticeLabel.Text = notice;
+                _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+                _sceneNoticeLabel.Visible = true;
+            }
+            return;
+        }
+
         _lobbyManager.StartGame(sceneId);
     }
 
@@ -472,10 +503,12 @@ public partial class LobbyScreen : BaseScreen
 
         if (_lobbyManager is not null && _lobbyManager.IsHost)
         {
-            _lobbyManager.SetSelectedScene(scene.SceneId, scene.Title, scene.Checksum);
+            var sceneJson = ProjectJsonSerializer.SerializeScene(scene.Document);
+            _lobbyManager.SetSelectedScene(scene.SceneId, scene.Title, scene.Checksum, sceneJson);
         }
 
         UpdateSceneNotice();
+        PopulateCharacterList();
         OnPlayerListUpdated();
     }
 
@@ -487,20 +520,43 @@ public partial class LobbyScreen : BaseScreen
         {
             var workshop = new SteamWorkshopService();
             var all = workshop.GetAvailableScenes();
-            var match = all.FirstOrDefault(p => p.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
-            if (match is not null && Coordinator is not null)
+            var localMatch = all.FirstOrDefault(p => p.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
+            if (localMatch is not null && !string.IsNullOrEmpty(localMatch.VideoFilePath) && File.Exists(localMatch.VideoFilePath))
             {
-                Coordinator.SelectedScenePackage = match;
+                try
+                {
+                    var hostDoc = ProjectJsonSerializer.DeserializeScene(_lobbyManager.SelectedSceneJson);
+                    var transientPackage = new ScenePackage(
+                        hostDoc,
+                        localMatch.PackageDirectory,
+                        localMatch.VideoFilePath,
+                        localMatch.ThumbnailFilePath);
+
+                    if (Coordinator is not null)
+                    {
+                        Coordinator.SelectedScenePackage = transientPackage;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    GD.PrintErr($"Failed to apply host transient scene edit: {ex.Message}");
+                    if (Coordinator is not null)
+                    {
+                        Coordinator.SelectedScenePackage = localMatch;
+                    }
+                }
             }
         }
 
         UpdateSceneNotice();
+        PopulateCharacterList();
         OnPlayerListUpdated();
     }
 
     private void OnSceneCompatibilityUpdated()
     {
         UpdateSceneNotice();
+        PopulateCharacterList();
         OnPlayerListUpdated();
     }
 
@@ -511,7 +567,6 @@ public partial class LobbyScreen : BaseScreen
         var isHost = _lobbyManager.IsHost;
         var sceneTitle = _lobbyManager.SelectedSceneTitle;
         var sceneId = _lobbyManager.SelectedSceneId;
-        var checksum = _lobbyManager.SelectedSceneChecksum;
 
         if (_sceneOptionButton is not null)
         {
@@ -557,40 +612,27 @@ public partial class LobbyScreen : BaseScreen
         {
             var workshop = new SteamWorkshopService();
             var localScene = workshop.GetAvailableScenes().FirstOrDefault(s => s.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
-
-            var isInstalled = localScene is not null;
-            var isMatchingVersion = isInstalled && (string.IsNullOrEmpty(checksum) || string.IsNullOrEmpty(localScene!.Checksum) || localScene.Checksum.Equals(checksum, StringComparison.OrdinalIgnoreCase));
+            var hasVideo = localScene is not null && !string.IsNullOrEmpty(localScene.VideoFilePath) && File.Exists(localScene.VideoFilePath);
 
             if (_guestSceneLabel is not null)
             {
-                if (isInstalled && isMatchingVersion)
+                if (hasVideo)
                 {
-                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (Synchronized)";
+                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (Synchronized with Host Edit)";
                     _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.18f, 0.65f, 0.35f));
-                }
-                else if (isInstalled && !isMatchingVersion)
-                {
-                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (VERSION MISMATCH)";
-                    _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
                 }
                 else
                 {
-                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (NOT INSTALLED)";
+                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (VIDEO NOT INSTALLED)";
                     _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
                 }
             }
 
             if (_sceneNoticeLabel is not null)
             {
-                if (!isInstalled)
+                if (!hasVideo)
                 {
-                    _sceneNoticeLabel.Text = $"You do not have '{sceneTitle}' installed! Host cannot start until you install this scene or the host picks a shared scene.";
-                    _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
-                    _sceneNoticeLabel.Visible = true;
-                }
-                else if (!isMatchingVersion)
-                {
-                    _sceneNoticeLabel.Text = $"Scene '{sceneTitle}' version mismatch! Your local scene files differ from the host's version. Both players must have identical scene files to start.";
+                    _sceneNoticeLabel.Text = $"You do not have the video for '{sceneTitle}' installed! Host cannot start until you install this scene or the host picks a shared scene.";
                     _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
                     _sceneNoticeLabel.Visible = true;
                 }
@@ -600,6 +642,79 @@ public partial class LobbyScreen : BaseScreen
                 }
             }
         }
+    }
+
+    private void PopulateCharacterList()
+    {
+        if (_characterListContainer is null) return;
+
+        foreach (var child in _characterListContainer.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        var scene = Coordinator?.SelectedScenePackage;
+        if (scene is null || _lobbyManager is null) return;
+
+        var characters = scene.Document.Characters;
+        var localPeerId = _lobbyManager.LocalPeerId;
+
+        foreach (var charDef in characters)
+        {
+            var owner = _lobbyManager.Players.Values.FirstOrDefault(p => p.AssignedCharacterIds.Contains(charDef.CharacterId));
+            var btn = new Button
+            {
+                CustomMinimumSize = new Vector2(130, 38),
+            };
+
+            if (owner is null)
+            {
+                // Free to claim
+                btn.Text = charDef.DisplayName;
+                StyleOutlinePill(btn, 14);
+                btn.Disabled = false;
+                var charId = charDef.CharacterId;
+                btn.Pressed += () => _lobbyManager?.ToggleCharacterClaim(charId);
+            }
+            else if (owner.PeerId == localPeerId)
+            {
+                // Claimed by local player (Click to release)
+                btn.Text = $"{charDef.DisplayName} [YOU]";
+                StyleActionPill(btn, new Color(0.600f, 0.480f, 0.950f), 14);
+                btn.Disabled = false;
+                var charId = charDef.CharacterId;
+                btn.Pressed += () => _lobbyManager?.ToggleCharacterClaim(charId);
+            }
+            else
+            {
+                // Claimed by someone else (Locked)
+                btn.Text = $"{charDef.DisplayName} [{owner.PlayerName}]";
+                StyleDisabledPill(btn, 14);
+                btn.Disabled = true;
+            }
+
+            _characterListContainer.AddChild(btn);
+        }
+    }
+
+    private static void StyleDisabledPill(Button btn, int radius)
+    {
+        var box = new StyleBoxFlat
+        {
+            BgColor = new Color(0.92f, 0.93f, 0.96f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.82f, 0.84f, 0.88f),
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomLeft = radius,
+            CornerRadiusBottomRight = radius,
+        };
+        btn.AddThemeStyleboxOverride("disabled", box);
+        btn.AddThemeColorOverride("font_disabled_color", new Color(0.55f, 0.58f, 0.65f));
+        btn.MouseDefaultCursorShape = Control.CursorShape.Forbidden;
     }
 
     private void OnPlayerListUpdated()
@@ -616,6 +731,7 @@ public partial class LobbyScreen : BaseScreen
 
         var players = _lobbyManager.Players.Values.ToList();
         var incompatiblePeersCount = 0;
+        var sceneChars = Coordinator?.SelectedScenePackage?.Document.Characters ?? [];
 
         foreach (var p in players)
         {
@@ -624,7 +740,11 @@ public partial class LobbyScreen : BaseScreen
 
             var hostBadge = p.IsHost ? "[HOST] " : "";
             var readyBadge = p.IsReady ? "[READY]" : "[WAITING]";
-            var charText = string.IsNullOrEmpty(p.AssignedCharacterId) ? "No character" : p.AssignedCharacterId;
+
+            var charNames = p.AssignedCharacterIds
+                .Select(id => sceneChars.FirstOrDefault(c => c.CharacterId == id)?.DisplayName ?? id)
+                .ToList();
+            var charText = charNames.Count > 0 ? string.Join(", ", charNames) : "None";
 
             var sceneBadge = "";
             var hasIssue = false;
@@ -642,7 +762,7 @@ public partial class LobbyScreen : BaseScreen
 
             var label = new Label
             {
-                Text = $"{hostBadge}{p.PlayerName} {readyBadge}{sceneBadge} - Character: {charText}",
+                Text = $"{hostBadge}{p.PlayerName} {readyBadge}{sceneBadge} - Character(s): {charText}",
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
 
@@ -659,11 +779,22 @@ public partial class LobbyScreen : BaseScreen
             _playersListContainer.AddChild(item);
         }
 
+        PopulateCharacterList();
+
         if (_startButton is not null)
         {
             _startButton.Visible = _lobbyManager.IsHost;
             var allReady = players.Count >= 2 && players.All(p => p.IsReady);
-            _startButton.Disabled = !allReady || incompatiblePeersCount > 0;
+            var everyPlayerHasChar = players.All(p => p.AssignedCharacterIds.Length > 0);
+
+            var requiredCharIds = Coordinator?.SelectedScenePackage?.Document.VoiceSlots
+                .Select(v => v.CharacterId)
+                .Distinct(StringComparer.Ordinal)
+                .ToList() ?? [];
+            var allClaimedCharIds = players.SelectMany(p => p.AssignedCharacterIds).ToHashSet(StringComparer.Ordinal);
+            var allRequiredClaimed = requiredCharIds.All(cId => allClaimedCharIds.Contains(cId));
+
+            _startButton.Disabled = !allReady || incompatiblePeersCount > 0 || !everyPlayerHasChar || !allRequiredClaimed;
         }
     }
 
@@ -671,49 +802,70 @@ public partial class LobbyScreen : BaseScreen
     {
         var workshop = new SteamWorkshopService();
         var all = workshop.GetAvailableScenes();
-        var match = all.FirstOrDefault(p => p.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
+        var localMatch = all.FirstOrDefault(p => p.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
 
-        if (match is null)
+        if (localMatch is null || string.IsNullOrEmpty(localMatch.VideoFilePath) || !File.Exists(localMatch.VideoFilePath))
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"Cannot start game: Scene '{sceneId}' is not installed on your system.";
+                _statusLabel.Text = $"Cannot start game: Video for scene '{sceneId}' is not installed on your system.";
             }
             if (_sceneNoticeLabel is not null)
             {
-                _sceneNoticeLabel.Text = $"Cannot start: Scene '{sceneId}' is not installed on your system.";
+                _sceneNoticeLabel.Text = $"Cannot start: Video for scene '{sceneId}' is not installed on your system.";
                 _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
                 _sceneNoticeLabel.Visible = true;
             }
             return;
         }
 
-        if (!string.IsNullOrEmpty(checksum) && !string.IsNullOrEmpty(match.Checksum) && !match.Checksum.Equals(checksum, StringComparison.OrdinalIgnoreCase))
+        // Apply Host's transient scene document in RAM if guest
+        OfficialSceneDocument sceneDoc;
+        if (!_lobbyManager?.IsHost ?? false)
         {
-            if (_statusLabel is not null)
+            try
             {
-                _statusLabel.Text = $"Cannot start game: Scene '{sceneId}' checksum mismatch with host.";
+                var hostDoc = ProjectJsonSerializer.DeserializeScene(_lobbyManager!.SelectedSceneJson);
+                var transientPackage = new ScenePackage(
+                    hostDoc,
+                    localMatch.PackageDirectory,
+                    localMatch.VideoFilePath,
+                    localMatch.ThumbnailFilePath);
+                sceneDoc = hostDoc;
+                if (Coordinator is not null)
+                {
+                    Coordinator.SelectedScenePackage = transientPackage;
+                }
             }
-            if (_sceneNoticeLabel is not null)
+            catch (Exception ex)
             {
-                _sceneNoticeLabel.Text = $"Cannot start: Scene '{sceneId}' files differ from the host version.";
-                _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
-                _sceneNoticeLabel.Visible = true;
+                GD.PrintErr($"Failed to parse host scene document at launch: {ex.Message}");
+                sceneDoc = localMatch.Document;
             }
-            return;
+        }
+        else
+        {
+            sceneDoc = Coordinator?.SelectedScenePackage?.Document ?? localMatch.Document;
         }
 
-        if (Coordinator is not null)
+        // Build characterToPlayerNameMap from claimed characters
+        var charMap = new Dictionary<string, string>();
+        if (_lobbyManager is not null)
         {
-            Coordinator.SelectedScenePackage = match;
+            foreach (var player in _lobbyManager.Players.Values)
+            {
+                foreach (var charId in player.AssignedCharacterIds)
+                {
+                    charMap[charId] = player.PlayerName;
+                }
+            }
         }
 
         var playerNames = _lobbyManager?.Players.Values.Select(p => p.PlayerName) ?? ["Host", "Guest"];
-        var sceneDoc = match.Document;
 
         try
         {
-            Coordinator?.StartSession(playerNames, sceneDoc, DubbedUp.Core.Game.GameMode.CoopDubbing);
+            Coordinator?.StartSession(playerNames, sceneDoc, DubbedUp.Core.Game.GameMode.CoopDubbing, charMap);
             Navigator?.NavigateTo(AppScreen.Recording);
         }
         catch (Exception ex)

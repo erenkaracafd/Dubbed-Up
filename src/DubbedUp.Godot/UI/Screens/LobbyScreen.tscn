@@ -202,6 +202,24 @@ theme_override_font_sizes/font_size = 12
 text = "Warning notice"
 autowrap_mode = 2
 
+[node name="CharacterSeparator" type="HSeparator" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+layout_mode = 2
+
+[node name="CharacterSection" type="VBoxContainer" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="CharacterHeading" type="Label" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/CharacterSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 14
+text = "Character Selection (Click to claim / release):"
+
+[node name="CharacterListContainer" type="HFlowContainer" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/CharacterSection"]
+layout_mode = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
 [node name="ActionSeparator" type="HSeparator" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
 layout_mode = 2
 

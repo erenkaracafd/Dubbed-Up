@@ -63,6 +63,7 @@ public partial class NetworkLobbyManager : Node
     public string SelectedSceneId { get; private set; } = "museum-mixup";
     public string SelectedSceneTitle { get; private set; } = "Museum Mix-up";
     public string SelectedSceneChecksum { get; private set; } = string.Empty;
+    public string SelectedSceneJson { get; private set; } = string.Empty;
 
     public IReadOnlyDictionary<long, bool> PeerSceneCompatibility => _peerSceneCompatibility;
     public IReadOnlyDictionary<long, string> PeerMismatchReasons => _peerMismatchReasons;
@@ -232,8 +233,20 @@ public partial class NetworkLobbyManager : Node
 
     public void SelectCharacter(string characterId)
     {
+        ToggleCharacterClaim(characterId);
+    }
+
+    public void ToggleCharacterClaim(string characterId)
+    {
         var localId = LocalPeerId;
-        Rpc(nameof(SyncPlayerCharacter), localId, characterId);
+        if (IsHost)
+        {
+            ServerToggleCharacter(localId, characterId);
+        }
+        else
+        {
+            RpcId(1, nameof(RequestToggleCharacter), localId, characterId);
+        }
     }
 
     public void SetReadyState(bool isReady)
@@ -242,14 +255,22 @@ public partial class NetworkLobbyManager : Node
         Rpc(nameof(SyncPlayerReady), localId, isReady);
     }
 
-    public void SetSelectedScene(string sceneId, string sceneTitle, string checksum)
+    public void SetSelectedScene(string sceneId, string sceneTitle, string checksum, string sceneJson)
     {
         SelectedSceneId = sceneId;
         SelectedSceneTitle = sceneTitle;
         SelectedSceneChecksum = checksum;
+        SelectedSceneJson = sceneJson;
 
         if (IsHost)
         {
+            // Reset character claims for all players since new scene has different characters
+            foreach (var peerId in _players.Keys.ToList())
+            {
+                _players[peerId] = _players[peerId] with { AssignedCharacterIds = [] };
+                Rpc(nameof(SyncPlayerCharacters), peerId, System.Array.Empty<string>());
+            }
+
             _peerSceneCompatibility[1] = true;
             _peerMismatchReasons.Remove(1);
             foreach (var peerId in _players.Keys)
@@ -261,9 +282,10 @@ public partial class NetworkLobbyManager : Node
                 }
             }
 
-            Rpc(nameof(SyncSelectedScene), sceneId, sceneTitle, checksum);
+            Rpc(nameof(SyncSelectedScene), sceneId, sceneTitle, checksum, sceneJson);
             EmitSignal(SignalName.SelectedSceneChanged, sceneId, sceneTitle, checksum);
             EmitSignal(SignalName.SceneCompatibilityUpdated);
+            EmitSignal(SignalName.PlayerListUpdated);
         }
     }
 
@@ -308,6 +330,7 @@ public partial class NetworkLobbyManager : Node
                 PlayerName = name,
                 IsHost = peerId == 1,
                 IsReady = false,
+                AssignedCharacterIds = [],
             };
 
             if (peerId != 1)
@@ -319,38 +342,37 @@ public partial class NetworkLobbyManager : Node
             // Broadcast full updated player roster to all clients
             foreach (var (id, p) in _players)
             {
-                Rpc(nameof(SyncPlayerInfo), id, p.PlayerName, p.IsHost, p.IsReady, p.AssignedCharacterId ?? string.Empty);
+                Rpc(nameof(SyncPlayerInfo), id, p.PlayerName, p.IsHost, p.IsReady, p.AssignedCharacterIds);
             }
 
-            // Sync currently selected scene and checksum to the newly connected peer
-            RpcId(peerId, nameof(SyncSelectedScene), SelectedSceneId, SelectedSceneTitle, SelectedSceneChecksum);
+            // Sync currently selected scene, checksum, and host scene edit to the newly connected peer
+            RpcId(peerId, nameof(SyncSelectedScene), SelectedSceneId, SelectedSceneTitle, SelectedSceneChecksum, SelectedSceneJson);
         }
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
-    private void SyncSelectedScene(string sceneId, string sceneTitle, string checksum)
+    private void SyncSelectedScene(string sceneId, string sceneTitle, string checksum, string sceneJson)
     {
         SelectedSceneId = sceneId;
         SelectedSceneTitle = sceneTitle;
         SelectedSceneChecksum = checksum;
+        SelectedSceneJson = sceneJson;
         EmitSignal(SignalName.SelectedSceneChanged, sceneId, sceneTitle, checksum);
 
         if (!IsHost)
         {
             var workshop = new SteamWorkshopService();
-            var localScene = workshop.GetAvailableScenes().FirstOrDefault(s => s.SceneId.Equals(sceneId, System.StringComparison.OrdinalIgnoreCase));
+            var localScenes = workshop.GetAvailableScenes();
+            var localScene = localScenes.FirstOrDefault(s => s.SceneId.Equals(sceneId, System.StringComparison.OrdinalIgnoreCase));
             var localId = LocalPeerId;
 
-            if (localScene is null)
+            if (localScene is null || string.IsNullOrEmpty(localScene.VideoFilePath) || !System.IO.File.Exists(localScene.VideoFilePath))
             {
-                RpcId(1, nameof(ReportSceneCompatibility), localId, sceneId, false, "Scene not installed");
-            }
-            else if (!string.IsNullOrEmpty(checksum) && !string.IsNullOrEmpty(localScene.Checksum) && !localScene.Checksum.Equals(checksum, System.StringComparison.OrdinalIgnoreCase))
-            {
-                RpcId(1, nameof(ReportSceneCompatibility), localId, sceneId, false, "Scene version mismatch (content modified)");
+                RpcId(1, nameof(ReportSceneCompatibility), localId, sceneId, false, "Video not installed");
             }
             else
             {
+                // Local video file exists! We use Host's sceneJson in memory.
                 RpcId(1, nameof(ReportSceneCompatibility), localId, sceneId, true, string.Empty);
             }
 
@@ -377,8 +399,59 @@ public partial class NetworkLobbyManager : Node
         }
     }
 
+    private void ServerToggleCharacter(long peerId, string characterId)
+    {
+        if (!IsHost) return;
+
+        // Check if another player already claimed this character
+        var otherOwner = _players.Values.FirstOrDefault(p => p.PeerId != peerId && p.AssignedCharacterIds.Contains(characterId));
+        if (otherOwner is not null)
+        {
+            GD.Print($"Character '{characterId}' is already claimed by {otherOwner.PlayerName}");
+            return;
+        }
+
+        if (_players.TryGetValue(peerId, out var player))
+        {
+            var list = player.AssignedCharacterIds.ToList();
+            if (list.Contains(characterId))
+            {
+                list.Remove(characterId);
+            }
+            else
+            {
+                list.Add(characterId);
+            }
+
+            var updated = list.ToArray();
+            _players[peerId] = player with { AssignedCharacterIds = updated };
+
+            Rpc(nameof(SyncPlayerCharacters), peerId, updated);
+            EmitSignal(SignalName.PlayerListUpdated);
+        }
+    }
+
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
-    private void SyncPlayerInfo(long peerId, string name, bool isHost, bool isReady, string characterId)
+    private void RequestToggleCharacter(long peerId, string characterId)
+    {
+        if (IsHost)
+        {
+            ServerToggleCharacter(peerId, characterId);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncPlayerCharacters(long peerId, string[] characterIds)
+    {
+        if (_players.TryGetValue(peerId, out var player))
+        {
+            _players[peerId] = player with { AssignedCharacterIds = characterIds ?? [] };
+            EmitSignal(SignalName.PlayerListUpdated);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncPlayerInfo(long peerId, string name, bool isHost, bool isReady, string[] characterIds)
     {
         _players[peerId] = new NetworkPlayerInfo
         {
@@ -386,23 +459,10 @@ public partial class NetworkLobbyManager : Node
             PlayerName = name,
             IsHost = isHost,
             IsReady = isReady,
-            AssignedCharacterId = string.IsNullOrEmpty(characterId) ? null : characterId,
+            AssignedCharacterIds = characterIds ?? [],
         };
 
         EmitSignal(SignalName.PlayerListUpdated);
-    }
-
-    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
-    private void SyncPlayerCharacter(long peerId, string characterId)
-    {
-        if (_players.TryGetValue(peerId, out var player))
-        {
-            _players[peerId] = player with
-            {
-                AssignedCharacterId = string.IsNullOrEmpty(characterId) ? null : characterId
-            };
-            EmitSignal(SignalName.PlayerListUpdated);
-        }
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]

@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace DubbedUp.Godot.Network;
 
 /// <summary>
@@ -9,7 +11,9 @@ public sealed record NetworkPlayerInfo
 
     public string PlayerName { get; init; } = "Player";
 
-    public string? AssignedCharacterId { get; init; }
+    public string[] AssignedCharacterIds { get; init; } = [];
+
+    public string? AssignedCharacterId => AssignedCharacterIds.FirstOrDefault();
 
     public bool IsHost { get; init; }
 
