@@ -1,7 +1,10 @@
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using DubbedUp.Godot.Steam;
 using DubbedUp.Godot.Network.VoiceTransport;
 using DubbedUp.Godot.Network.Sync;
+using DubbedUp.Godot.Workshop;
 
 namespace DubbedUp.Godot.Network;
 
@@ -20,7 +23,13 @@ public partial class NetworkLobbyManager : Node
     public delegate void ConnectionStateChangedEventHandler(bool isConnected, string statusMessage);
 
     [Signal]
-    public delegate void GameStartedEventHandler(string sceneId);
+    public delegate void GameStartedEventHandler(string sceneId, string checksum);
+
+    [Signal]
+    public delegate void SelectedSceneChangedEventHandler(string sceneId, string sceneTitle, string checksum);
+
+    [Signal]
+    public delegate void SceneCompatibilityUpdatedEventHandler();
 
     [Signal]
     public delegate void AudioTakeReceivedEventHandler(string voiceSlotId, string senderPlayerId, byte[] audioData);
@@ -41,6 +50,8 @@ public partial class NetworkLobbyManager : Node
     public delegate void SteamStateChangedEventHandler(bool isAvailable, string statusMessage);
 
     private readonly Dictionary<long, NetworkPlayerInfo> _players = [];
+    private readonly Dictionary<long, bool> _peerSceneCompatibility = [];
+    private readonly Dictionary<long, string> _peerMismatchReasons = [];
     private readonly SteamLobbyService _steamLobby = new();
     private readonly VoiceTakeTransportManager _voiceTransport = new();
     private readonly PlaybackSyncCoordinator _syncCoordinator = new();
@@ -48,6 +59,19 @@ public partial class NetworkLobbyManager : Node
     private string _localPlayerName = "Host";
 
     public IReadOnlyDictionary<long, NetworkPlayerInfo> Players => _players;
+
+    public string SelectedSceneId { get; private set; } = "museum-mixup";
+    public string SelectedSceneTitle { get; private set; } = "Museum Mix-up";
+    public string SelectedSceneChecksum { get; private set; } = string.Empty;
+
+    public IReadOnlyDictionary<long, bool> PeerSceneCompatibility => _peerSceneCompatibility;
+    public IReadOnlyDictionary<long, string> PeerMismatchReasons => _peerMismatchReasons;
+
+    public bool AllPeersHaveScene => _peerSceneCompatibility.Count == 0 || _peerSceneCompatibility.Values.All(has => has);
+
+    public bool PeerHasScene(long peerId) => !_peerSceneCompatibility.TryGetValue(peerId, out var has) || has;
+
+    public string GetPeerMismatchReason(long peerId) => _peerMismatchReasons.TryGetValue(peerId, out var r) ? r : string.Empty;
 
     public bool IsHost => Multiplayer.IsServer();
 
@@ -157,8 +181,12 @@ public partial class NetworkLobbyManager : Node
             IsReady = true,
         };
 
+        _peerSceneCompatibility.Clear();
+        _peerSceneCompatibility[1] = true;
+
         EmitSignal(SignalName.ConnectionStateChanged, true, $"Server hosting on port {port}");
         EmitSignal(SignalName.PlayerListUpdated);
+        EmitSignal(SignalName.SceneCompatibilityUpdated);
         return Error.Ok;
     }
 
@@ -195,8 +223,11 @@ public partial class NetworkLobbyManager : Node
         _voiceTransport.Reset();
         _syncCoordinator.Reset();
         _players.Clear();
+        _peerSceneCompatibility.Clear();
+        _peerMismatchReasons.Clear();
         EmitSignal(SignalName.ConnectionStateChanged, false, "Disconnected from lobby.");
         EmitSignal(SignalName.PlayerListUpdated);
+        EmitSignal(SignalName.SceneCompatibilityUpdated);
     }
 
     public void SelectCharacter(string characterId)
@@ -211,6 +242,31 @@ public partial class NetworkLobbyManager : Node
         Rpc(nameof(SyncPlayerReady), localId, isReady);
     }
 
+    public void SetSelectedScene(string sceneId, string sceneTitle, string checksum)
+    {
+        SelectedSceneId = sceneId;
+        SelectedSceneTitle = sceneTitle;
+        SelectedSceneChecksum = checksum;
+
+        if (IsHost)
+        {
+            _peerSceneCompatibility[1] = true;
+            _peerMismatchReasons.Remove(1);
+            foreach (var peerId in _players.Keys)
+            {
+                if (peerId != 1)
+                {
+                    _peerSceneCompatibility[peerId] = false;
+                    _peerMismatchReasons[peerId] = "Verifying scene...";
+                }
+            }
+
+            Rpc(nameof(SyncSelectedScene), sceneId, sceneTitle, checksum);
+            EmitSignal(SignalName.SelectedSceneChanged, sceneId, sceneTitle, checksum);
+            EmitSignal(SignalName.SceneCompatibilityUpdated);
+        }
+    }
+
     public void StartGame(string sceneId)
     {
         if (!IsHost)
@@ -218,7 +274,13 @@ public partial class NetworkLobbyManager : Node
             return;
         }
 
-        Rpc(nameof(RpcStartGame), sceneId);
+        if (!AllPeersHaveScene)
+        {
+            GD.PrintErr("NetworkLobbyManager: Cannot start game because one or more peers do not have the matching scene installed.");
+            return;
+        }
+
+        Rpc(nameof(RpcStartGame), sceneId, SelectedSceneChecksum);
     }
 
     public void BroadcastAudioTake(string voiceSlotId, byte[] audioData, float durationSeconds = 0f)
@@ -248,11 +310,70 @@ public partial class NetworkLobbyManager : Node
                 IsReady = false,
             };
 
+            if (peerId != 1)
+            {
+                _peerSceneCompatibility[peerId] = false;
+                _peerMismatchReasons[peerId] = "Verifying scene...";
+            }
+
             // Broadcast full updated player roster to all clients
             foreach (var (id, p) in _players)
             {
                 Rpc(nameof(SyncPlayerInfo), id, p.PlayerName, p.IsHost, p.IsReady, p.AssignedCharacterId ?? string.Empty);
             }
+
+            // Sync currently selected scene and checksum to the newly connected peer
+            RpcId(peerId, nameof(SyncSelectedScene), SelectedSceneId, SelectedSceneTitle, SelectedSceneChecksum);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncSelectedScene(string sceneId, string sceneTitle, string checksum)
+    {
+        SelectedSceneId = sceneId;
+        SelectedSceneTitle = sceneTitle;
+        SelectedSceneChecksum = checksum;
+        EmitSignal(SignalName.SelectedSceneChanged, sceneId, sceneTitle, checksum);
+
+        if (!IsHost)
+        {
+            var workshop = new SteamWorkshopService();
+            var localScene = workshop.GetAvailableScenes().FirstOrDefault(s => s.SceneId.Equals(sceneId, System.StringComparison.OrdinalIgnoreCase));
+            var localId = LocalPeerId;
+
+            if (localScene is null)
+            {
+                RpcId(1, nameof(ReportSceneCompatibility), localId, sceneId, false, "Scene not installed");
+            }
+            else if (!string.IsNullOrEmpty(checksum) && !string.IsNullOrEmpty(localScene.Checksum) && !localScene.Checksum.Equals(checksum, System.StringComparison.OrdinalIgnoreCase))
+            {
+                RpcId(1, nameof(ReportSceneCompatibility), localId, sceneId, false, "Scene version mismatch (content modified)");
+            }
+            else
+            {
+                RpcId(1, nameof(ReportSceneCompatibility), localId, sceneId, true, string.Empty);
+            }
+
+            EmitSignal(SignalName.SceneCompatibilityUpdated);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void ReportSceneCompatibility(long peerId, string sceneId, bool hasScene, string reason)
+    {
+        if (IsHost && sceneId.Equals(SelectedSceneId, System.StringComparison.OrdinalIgnoreCase))
+        {
+            _peerSceneCompatibility[peerId] = hasScene;
+            if (!hasScene && !string.IsNullOrEmpty(reason))
+            {
+                _peerMismatchReasons[peerId] = reason;
+            }
+            else
+            {
+                _peerMismatchReasons.Remove(peerId);
+            }
+            EmitSignal(SignalName.SceneCompatibilityUpdated);
+            EmitSignal(SignalName.PlayerListUpdated);
         }
     }
 
@@ -295,9 +416,9 @@ public partial class NetworkLobbyManager : Node
     }
 
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true)]
-    private void RpcStartGame(string sceneId)
+    private void RpcStartGame(string sceneId, string checksum)
     {
-        EmitSignal(SignalName.GameStarted, sceneId);
+        EmitSignal(SignalName.GameStarted, sceneId, checksum);
     }
 
     private void OnVoiceTakeTransferCompleted(string transferId, string voiceSlotId, long senderPeerId, string senderName, byte[] audioData)
@@ -336,7 +457,10 @@ public partial class NetworkLobbyManager : Node
         GD.Print($"Multiplayer peer disconnected: {id}");
         _syncCoordinator.ReadyBarrier.UnregisterPeer(id);
         _players.Remove(id);
+        _peerSceneCompatibility.Remove(id);
+        _peerMismatchReasons.Remove(id);
         EmitSignal(SignalName.PlayerListUpdated);
+        EmitSignal(SignalName.SceneCompatibilityUpdated);
     }
 
     private void OnConnectedToServer()

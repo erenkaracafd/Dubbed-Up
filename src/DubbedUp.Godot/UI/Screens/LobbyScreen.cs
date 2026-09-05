@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using DubbedUp.Core.Scenes;
 using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
 using DubbedUp.Godot.Network;
@@ -22,6 +26,11 @@ public partial class LobbyScreen : BaseScreen
     private Control? _connectionPanel;
     private Control? _lobbyPanel;
 
+    private OptionButton? _sceneOptionButton;
+    private Label? _guestSceneLabel;
+    private Label? _sceneNoticeLabel;
+    private IReadOnlyList<ScenePackage> _availableScenes = [];
+
     private NetworkLobbyManager? _lobbyManager;
     private bool _isLocalReady = false;
 
@@ -35,6 +44,8 @@ public partial class LobbyScreen : BaseScreen
             _lobbyManager.PlayerListUpdated += OnPlayerListUpdated;
             _lobbyManager.ConnectionStateChanged += OnConnectionStateChanged;
             _lobbyManager.GameStarted += OnGameStarted;
+            _lobbyManager.SelectedSceneChanged += OnSelectedSceneChanged;
+            _lobbyManager.SceneCompatibilityUpdated += OnSceneCompatibilityUpdated;
 
             UpdatePanelsVisibility(_lobbyManager.IsConnectedToLobby);
             OnPlayerListUpdated();
@@ -58,6 +69,17 @@ public partial class LobbyScreen : BaseScreen
         _leaveButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/LeaveButton");
         _backButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/BackButton");
 
+        _sceneOptionButton = GetNodeOrNull<OptionButton>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection/SceneOptionButton");
+        _guestSceneLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection/GuestSceneLabel");
+        _sceneNoticeLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection/SceneNoticeLabel");
+
+        if (_sceneOptionButton is not null)
+        {
+            _sceneOptionButton.ItemSelected += OnSceneOptionSelected;
+            StyleOptionButton(_sceneOptionButton);
+        }
+
+        PopulateSceneDropdown();
         ApplyStyling();
 
         if (_hostButton is not null) SetupButton(_hostButton, OnHostPressed);
@@ -227,6 +249,8 @@ public partial class LobbyScreen : BaseScreen
             _lobbyManager.PlayerListUpdated -= OnPlayerListUpdated;
             _lobbyManager.ConnectionStateChanged -= OnConnectionStateChanged;
             _lobbyManager.GameStarted -= OnGameStarted;
+            _lobbyManager.SelectedSceneChanged -= OnSelectedSceneChanged;
+            _lobbyManager.SceneCompatibilityUpdated -= OnSceneCompatibilityUpdated;
         }
     }
 
@@ -234,6 +258,11 @@ public partial class LobbyScreen : BaseScreen
     {
         if (_connectionPanel is not null) _connectionPanel.Visible = !inLobby;
         if (_lobbyPanel is not null) _lobbyPanel.Visible = inLobby;
+
+        if (inLobby)
+        {
+            UpdateSceneNotice();
+        }
     }
 
     private void OnHostPressed()
@@ -251,6 +280,16 @@ public partial class LobbyScreen : BaseScreen
             var err = _lobbyManager.HostGame(port, name);
             if (err == Error.Ok)
             {
+                var selectedScene = GetCurrentSelectedScene();
+                if (selectedScene is not null)
+                {
+                    _lobbyManager.SetSelectedScene(selectedScene.SceneId, selectedScene.Title, selectedScene.Checksum);
+                    if (Coordinator is not null)
+                    {
+                        Coordinator.SelectedScenePackage = selectedScene;
+                    }
+                }
+
                 UpdatePanelsVisibility(true);
                 if (_statusLabel is not null)
                 {
@@ -322,7 +361,36 @@ public partial class LobbyScreen : BaseScreen
             return;
         }
 
-        var sceneId = Coordinator?.SelectedScenePackage?.SceneId ?? "museum-mixup";
+        var sceneId = _lobbyManager.SelectedSceneId;
+        var sceneTitle = _lobbyManager.SelectedSceneTitle;
+
+        // Check if any peer is missing this scene or has checksum mismatch
+        var incompatiblePeers = _lobbyManager.Players.Values
+            .Where(p => !p.IsHost && !_lobbyManager.PeerHasScene(p.PeerId))
+            .ToList();
+
+        if (incompatiblePeers.Count > 0)
+        {
+            var details = incompatiblePeers.Select(p =>
+            {
+                var reason = _lobbyManager.GetPeerMismatchReason(p.PeerId);
+                return string.IsNullOrEmpty(reason) ? p.PlayerName : $"{p.PlayerName} ({reason})";
+            });
+            var detailText = string.Join(", ", details);
+
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = $"Cannot start: {detailText}.";
+            }
+            if (_sceneNoticeLabel is not null)
+            {
+                _sceneNoticeLabel.Text = $"Cannot start: {detailText}. Please pick a matching scene.";
+                _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+                _sceneNoticeLabel.Visible = true;
+            }
+            return;
+        }
+
         _lobbyManager.StartGame(sceneId);
     }
 
@@ -342,6 +410,198 @@ public partial class LobbyScreen : BaseScreen
         UpdatePanelsVisibility(isConnected);
     }
 
+    private void PopulateSceneDropdown()
+    {
+        if (_sceneOptionButton is null) return;
+        _sceneOptionButton.Clear();
+
+        var workshop = new SteamWorkshopService();
+        _availableScenes = workshop.GetAvailableScenes();
+
+        if (_availableScenes.Count == 0)
+        {
+            _sceneOptionButton.AddItem("No scenes found", 0);
+            return;
+        }
+
+        var currentSelectedId = Coordinator?.SelectedScenePackage?.SceneId ?? _availableScenes[0].SceneId;
+        var selectIndex = 0;
+
+        for (var i = 0; i < _availableScenes.Count; i++)
+        {
+            var sc = _availableScenes[i];
+            var charCount = sc.Document.Characters.Count;
+            var durSec = sc.DurationMilliseconds / 1000f;
+            var text = $"{sc.Title} ({charCount} Chars, {durSec:F0}s)";
+            _sceneOptionButton.AddItem(text, i);
+
+            if (sc.SceneId.Equals(currentSelectedId, StringComparison.OrdinalIgnoreCase))
+            {
+                selectIndex = i;
+            }
+        }
+
+        _sceneOptionButton.Selected = selectIndex;
+        var initialScene = _availableScenes[selectIndex];
+        if (Coordinator is not null && Coordinator.SelectedScenePackage is null)
+        {
+            Coordinator.SelectedScenePackage = initialScene;
+        }
+    }
+
+    private ScenePackage? GetCurrentSelectedScene()
+    {
+        if (_availableScenes.Count == 0) return null;
+        var index = _sceneOptionButton?.Selected ?? 0;
+        if (index >= 0 && index < _availableScenes.Count)
+        {
+            return _availableScenes[index];
+        }
+        return _availableScenes[0];
+    }
+
+    private void OnSceneOptionSelected(long index)
+    {
+        if (_availableScenes.Count == 0 || index < 0 || index >= _availableScenes.Count) return;
+        var scene = _availableScenes[(int)index];
+
+        if (Coordinator is not null)
+        {
+            Coordinator.SelectedScenePackage = scene;
+        }
+
+        if (_lobbyManager is not null && _lobbyManager.IsHost)
+        {
+            _lobbyManager.SetSelectedScene(scene.SceneId, scene.Title, scene.Checksum);
+        }
+
+        UpdateSceneNotice();
+        OnPlayerListUpdated();
+    }
+
+    private void OnSelectedSceneChanged(string sceneId, string sceneTitle, string checksum)
+    {
+        if (_lobbyManager is null) return;
+
+        if (!_lobbyManager.IsHost)
+        {
+            var workshop = new SteamWorkshopService();
+            var all = workshop.GetAvailableScenes();
+            var match = all.FirstOrDefault(p => p.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
+            if (match is not null && Coordinator is not null)
+            {
+                Coordinator.SelectedScenePackage = match;
+            }
+        }
+
+        UpdateSceneNotice();
+        OnPlayerListUpdated();
+    }
+
+    private void OnSceneCompatibilityUpdated()
+    {
+        UpdateSceneNotice();
+        OnPlayerListUpdated();
+    }
+
+    private void UpdateSceneNotice()
+    {
+        if (_lobbyManager is null) return;
+
+        var isHost = _lobbyManager.IsHost;
+        var sceneTitle = _lobbyManager.SelectedSceneTitle;
+        var sceneId = _lobbyManager.SelectedSceneId;
+        var checksum = _lobbyManager.SelectedSceneChecksum;
+
+        if (_sceneOptionButton is not null)
+        {
+            _sceneOptionButton.Visible = isHost;
+        }
+
+        if (_guestSceneLabel is not null)
+        {
+            _guestSceneLabel.Visible = !isHost;
+        }
+
+        if (isHost)
+        {
+            var incompatiblePeers = _lobbyManager.Players.Values
+                .Where(p => !p.IsHost && !_lobbyManager.PeerHasScene(p.PeerId))
+                .ToList();
+
+            if (incompatiblePeers.Count > 0)
+            {
+                var details = incompatiblePeers.Select(p =>
+                {
+                    var reason = _lobbyManager.GetPeerMismatchReason(p.PeerId);
+                    return string.IsNullOrEmpty(reason) ? p.PlayerName : $"{p.PlayerName} ({reason})";
+                });
+                var detailText = string.Join(", ", details);
+
+                if (_sceneNoticeLabel is not null)
+                {
+                    _sceneNoticeLabel.Text = $"Cannot start: {detailText}. Please pick a matching scene.";
+                    _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+                    _sceneNoticeLabel.Visible = true;
+                }
+            }
+            else
+            {
+                if (_sceneNoticeLabel is not null)
+                {
+                    _sceneNoticeLabel.Visible = false;
+                }
+            }
+        }
+        else
+        {
+            var workshop = new SteamWorkshopService();
+            var localScene = workshop.GetAvailableScenes().FirstOrDefault(s => s.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
+
+            var isInstalled = localScene is not null;
+            var isMatchingVersion = isInstalled && (string.IsNullOrEmpty(checksum) || string.IsNullOrEmpty(localScene!.Checksum) || localScene.Checksum.Equals(checksum, StringComparison.OrdinalIgnoreCase));
+
+            if (_guestSceneLabel is not null)
+            {
+                if (isInstalled && isMatchingVersion)
+                {
+                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (Synchronized)";
+                    _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.18f, 0.65f, 0.35f));
+                }
+                else if (isInstalled && !isMatchingVersion)
+                {
+                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (VERSION MISMATCH)";
+                    _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+                }
+                else
+                {
+                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (NOT INSTALLED)";
+                    _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+                }
+            }
+
+            if (_sceneNoticeLabel is not null)
+            {
+                if (!isInstalled)
+                {
+                    _sceneNoticeLabel.Text = $"You do not have '{sceneTitle}' installed! Host cannot start until you install this scene or the host picks a shared scene.";
+                    _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+                    _sceneNoticeLabel.Visible = true;
+                }
+                else if (!isMatchingVersion)
+                {
+                    _sceneNoticeLabel.Text = $"Scene '{sceneTitle}' version mismatch! Your local scene files differ from the host's version. Both players must have identical scene files to start.";
+                    _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+                    _sceneNoticeLabel.Visible = true;
+                }
+                else
+                {
+                    _sceneNoticeLabel.Visible = false;
+                }
+            }
+        }
+    }
+
     private void OnPlayerListUpdated()
     {
         if (_playersListContainer is null || _lobbyManager is null)
@@ -355,6 +615,8 @@ public partial class LobbyScreen : BaseScreen
         }
 
         var players = _lobbyManager.Players.Values.ToList();
+        var incompatiblePeersCount = 0;
+
         foreach (var p in players)
         {
             var item = new HBoxContainer();
@@ -364,11 +626,35 @@ public partial class LobbyScreen : BaseScreen
             var readyBadge = p.IsReady ? "[READY]" : "[WAITING]";
             var charText = string.IsNullOrEmpty(p.AssignedCharacterId) ? "No character" : p.AssignedCharacterId;
 
+            var sceneBadge = "";
+            var hasIssue = false;
+            if (!p.IsHost)
+            {
+                var hasScene = _lobbyManager.PeerHasScene(p.PeerId);
+                if (!hasScene)
+                {
+                    var reason = _lobbyManager.GetPeerMismatchReason(p.PeerId);
+                    sceneBadge = string.IsNullOrEmpty(reason) ? " - [MISSING SCENE]" : $" - [{reason.ToUpperInvariant()}]";
+                    incompatiblePeersCount++;
+                    hasIssue = true;
+                }
+            }
+
             var label = new Label
             {
-                Text = $"{hostBadge}{p.PlayerName} {readyBadge} - Character: {charText}",
+                Text = $"{hostBadge}{p.PlayerName} {readyBadge}{sceneBadge} - Character: {charText}",
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
+
+            if (hasIssue)
+            {
+                label.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+            }
+            else
+            {
+                label.AddThemeColorOverride("font_color", new Color(0.18f, 0.16f, 0.38f));
+            }
+
             item.AddChild(label);
             _playersListContainer.AddChild(item);
         }
@@ -376,15 +662,54 @@ public partial class LobbyScreen : BaseScreen
         if (_startButton is not null)
         {
             _startButton.Visible = _lobbyManager.IsHost;
-            _startButton.Disabled = players.Count < 2 || players.Any(p => !p.IsReady);
+            var allReady = players.Count >= 2 && players.All(p => p.IsReady);
+            _startButton.Disabled = !allReady || incompatiblePeersCount > 0;
         }
     }
 
-    private void OnGameStarted(string sceneId)
+    private void OnGameStarted(string sceneId, string checksum)
     {
-        // Transition to Recording screen when host starts the match
+        var workshop = new SteamWorkshopService();
+        var all = workshop.GetAvailableScenes();
+        var match = all.FirstOrDefault(p => p.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
+
+        if (match is null)
+        {
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = $"Cannot start game: Scene '{sceneId}' is not installed on your system.";
+            }
+            if (_sceneNoticeLabel is not null)
+            {
+                _sceneNoticeLabel.Text = $"Cannot start: Scene '{sceneId}' is not installed on your system.";
+                _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+                _sceneNoticeLabel.Visible = true;
+            }
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(checksum) && !string.IsNullOrEmpty(match.Checksum) && !match.Checksum.Equals(checksum, StringComparison.OrdinalIgnoreCase))
+        {
+            if (_statusLabel is not null)
+            {
+                _statusLabel.Text = $"Cannot start game: Scene '{sceneId}' checksum mismatch with host.";
+            }
+            if (_sceneNoticeLabel is not null)
+            {
+                _sceneNoticeLabel.Text = $"Cannot start: Scene '{sceneId}' files differ from the host version.";
+                _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
+                _sceneNoticeLabel.Visible = true;
+            }
+            return;
+        }
+
+        if (Coordinator is not null)
+        {
+            Coordinator.SelectedScenePackage = match;
+        }
+
         var playerNames = _lobbyManager?.Players.Values.Select(p => p.PlayerName) ?? ["Host", "Guest"];
-        var sceneDoc = Coordinator?.SelectedScenePackage?.Document;
+        var sceneDoc = match.Document;
 
         try
         {
@@ -398,6 +723,47 @@ public partial class LobbyScreen : BaseScreen
                 _statusLabel.Text = $"Launch error: {ex.Message}";
             }
         }
+    }
+
+    private static void StyleOptionButton(OptionButton btn)
+    {
+        var normal = new StyleBoxFlat
+        {
+            BgColor = new Color(0.970f, 0.980f, 0.995f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.820f, 0.860f, 0.920f),
+            CornerRadiusTopLeft = 10,
+            CornerRadiusTopRight = 10,
+            CornerRadiusBottomLeft = 10,
+            CornerRadiusBottomRight = 10,
+            ContentMarginLeft = 14,
+            ContentMarginRight = 14
+        };
+        var hover = new StyleBoxFlat
+        {
+            BgColor = Colors.White,
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.460f, 0.380f, 0.920f),
+            CornerRadiusTopLeft = 10,
+            CornerRadiusTopRight = 10,
+            CornerRadiusBottomLeft = 10,
+            CornerRadiusBottomRight = 10,
+            ContentMarginLeft = 14,
+            ContentMarginRight = 14
+        };
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", normal);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
+        btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
     }
 }
 
