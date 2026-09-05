@@ -236,19 +236,14 @@ public partial class TimelineWaveformEditor : Control
             DrawCircle(new Vector2(midX, midY), dotRadius, isSelected ? new Color(0.3f, 1.0f, 0.5f, 1.0f) : new Color(0.9f, 0.95f, 1.0f, 0.95f));
             DrawArc(new Vector2(midX, midY), dotRadius + 1.5f, 0, Mathf.Tau, 16, borderColor, 1.2f);
 
-            // Header Tag (Number & Character Name)
-            var tagText = $"#{i + 1} {slot.CharacterName}";
-            var tagWidth = Math.Min(width, 160);
-            var tagBgRect = new Rect2(xStart, yTop, tagWidth, 16);
-            DrawRect(tagBgRect, new Color(0.0f, 0.0f, 0.0f, 0.80f));
-            DrawString(font, new Vector2(xStart + 4, yTop + 12), tagText, HorizontalAlignment.Left, (int)tagWidth - 20, 11, new Color(1.0f, 1.0f, 1.0f, 1.0f));
-
-            // Delete 'x' Icon button at top right of the box if width allows
-            if (width >= 35)
+            // Character Name (Minimal, clean, no heavy black bar or delete icon)
+            if (width >= 16)
             {
-                var deleteIconRect = new Rect2(xStart + width - 16, yTop, 16, 16);
-                DrawRect(deleteIconRect, isSelected ? new Color(0.9f, 0.2f, 0.2f, 0.9f) : new Color(0.0f, 0.0f, 0.0f, 0.7f));
-                DrawString(font, new Vector2(xStart + width - 13, yTop + 12), "✕", HorizontalAlignment.Left, -1, 10, new Color(1.0f, 1.0f, 1.0f, 1.0f));
+                var nameText = slot.CharacterName;
+                var maxTextWidth = (int)Math.Max(10, width - 8);
+                // Subtle text shadow for crisp legibility over waveform
+                DrawString(font, new Vector2(xStart + 5, yTop + 13), nameText, HorizontalAlignment.Left, maxTextWidth, 11, new Color(0.0f, 0.0f, 0.0f, 0.85f));
+                DrawString(font, new Vector2(xStart + 4, yTop + 12), nameText, HorizontalAlignment.Left, maxTextWidth, 11, isSelected ? new Color(0.4f, 1.0f, 0.6f, 1.0f) : Colors.White);
             }
         }
 
@@ -330,13 +325,6 @@ public partial class TimelineWaveformEditor : Control
 
                         if (mouseX >= x1 - 6 && mouseX <= x2 + 6)
                         {
-                            // Check delete icon hit (top-right 16x16 area)
-                            if (mouseY >= 16 && mouseY <= 32 && mouseX >= x2 - 18 && mouseX <= x2 + 2)
-                            {
-                                EmitSignal(SignalName.SlotDeleteRequested, i);
-                                return;
-                            }
-
                             hitSlot = i;
                             // Check resize handles (within 8px of edges)
                             if (Math.Abs(mouseX - x1) <= 8)
