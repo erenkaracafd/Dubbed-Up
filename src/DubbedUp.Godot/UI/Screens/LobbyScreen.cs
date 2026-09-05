@@ -43,6 +43,11 @@ public partial class LobbyScreen : BaseScreen
 
     public override void _Ready()
     {
+        _statusLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/StatusLabel");
+        _connectionPanel = GetNodeOrNull<Control>("CenterArea/VBoxContainer/ConnectionPanel");
+        _lobbyPanel = GetNodeOrNull<Control>("CenterArea/VBoxContainer/LobbyPanel");
+        _playersListContainer = GetNodeOrNull<VBoxContainer>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/PlayersListContainer");
+
         _playerNameInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PlayerNameInput");
         _addressInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/AddressInput");
         _portInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PortInput");
@@ -56,6 +61,21 @@ public partial class LobbyScreen : BaseScreen
         ApplyStyling();
 
         if (_hostButton is not null) SetupButton(_hostButton, OnHostPressed);
+        if (_joinButton is not null) SetupButton(_joinButton, OnJoinPressed);
+        if (_readyButton is not null) SetupButton(_readyButton, OnReadyPressed);
+        if (_startButton is not null) SetupButton(_startButton, OnStartPressed);
+        if (_leaveButton is not null) SetupButton(_leaveButton, OnLeavePressed);
+        if (_backButton is not null) SetupButton(_backButton, OnBackPressed);
+
+        if (_lobbyManager is not null)
+        {
+            UpdatePanelsVisibility(_lobbyManager.IsConnectedToLobby);
+            OnPlayerListUpdated();
+        }
+        else
+        {
+            UpdatePanelsVisibility(false);
+        }
     }
 
     private void SetupButton(Button btn, Action action)
@@ -151,6 +171,23 @@ public partial class LobbyScreen : BaseScreen
         btn.AddThemeStyleboxOverride("focus", hover);
         btn.AddThemeColorOverride("font_color", Colors.White);
         btn.AddThemeColorOverride("font_hover_color", Colors.White);
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+        btn.PivotOffset = new Vector2(btn.CustomMinimumSize.X > 0 ? btn.CustomMinimumSize.X / 2f : 60f, 23f);
+
+        btn.MouseEntered += () =>
+        {
+            var tween = btn.CreateTween();
+            tween.TweenProperty(btn, "scale", new Vector2(1.04f, 1.04f), 0.12)
+                .SetTrans(Tween.TransitionType.Back)
+                .SetEase(Tween.EaseType.Out);
+        };
+        btn.MouseExited += () =>
+        {
+            var tween = btn.CreateTween();
+            tween.TweenProperty(btn, "scale", Vector2.One, 0.10)
+                .SetTrans(Tween.TransitionType.Quad)
+                .SetEase(Tween.EaseType.Out);
+        };
     }
 
     private static void StyleOutlinePill(Button btn, int radius)
@@ -164,6 +201,23 @@ public partial class LobbyScreen : BaseScreen
         btn.AddThemeStyleboxOverride("focus", hover);
         btn.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
         btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+        btn.PivotOffset = new Vector2(btn.CustomMinimumSize.X > 0 ? btn.CustomMinimumSize.X / 2f : 55f, 18f);
+
+        btn.MouseEntered += () =>
+        {
+            var tween = btn.CreateTween();
+            tween.TweenProperty(btn, "scale", new Vector2(1.04f, 1.04f), 0.12)
+                .SetTrans(Tween.TransitionType.Back)
+                .SetEase(Tween.EaseType.Out);
+        };
+        btn.MouseExited += () =>
+        {
+            var tween = btn.CreateTween();
+            tween.TweenProperty(btn, "scale", Vector2.One, 0.10)
+                .SetTrans(Tween.TransitionType.Quad)
+                .SetEase(Tween.EaseType.Out);
+        };
     }
 
     public override void _ExitTree()
@@ -189,7 +243,7 @@ public partial class LobbyScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"⏳ Starting server on port {port}...";
+            _statusLabel.Text = $"Starting server on port {port}...";
         }
 
         if (_lobbyManager is not null)
@@ -200,14 +254,14 @@ public partial class LobbyScreen : BaseScreen
                 UpdatePanelsVisibility(true);
                 if (_statusLabel is not null)
                 {
-                    _statusLabel.Text = $"✅ Hosting lobby on port {port}. Waiting for players...";
+                    _statusLabel.Text = $"Hosting lobby on port {port}. Waiting for players...";
                 }
             }
             else
             {
                 if (_statusLabel is not null)
                 {
-                    _statusLabel.Text = $"❌ Failed to host server on port {port}: {err}";
+                    _statusLabel.Text = $"Failed to host server on port {port}: {err}";
                 }
             }
         }
@@ -215,7 +269,7 @@ public partial class LobbyScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "❌ Network manager not available.";
+                _statusLabel.Text = "Network manager not available.";
             }
         }
     }
@@ -228,7 +282,7 @@ public partial class LobbyScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"⏳ Connecting to host at {addr}:{port}...";
+            _statusLabel.Text = $"Connecting to host at {addr}:{port}...";
         }
 
         if (_lobbyManager is not null)
@@ -238,7 +292,7 @@ public partial class LobbyScreen : BaseScreen
             {
                 if (_statusLabel is not null)
                 {
-                    _statusLabel.Text = $"❌ Failed to initiate connection: {err}";
+                    _statusLabel.Text = $"Failed to initiate connection: {err}";
                 }
             }
         }
@@ -307,7 +361,7 @@ public partial class LobbyScreen : BaseScreen
             item.AddThemeConstantOverride("separation", 14);
 
             var hostBadge = p.IsHost ? "[HOST] " : "";
-            var readyBadge = p.IsReady ? "✅" : "⏳";
+            var readyBadge = p.IsReady ? "[READY]" : "[WAITING]";
             var charText = string.IsNullOrEmpty(p.AssignedCharacterId) ? "No character" : p.AssignedCharacterId;
 
             var label = new Label
