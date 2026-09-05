@@ -95,7 +95,11 @@ public sealed class LocalSessionCoordinator
         ],
     };
 
-    public void StartSession(IEnumerable<string> playerNames, OfficialSceneDocument? scene = null, GameMode mode = GameMode.CoopDubbing)
+    public void StartSession(
+        IEnumerable<string> playerNames,
+        OfficialSceneDocument? scene = null,
+        GameMode mode = GameMode.CoopDubbing,
+        IReadOnlyDictionary<string, string>? characterToPlayerNameMap = null)
     {
         ArgumentNullException.ThrowIfNull(playerNames);
         var names = playerNames.Where(name => !string.IsNullOrWhiteSpace(name)).ToArray();
@@ -113,7 +117,7 @@ public sealed class LocalSessionCoordinator
         ScoreBoard = players.Length >= 2 ? ScoreBoard.Create(players.Select(p => p.PlayerId)) : null;
         CurrentScene = scene ?? CreateDefaultScene();
 
-        StartRoundInternal(CurrentScene);
+        StartRoundInternal(CurrentScene, characterToPlayerNameMap);
     }
 
     public void StartNextRound(OfficialSceneDocument? scene = null)
@@ -132,7 +136,9 @@ public sealed class LocalSessionCoordinator
         StartRoundInternal(CurrentScene);
     }
 
-    private void StartRoundInternal(OfficialSceneDocument scene)
+    private void StartRoundInternal(
+        OfficialSceneDocument scene,
+        IReadOnlyDictionary<string, string>? characterToPlayerNameMap = null)
     {
         if (CurrentSession is null)
         {
@@ -142,7 +148,7 @@ public sealed class LocalSessionCoordinator
         var roundId = $"round-{CurrentSession.Rounds.Count + 1}";
         ActiveRound = CurrentSession.StartRound(roundId, scene);
 
-        // Assign all characters that have voice slots round-robin to available players
+        // Assign characters that have voice slots based on map or round-robin
         var players = CurrentSession.Players;
         var requiredCharacterIds = scene.VoiceSlots
             .Select(slot => slot.CharacterId)
@@ -152,8 +158,16 @@ public sealed class LocalSessionCoordinator
         for (var i = 0; i < requiredCharacterIds.Count; i++)
         {
             var charId = requiredCharacterIds[i];
-            var player = players[i % players.Count];
-            ActiveRound.AssignCharacter(charId, player.PlayerId);
+            Player? assignedPlayer = null;
+
+            if (characterToPlayerNameMap is not null &&
+                characterToPlayerNameMap.TryGetValue(charId, out var targetPlayerName))
+            {
+                assignedPlayer = players.FirstOrDefault(p => string.Equals(p.DisplayName, targetPlayerName, StringComparison.OrdinalIgnoreCase));
+            }
+
+            assignedPlayer ??= players[i % players.Count];
+            ActiveRound.AssignCharacter(charId, assignedPlayer.PlayerId);
         }
 
         ActiveRound.StartRecording();
