@@ -49,6 +49,12 @@ public partial class NetworkLobbyManager : Node
     [Signal]
     public delegate void SteamStateChangedEventHandler(bool isAvailable, string statusMessage);
 
+    [Signal]
+    public delegate void RecordingSlotChangedEventHandler(int slotIndex);
+
+    [Signal]
+    public delegate void ProceedToPlaybackTriggeredEventHandler();
+
     private readonly Dictionary<long, NetworkPlayerInfo> _players = [];
     private readonly Dictionary<long, bool> _peerSceneCompatibility = [];
     private readonly Dictionary<long, string> _peerMismatchReasons = [];
@@ -64,6 +70,7 @@ public partial class NetworkLobbyManager : Node
     public string SelectedSceneTitle { get; private set; } = "Museum Mix-up";
     public string SelectedSceneChecksum { get; private set; } = string.Empty;
     public string SelectedSceneJson { get; private set; } = string.Empty;
+    public int CurrentRecordingSlotIndex { get; private set; } = 0;
 
     public IReadOnlyDictionary<long, bool> PeerSceneCompatibility => _peerSceneCompatibility;
     public IReadOnlyDictionary<long, string> PeerMismatchReasons => _peerMismatchReasons;
@@ -226,6 +233,7 @@ public partial class NetworkLobbyManager : Node
         _players.Clear();
         _peerSceneCompatibility.Clear();
         _peerMismatchReasons.Clear();
+        CurrentRecordingSlotIndex = 0;
         EmitSignal(SignalName.ConnectionStateChanged, false, "Disconnected from lobby.");
         EmitSignal(SignalName.PlayerListUpdated);
         EmitSignal(SignalName.SceneCompatibilityUpdated);
@@ -308,6 +316,32 @@ public partial class NetworkLobbyManager : Node
     public void BroadcastAudioTake(string voiceSlotId, byte[] audioData, float durationSeconds = 0f)
     {
         _voiceTransport.SendVoiceTake(voiceSlotId, _localPlayerName, audioData, durationSeconds);
+    }
+
+    public void SetRecordingSlotIndex(int slotIndex)
+    {
+        if (!IsHost) return;
+        CurrentRecordingSlotIndex = slotIndex;
+        Rpc(nameof(SyncRecordingSlotIndex), slotIndex);
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = false)]
+    private void SyncRecordingSlotIndex(int slotIndex)
+    {
+        CurrentRecordingSlotIndex = slotIndex;
+        EmitSignal(SignalName.RecordingSlotChanged, slotIndex);
+    }
+
+    public void TriggerProceedToPlayback()
+    {
+        if (!IsHost) return;
+        Rpc(nameof(RpcProceedToPlayback));
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true)]
+    private void RpcProceedToPlayback()
+    {
+        EmitSignal(SignalName.ProceedToPlaybackTriggered);
     }
 
     public void StartClockSync() => _syncCoordinator.StartClockSync();

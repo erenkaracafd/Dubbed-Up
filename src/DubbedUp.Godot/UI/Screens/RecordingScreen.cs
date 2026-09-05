@@ -121,6 +121,8 @@ public partial class RecordingScreen : BaseScreen
             if (_lobbyManager.IsConnectedToLobby)
             {
                 _lobbyManager.AudioTakeReceived += OnRemoteAudioTakeReceived;
+                _lobbyManager.RecordingSlotChanged += OnRemoteSlotChanged;
+                _lobbyManager.ProceedToPlaybackTriggered += OnRemoteProceedToPlayback;
             }
         }
 
@@ -166,13 +168,52 @@ public partial class RecordingScreen : BaseScreen
         }
 
         if (_previewOriginalButton is not null) StyleActionPill(_previewOriginalButton, new Color(0.280f, 0.650f, 0.950f), 21);
-        if (_recordButton is not null) StyleActionPill(_recordButton, new Color(1.0f, 0.540f, 0.680f), 21);
-        if (_proceedButton is not null) StyleActionPill(_proceedButton, new Color(1.0f, 0.540f, 0.680f), 20);
+        if (_recordButton is not null)
+        {
+            StyleActionPill(_recordButton, new Color(1.0f, 0.540f, 0.680f), 21);
+            StyleDisabledPill(_recordButton, 21);
+        }
+        if (_proceedButton is not null)
+        {
+            StyleActionPill(_proceedButton, new Color(1.0f, 0.540f, 0.680f), 20);
+            StyleDisabledPill(_proceedButton, 20);
+        }
         if (_previewTakeButton is not null) StyleOutlinePill(_previewTakeButton, 18);
-        if (_reRecordButton is not null) StyleOutlinePill(_reRecordButton, 18);
-        if (_prevSlotButton is not null) StyleOutlinePill(_prevSlotButton, 18);
-        if (_nextSlotButton is not null) StyleOutlinePill(_nextSlotButton, 18);
+        if (_reRecordButton is not null)
+        {
+            StyleOutlinePill(_reRecordButton, 18);
+            StyleDisabledPill(_reRecordButton, 18);
+        }
+        if (_prevSlotButton is not null)
+        {
+            StyleOutlinePill(_prevSlotButton, 18);
+            StyleDisabledPill(_prevSlotButton, 18);
+        }
+        if (_nextSlotButton is not null)
+        {
+            StyleOutlinePill(_nextSlotButton, 18);
+            StyleDisabledPill(_nextSlotButton, 18);
+        }
         if (_cancelButton is not null) StyleOutlinePill(_cancelButton, 16);
+    }
+
+    private static void StyleDisabledPill(Button btn, int radius)
+    {
+        var disabled = new StyleBoxFlat
+        {
+            BgColor = new Color(0.85f, 0.88f, 0.92f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.75f, 0.78f, 0.84f),
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomLeft = radius,
+            CornerRadiusBottomRight = radius
+        };
+        btn.AddThemeStyleboxOverride("disabled", disabled);
+        btn.AddThemeColorOverride("font_disabled_color", new Color(0.55f, 0.58f, 0.65f));
     }
 
     private static void StyleActionPill(Button btn, Color color, int radius)
@@ -206,6 +247,8 @@ public partial class RecordingScreen : BaseScreen
         if (_lobbyManager is not null)
         {
             _lobbyManager.AudioTakeReceived -= OnRemoteAudioTakeReceived;
+            _lobbyManager.RecordingSlotChanged -= OnRemoteSlotChanged;
+            _lobbyManager.ProceedToPlaybackTriggered -= OnRemoteProceedToPlayback;
         }
     }
 
@@ -253,7 +296,7 @@ public partial class RecordingScreen : BaseScreen
             if (_countdownLabel is not null)
             {
                 var count = (int)Math.Ceiling(_countdownTimer);
-                _countdownLabel.Text = count > 0 ? $"🎙️ COUNTDOWN: {count}" : "🎬 STARTING!";
+                _countdownLabel.Text = count > 0 ? $"COUNTDOWN: {count}" : "STARTING!";
                 _countdownLabel.Visible = true;
             }
 
@@ -277,12 +320,12 @@ public partial class RecordingScreen : BaseScreen
                 var remaining = _leadInSec - _recordingElapsed;
                 if (_countdownLabel is not null)
                 {
-                    _countdownLabel.Text = remaining > 0.2 ? $"⏳ PRE-ROLL LEAD-IN: {remaining:F1}s" : "🔴 SPEAK NOW!";
+                    _countdownLabel.Text = remaining > 0.2 ? $"PRE-ROLL LEAD-IN: {remaining:F1}s" : "SPEAK NOW!";
                     _countdownLabel.Visible = true;
                 }
                 if (_statusLabel is not null)
                 {
-                    _statusLabel.Text = $"🎬 Video playing ({_leadInSec:F1}s lead-in)... Get ready to speak in {remaining:F1}s!";
+                    _statusLabel.Text = $"Video playing ({_leadInSec:F1}s lead-in)... Get ready to speak in {remaining:F1}s!";
                 }
             }
             // Stage 2: Speech Box (Live Microphone Capture with original sound muted)
@@ -303,12 +346,12 @@ public partial class RecordingScreen : BaseScreen
 
                     if (_countdownLabel is not null)
                     {
-                        _countdownLabel.Text = "🔴 RECORDING LIVE — SPEAK NOW!";
+                        _countdownLabel.Text = "RECORDING LIVE -- SPEAK NOW!";
                         _countdownLabel.Visible = true;
                     }
                     if (_statusLabel is not null)
                     {
-                        _statusLabel.Text = "🔴 RECORDING LIVE — Speak your line!";
+                        _statusLabel.Text = "RECORDING LIVE -- Speak your line!";
                     }
                 }
 
@@ -369,6 +412,49 @@ public partial class RecordingScreen : BaseScreen
         if (_statusLabel is not null) _statusLabel.Text = "Take preview finished.";
     }
 
+    private bool IsLocalPlayerTurn()
+    {
+        if (_lobbyManager is null || !_lobbyManager.IsConnectedToLobby)
+        {
+            return true;
+        }
+
+        if (Coordinator?.CurrentScene is null) return false;
+
+        var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
+        if (_currentSlotIndex < 0 || _currentSlotIndex >= voiceSlots.Count) return false;
+
+        var currentSlot = voiceSlots[_currentSlotIndex];
+        var localPeerId = _lobbyManager.LocalPeerId;
+
+        if (_lobbyManager.Players.TryGetValue(localPeerId, out var localPlayer))
+        {
+            return localPlayer.AssignedCharacterIds.Contains(currentSlot.CharacterId);
+        }
+
+        return false;
+    }
+
+    private string GetAssignedPlayerName()
+    {
+        if (Coordinator?.CurrentScene is null) return "Player";
+        var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
+        if (_currentSlotIndex < 0 || _currentSlotIndex >= voiceSlots.Count) return "Player";
+        var currentSlot = voiceSlots[_currentSlotIndex];
+
+        if (_lobbyManager is not null && _lobbyManager.IsConnectedToLobby)
+        {
+            var assignedPlayer = _lobbyManager.Players.Values.FirstOrDefault(p => p.AssignedCharacterIds.Contains(currentSlot.CharacterId));
+            if (assignedPlayer is not null)
+            {
+                return assignedPlayer.PlayerName;
+            }
+        }
+
+        var assignment = Coordinator.ActiveRound?.GetVoiceSlotAssignments().FirstOrDefault(a => a.VoiceSlotId == currentSlot.VoiceSlotId);
+        return Coordinator.CurrentSession?.Players.FirstOrDefault(p => p.PlayerId == assignment?.PlayerId)?.DisplayName ?? "Player";
+    }
+
     private void UpdateUiState()
     {
         if (Coordinator?.CurrentScene is null || Coordinator.ActiveRound is null)
@@ -397,20 +483,25 @@ public partial class RecordingScreen : BaseScreen
             _maxSlotDuration = 4.0;
         }
 
+        var isMultiplayer = _lobbyManager is not null && _lobbyManager.IsConnectedToLobby;
+        var isHost = !isMultiplayer || _lobbyManager!.IsHost;
+        var isLocalTurn = IsLocalPlayerTurn();
+        var assignedName = GetAssignedPlayerName();
+
         var charDef = Coordinator.CurrentScene.Characters.FirstOrDefault(c => c.CharacterId == currentSlot.CharacterId);
         var charName = charDef?.DisplayName ?? currentSlot.CharacterId;
 
-        var assignment = Coordinator.ActiveRound.GetVoiceSlotAssignments().FirstOrDefault(a => a.VoiceSlotId == currentSlot.VoiceSlotId);
-        var playerName = Coordinator.CurrentSession?.Players.FirstOrDefault(p => p.PlayerId == assignment?.PlayerId)?.DisplayName ?? "Player";
-
         if (_slotInfoLabel is not null)
         {
-            _slotInfoLabel.Text = $"Line {_currentSlotIndex + 1} / {voiceSlots.Count}  |  Character: 🎭 {charName}  ({playerName})  |  Duration: {_maxSlotDuration:F1}s";
+            var turnInfo = isMultiplayer
+                ? (isLocalTurn ? " [YOUR TURN]" : $" [WAITING FOR {assignedName.ToUpperInvariant()}]")
+                : "";
+            _slotInfoLabel.Text = $"Line {_currentSlotIndex + 1} / {voiceSlots.Count}  |  Character: {charName} ({assignedName}){turnInfo}  |  Duration: {_maxSlotDuration:F1}s";
         }
 
         if (_promptSubtitleLabel is not null)
         {
-            _promptSubtitleLabel.Text = $"💬 \"{currentSlot.Prompt}\"";
+            _promptSubtitleLabel.Text = $"\"{currentSlot.Prompt}\"";
         }
 
         // Reset Waveform visualizer with REAL audio waveform extracted from video audio
@@ -420,45 +511,83 @@ public partial class RecordingScreen : BaseScreen
         var latestTake = Coordinator.TakeStore.GetLatestTakeForSlot(currentSlot.VoiceSlotId);
         _currentTakeId = latestTake?.TakeId;
 
-        // Button visibility
+        // Button visibility and state
         LoadGameplaySettings();
         if (_previewOriginalButton is not null) _previewOriginalButton.Visible = true;
+
         if (_recordButton is not null)
         {
-            if (isRecorded)
+            if (isMultiplayer && !isLocalTurn)
             {
-                _recordButton.Text = "Re-Record (Overwrite)";
+                _recordButton.Disabled = true;
+                _recordButton.Text = $"Waiting for {assignedName} to record...";
             }
             else
             {
-                _recordButton.Text = _settingCountdownSeconds > 0
-                    ? $"Start Recording ({_settingCountdownSeconds:F0}s Countdown)"
-                    : "Start Recording";
+                _recordButton.Disabled = false;
+                if (_isRecordingActive)
+                {
+                    _recordButton.Text = "Cancel Recording";
+                }
+                else if (_isCountingDown)
+                {
+                    _recordButton.Text = "Cancel";
+                }
+                else if (isRecorded)
+                {
+                    _recordButton.Text = "Re-Record (Overwrite)";
+                }
+                else
+                {
+                    _recordButton.Text = _settingCountdownSeconds > 0
+                        ? $"Start Recording ({_settingCountdownSeconds:F0}s Countdown)"
+                        : "Start Recording";
+                }
             }
         }
+
         if (_previewTakeButton is not null) _previewTakeButton.Visible = isRecorded;
-        if (_reRecordButton is not null) _reRecordButton.Visible = isRecorded;
+        if (_reRecordButton is not null) _reRecordButton.Visible = isRecorded && (!isMultiplayer || isLocalTurn);
+
         if (_prevSlotButton is not null)
         {
-            _prevSlotButton.Visible = _currentSlotIndex > 0;
+            _prevSlotButton.Visible = isHost && _currentSlotIndex > 0;
         }
+
         if (_nextSlotButton is not null)
         {
-            _nextSlotButton.Visible = isRecorded && _currentSlotIndex < voiceSlots.Count - 1;
+            _nextSlotButton.Visible = isHost && isRecorded && _currentSlotIndex < voiceSlots.Count - 1;
         }
 
         var allDone = voiceSlots.All(s => Coordinator.TakeStore.HasTakeForSlot(s.VoiceSlotId));
         if (_proceedButton is not null)
         {
-            _proceedButton.Visible = allDone;
+            _proceedButton.Visible = isHost && allDone;
             _proceedButton.Text = "All Lines Recorded — Watch Full Playback!";
         }
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = isRecorded
-                ? "✅ Take recorded! You can preview your take, re-record, or proceed to the next line."
-                : "Ready. Press 'Listen to Original' or 'Start Recording'.";
+            if (allDone)
+            {
+                _statusLabel.Text = isHost
+                    ? "All lines recorded! Press 'Watch Full Playback' to review the dubbed scene."
+                    : "All lines recorded! Waiting for host to start playback...";
+            }
+            else if (isRecorded)
+            {
+                _statusLabel.Text = isHost
+                    ? "Take recorded! You can preview the take, re-record, or proceed to the next line."
+                    : (isLocalTurn
+                        ? "Take recorded! Waiting for host to advance to the next line."
+                        : $"{assignedName} recorded their line! Waiting for host to advance.");
+            }
+            else
+            {
+                _statusLabel.Text = isMultiplayer && !isLocalTurn
+                    ? $"Waiting for {assignedName} to record Line {_currentSlotIndex + 1}..."
+                    : "Ready. Press 'Listen to Original' or 'Start Recording'.";
+            }
         }
     }
 
@@ -588,7 +717,7 @@ public partial class RecordingScreen : BaseScreen
 
         if (_videoPlayer is null || _videoPlayer.Stream is null)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "ℹ️ No video stream found for this scene.";
+            if (_statusLabel is not null) _statusLabel.Text = "No video stream found for this scene.";
             return;
         }
 
@@ -612,11 +741,16 @@ public partial class RecordingScreen : BaseScreen
         _videoPlayer.StreamPosition = _leadInStartSec;
 
         if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Stop Playing";
-        if (_statusLabel is not null) _statusLabel.Text = $"🎧 Playing clip with {_leadInSec:F1}s context lead-in ({_leadInStartSec:F1}s → {_slotEndSec:F1}s)...";
+        if (_statusLabel is not null) _statusLabel.Text = $"Playing clip with {_leadInSec:F1}s context lead-in ({_leadInStartSec:F1}s -> {_slotEndSec:F1}s)...";
     }
 
     private void OnRecordButtonPressed()
     {
+        if (!IsLocalPlayerTurn())
+        {
+            return;
+        }
+
         if (_isPreviewingTake) StopTakePreview();
         if (_isPreviewingOriginal && _videoPlayer is not null) { _videoPlayer.Stop(); _isPreviewingOriginal = false; }
 
@@ -642,7 +776,7 @@ public partial class RecordingScreen : BaseScreen
             _countdownTimer = _settingCountdownSeconds;
             if (_countdownLabel is not null)
             {
-                _countdownLabel.Text = $"🎙️ COUNTDOWN: {(int)Math.Ceiling(_countdownTimer)}";
+                _countdownLabel.Text = $"COUNTDOWN: {(int)Math.Ceiling(_countdownTimer)}";
                 _countdownLabel.Visible = true;
             }
             if (_recordButton is not null) _recordButton.Text = "Cancel";
@@ -687,14 +821,14 @@ public partial class RecordingScreen : BaseScreen
             if (_recordButton is not null) _recordButton.Text = "Cancel Recording";
             if (_countdownLabel is not null)
             {
-                _countdownLabel.Text = _leadInSec > 0 ? $"⏳ PRE-ROLL LEAD-IN: {_leadInSec:F1}s" : "🔴 RECORDING LIVE — SPEAK NOW!";
+                _countdownLabel.Text = _leadInSec > 0 ? $"PRE-ROLL LEAD-IN: {_leadInSec:F1}s" : "RECORDING LIVE -- SPEAK NOW!";
                 _countdownLabel.Visible = true;
             }
             if (_statusLabel is not null)
             {
                 _statusLabel.Text = _leadInSec > 0
-                    ? $"🎬 Video starting ({_leadInSec:F1}s lead-in)... Focus on actor timing!"
-                    : "🔴 RECORDING LIVE — Speak your line!";
+                    ? $"Video starting ({_leadInSec:F1}s lead-in)... Focus on actor timing!"
+                    : "RECORDING LIVE -- Speak your line!";
             }
         }
         catch (Exception ex)
@@ -731,7 +865,7 @@ public partial class RecordingScreen : BaseScreen
             var matchPercent = _waveformVisualizer?.CalculateSyncMatchPercentage() ?? 90.0f;
             if (_syncScoreLabel is not null && take is not null)
             {
-                _syncScoreLabel.Text = $"⭐ Timing & Rhythm Match: {matchPercent:F0}%";
+                _syncScoreLabel.Text = $"Timing & Rhythm Match: {matchPercent:F0}%";
                 _syncScoreLabel.Visible = true;
             }
 
@@ -823,7 +957,7 @@ public partial class RecordingScreen : BaseScreen
                     _waveformVisualizer?.SetPlayhead(0.0, false);
 
                     if (_previewTakeButton is not null) _previewTakeButton.Text = "Stop Preview";
-                    if (_statusLabel is not null) _statusLabel.Text = "▶ Playing your take in sync with video...";
+                    if (_statusLabel is not null) _statusLabel.Text = "Playing your take in sync with video...";
                 }
             }
         }
@@ -835,6 +969,8 @@ public partial class RecordingScreen : BaseScreen
 
     private void OnReRecordPressed()
     {
+        if (!IsLocalPlayerTurn()) return;
+
         if (_isPreviewingTake) StopTakePreview();
         if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
@@ -847,6 +983,9 @@ public partial class RecordingScreen : BaseScreen
 
     private void OnPrevSlotPressed()
     {
+        var isMultiplayer = _lobbyManager is not null && _lobbyManager.IsConnectedToLobby;
+        if (isMultiplayer && !_lobbyManager!.IsHost) return;
+
         if (_isPreviewingTake) StopTakePreview();
         if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
@@ -856,11 +995,19 @@ public partial class RecordingScreen : BaseScreen
             _currentSlotIndex--;
             if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
             UpdateUiState();
+
+            if (isMultiplayer)
+            {
+                _lobbyManager!.SetRecordingSlotIndex(_currentSlotIndex);
+            }
         }
     }
 
     private void OnNextSlotPressed()
     {
+        var isMultiplayer = _lobbyManager is not null && _lobbyManager.IsConnectedToLobby;
+        if (isMultiplayer && !_lobbyManager!.IsHost) return;
+
         if (_isPreviewingTake) StopTakePreview();
         if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
@@ -870,7 +1017,23 @@ public partial class RecordingScreen : BaseScreen
             _currentSlotIndex++;
             if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
             UpdateUiState();
+
+            if (isMultiplayer)
+            {
+                _lobbyManager!.SetRecordingSlotIndex(_currentSlotIndex);
+            }
         }
+    }
+
+    private void OnRemoteSlotChanged(int slotIndex)
+    {
+        if (_isPreviewingTake) StopTakePreview();
+        if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
+        if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
+
+        _currentSlotIndex = slotIndex;
+        if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
+        UpdateUiState();
     }
 
     private void OnRemoteAudioTakeReceived(string slotId, string senderPlayerId, byte[] audioBytes)
@@ -879,7 +1042,7 @@ public partial class RecordingScreen : BaseScreen
 
         try
         {
-            var takeId = $"take-remote-{slotId}-{senderPlayerId}";
+            var takeId = $"take-remote-{slotId}-{senderPlayerId}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
             var userDir = ProjectSettings.GlobalizePath("user://recordings");
             if (!System.IO.Directory.Exists(userDir))
             {
@@ -906,6 +1069,21 @@ public partial class RecordingScreen : BaseScreen
     }
 
     private void OnProceedPressed()
+    {
+        var isMultiplayer = _lobbyManager is not null && _lobbyManager.IsConnectedToLobby;
+        if (isMultiplayer)
+        {
+            if (_lobbyManager!.IsHost)
+            {
+                _lobbyManager.TriggerProceedToPlayback();
+            }
+            return;
+        }
+
+        OnRemoteProceedToPlayback();
+    }
+
+    private void OnRemoteProceedToPlayback()
     {
         try
         {
