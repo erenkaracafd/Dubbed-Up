@@ -168,6 +168,43 @@ text = "Connected Players in Room:"
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="SceneSeparator" type="HSeparator" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+layout_mode = 2
+
+[node name="SceneSection" type="VBoxContainer" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SceneHeading" type="Label" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
+theme_override_font_sizes/font_size = 14
+text = "Scene Selection:"
+
+[node name="SceneOptionButton" type="OptionButton" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+
+[node name="GuestSceneLabel" type="Label" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.18, 0.16, 0.38, 1)
+theme_override_font_sizes/font_size = 14
+text = "Selected Scene: Loading..."
+autowrap_mode = 2
+
+[node name="SceneNoticeLabel" type="Label" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 12
+text = "Warning notice"
+autowrap_mode = 2
+
+[node name="ActionSeparator" type="HSeparator" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
+layout_mode = 2
+
 [node name="ActionsHBox" type="HBoxContainer" parent="CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 14
