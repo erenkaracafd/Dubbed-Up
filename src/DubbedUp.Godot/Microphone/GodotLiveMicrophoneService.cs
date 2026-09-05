@@ -60,12 +60,111 @@ public sealed class GodotLiveMicrophoneService
         }
     }
 
+    public void RestartMicrophoneCapture()
+    {
+        try
+        {
+            if (_microphonePlayer is not null && GodotObject.IsInstanceValid(_microphonePlayer))
+            {
+                _microphonePlayer.Stop();
+                _microphonePlayer.Play();
+                GD.Print("[Microphone] Restarted microphone capture stream.");
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[Microphone] Failed to restart capture: {ex.Message}");
+        }
+    }
+
+    public void ApplyMicGain(float gainMultiplier)
+    {
+        try
+        {
+            if (_recordBusIndex == -1)
+            {
+                _recordBusIndex = AudioServer.GetBusIndex(RecordBusName);
+            }
+
+            if (_recordBusIndex != -1)
+            {
+                var clamped = Math.Clamp(gainMultiplier, 0.0f, 3.0f);
+                var db = clamped <= 0.001f ? -80.0f : Mathf.LinearToDb(clamped);
+                AudioServer.SetBusVolumeDb(_recordBusIndex, db);
+                GD.Print($"[Microphone] Set Record bus gain to {db:F1} dB ({clamped * 100:F0}%)");
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[Microphone] Failed to apply mic gain: {ex.Message}");
+        }
+    }
+
+    public void LoadAudioSettings()
+    {
+        try
+        {
+            // Explicitly query input devices so WASAPI driver refreshes endpoints
+            var devices = GetAvailableInputDevices();
+
+            var config = new ConfigFile();
+            if (config.Load("user://audio_settings.cfg") == Error.Ok)
+            {
+                var micDevice = (string)config.GetValue("Audio", "MicDevice", "Default");
+                var micLatency = (double)config.GetValue("Audio", "MicLatencyMs", 150.0);
+                var micGain = (double)config.GetValue("Audio", "MicGain", 100.0);
+                var masterVol = (double)config.GetValue("Audio", "MasterVolume", 100.0);
+
+                LatencyCompensationSeconds = micLatency / 1000.0;
+
+                // Apply master volume
+                var masterBusIndex = AudioServer.GetBusIndex("Master");
+                if (masterBusIndex != -1)
+                {
+                    if (masterVol <= 0.0)
+                    {
+                        AudioServer.SetBusMute(masterBusIndex, true);
+                    }
+                    else
+                    {
+                        AudioServer.SetBusMute(masterBusIndex, false);
+                        AudioServer.SetBusVolumeDb(masterBusIndex, Mathf.LinearToDb((float)(masterVol / 100.0)));
+                    }
+                }
+
+                // Apply mic device
+                if (!string.IsNullOrWhiteSpace(micDevice) && micDevice != "Default" && micDevice != "Default Microphone")
+                {
+                    var matched = devices.FirstOrDefault(d => string.Equals(d, micDevice, StringComparison.OrdinalIgnoreCase));
+                    SetInputDevice(matched ?? micDevice);
+                }
+                else
+                {
+                    SetInputDevice("");
+                }
+
+                ApplyMicGain((float)(micGain / 100.0));
+            }
+            else
+            {
+                SetInputDevice("");
+                ApplyMicGain(1.0f);
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[Microphone] Failed to load audio settings: {ex.Message}");
+        }
+    }
+
     public void Initialize(Node? contextNode = null)
     {
         try
         {
             SetupRecordBus();
             EnsureMicrophonePlayer(contextNode);
+            LoadAudioSettings();
+            RestartMicrophoneCapture();
             GD.Print($"[Microphone] Initialized on bus '{RecordBusName}' -> '{SinkBusName}'. Device: '{AudioServer.InputDevice}'");
         }
         catch (Exception ex)

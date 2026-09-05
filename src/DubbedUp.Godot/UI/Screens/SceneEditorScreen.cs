@@ -97,17 +97,19 @@ public partial class SceneEditorScreen : BaseScreen
             _timelineEditor.SlotSplitRequested += SplitSlotAtIndex;
         }
 
-        if (_playPauseButton is not null) _playPauseButton.Pressed += OnPlayPausePressed;
-        if (_seekBackButton is not null) _seekBackButton.Pressed += () => SeekRelative(-5.0);
-        if (_seekForwardButton is not null) _seekForwardButton.Pressed += () => SeekRelative(5.0);
-        if (_stopButton is not null) _stopButton.Pressed += OnStopPressed;
-        if (_autoDetectButton is not null) _autoDetectButton.Pressed += OnAutoDetectPressed;
-        if (_addBoxButton is not null) _addBoxButton.Pressed += OnAddBoxPressed;
-        if (_cutBoxButton is not null) _cutBoxButton.Pressed += OnCutSelectedBoxPressed;
-        if (_deleteBoxButton is not null) _deleteBoxButton.Pressed += OnDeleteSelectedBoxPressed;
-        if (_saveAndProceedButton is not null) _saveAndProceedButton.Pressed += OnSaveAndProceedPressed;
-        if (_saveButton is not null) _saveButton.Pressed += OnSavePressed;
-        if (_backButton is not null) _backButton.Pressed += OnBackPressed;
+        ApplyStyling();
+
+        if (_playPauseButton is not null) SetupButton(_playPauseButton, OnPlayPausePressed);
+        if (_seekBackButton is not null) SetupButton(_seekBackButton, () => SeekRelative(-5.0));
+        if (_seekForwardButton is not null) SetupButton(_seekForwardButton, () => SeekRelative(5.0));
+        if (_stopButton is not null) SetupButton(_stopButton, OnStopPressed);
+        if (_autoDetectButton is not null) SetupButton(_autoDetectButton, OnAutoDetectPressed);
+        if (_addBoxButton is not null) SetupButton(_addBoxButton, OnAddBoxPressed);
+        if (_cutBoxButton is not null) SetupButton(_cutBoxButton, OnCutSelectedBoxPressed);
+        if (_deleteBoxButton is not null) SetupButton(_deleteBoxButton, OnDeleteSelectedBoxPressed);
+        if (_saveAndProceedButton is not null) SetupButton(_saveAndProceedButton, OnSaveAndProceedPressed);
+        if (_saveButton is not null) SetupButton(_saveButton, OnSavePressed);
+        if (_backButton is not null) SetupButton(_backButton, OnBackPressed);
 
         if (_durationInput is not null)
         {
@@ -139,7 +141,7 @@ public partial class SceneEditorScreen : BaseScreen
         var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
         if (doc is null)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "❌ No scene loaded to edit.";
+            if (_statusLabel is not null) _statusLabel.Text = "No scene loaded to edit.";
             return;
         }
 
@@ -168,7 +170,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"💡 Scene loaded: '{doc.Title}' (Duration: {_totalDuration:F1}s, {_editableSlots.Count} speech slots)";
+            _statusLabel.Text = $"Scene loaded: '{doc.Title}' (Duration: {_totalDuration:F1}s, {_editableSlots.Count} speech slots)";
         }
     }
 
@@ -322,7 +324,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"⏱ Total duration set to {_totalDuration:F1}s. Waveform updated.";
+            _statusLabel.Text = $"Total duration set to {_totalDuration:F1}s. Waveform updated.";
         }
     }
 
@@ -354,7 +356,7 @@ public partial class SceneEditorScreen : BaseScreen
             var slot = _editableSlots[slotIndex];
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"👉 Selected Line #{slotIndex + 1}: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
+                _statusLabel.Text = $"Selected Line #{slotIndex + 1}: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
             }
         }
     }
@@ -438,7 +440,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_videoTimeLabel is not null)
         {
-            _videoTimeLabel.Text = $"⏱ {clamped:F1}s / {_totalDuration:F1}s";
+            _videoTimeLabel.Text = $"{clamped:F1}s / {_totalDuration:F1}s";
         }
 
         _timelineEditor?.SetPlayhead(clamped);
@@ -459,7 +461,7 @@ public partial class SceneEditorScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "❌ No audio stream found to analyze.";
+                _statusLabel.Text = "No audio stream found to analyze.";
             }
             return;
         }
@@ -480,7 +482,7 @@ public partial class SceneEditorScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "⚠️ No spoken dialogue found in audio (silence/music skipped). You can add boxes manually.";
+                _statusLabel.Text = "No spoken dialogue found in audio (silence/music skipped). You can add boxes manually.";
             }
             return;
         }
@@ -505,7 +507,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"✨ AI extracted {detected.Count} dialogue lines with subtitles (silence skipped)!";
+            _statusLabel.Text = $"AI extracted {detected.Count} dialogue lines with subtitles (silence skipped)!";
         }
     }
 
@@ -516,7 +518,7 @@ public partial class SceneEditorScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "⚠️ Please select a speech box first to cut/split it.";
+                _statusLabel.Text = "Please select a speech box first to cut/split it.";
             }
             return;
         }
@@ -536,7 +538,7 @@ public partial class SceneEditorScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"⚠️ Playhead ({splitSec:F1}s) must be inside the selected box ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s) to cut.";
+                _statusLabel.Text = $"Playhead ({splitSec:F1}s) must be inside the selected box ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s) to cut.";
             }
             return;
         }
@@ -562,7 +564,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"✂️ Cut speech box at {splitSec:F1}s into two boxes!";
+            _statusLabel.Text = $"Cut speech box at {splitSec:F1}s into two boxes!";
         }
     }
 
@@ -592,7 +594,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"✨ Added new speech slot at {start:F1}s!";
+            _statusLabel.Text = $"Added new speech slot at {start:F1}s!";
         }
     }
 
@@ -619,7 +621,7 @@ public partial class SceneEditorScreen : BaseScreen
             SyncTimelineData();
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"🗑️ Deleted speech slot #{index + 1} ({charName}).";
+                _statusLabel.Text = $"Deleted speech slot #{index + 1} ({charName}).";
             }
         }
     }
@@ -651,7 +653,7 @@ public partial class SceneEditorScreen : BaseScreen
 
             if (_videoTimeLabel is not null)
             {
-                _videoTimeLabel.Text = $"⏱ {pos:F1}s / {_totalDuration:F1}s";
+                _videoTimeLabel.Text = $"{pos:F1}s / {_totalDuration:F1}s";
             }
 
             _timelineEditor?.SetPlayhead(pos);
@@ -691,21 +693,28 @@ public partial class SceneEditorScreen : BaseScreen
 
             var style = new StyleBoxFlat
             {
-                BgColor = new Color(0.12f, 0.15f, 0.20f, 0.95f),
-                CornerRadiusBottomLeft = 6,
-                CornerRadiusBottomRight = 6,
-                CornerRadiusTopLeft = 6,
-                CornerRadiusTopRight = 6,
-                BorderWidthBottom = 2,
+                BgColor = Colors.White,
+                CornerRadiusBottomLeft = 10,
+                CornerRadiusBottomRight = 10,
+                CornerRadiusTopLeft = 10,
+                CornerRadiusTopRight = 10,
+                BorderWidthBottom = 1,
                 BorderWidthLeft = 4,
-                BorderWidthRight = 2,
-                BorderWidthTop = 2,
-                BorderColor = new Color(0.3f, 0.6f, 0.9f, 0.8f)
+                BorderWidthRight = 1,
+                BorderWidthTop = 1,
+                BorderColor = new Color(0.85f, 0.88f, 0.94f),
+                ShadowColor = new Color(0.12f, 0.15f, 0.25f, 0.05f),
+                ShadowSize = 6,
+                ShadowOffset = new Vector2(0, 2),
+                ContentMarginLeft = 14,
+                ContentMarginRight = 14,
+                ContentMarginTop = 10,
+                ContentMarginBottom = 10
             };
             panel.AddThemeStyleboxOverride("panel", style);
 
             var mainVBox = new VBoxContainer();
-            mainVBox.AddThemeConstantOverride("separation", 6);
+            mainVBox.AddThemeConstantOverride("separation", 8);
             panel.AddChild(mainVBox);
 
             // Row 1: Header (Number, Character, Start/End, Preview, Delete)
@@ -716,17 +725,18 @@ public partial class SceneEditorScreen : BaseScreen
             var numLabel = new Label
             {
                 Text = $"#{index + 1}",
-                CustomMinimumSize = new Vector2(32, 0)
+                CustomMinimumSize = new Vector2(36, 0)
             };
-            numLabel.AddThemeColorOverride("font_color", new Color(1.0f, 0.85f, 0.3f));
+            numLabel.AddThemeColorOverride("font_color", new Color(0.460f, 0.380f, 0.920f));
             row1.AddChild(numLabel);
 
             var charNameInput = new LineEdit
             {
                 Text = slot.CharacterName,
                 PlaceholderText = "Character Name...",
-                CustomMinimumSize = new Vector2(160, 32)
+                CustomMinimumSize = new Vector2(170, 34)
             };
+            StyleEditorInput(charNameInput);
             charNameInput.TextChanged += text =>
             {
                 slot.CharacterName = text;
@@ -736,6 +746,7 @@ public partial class SceneEditorScreen : BaseScreen
             row1.AddChild(charNameInput);
 
             var startLabel = new Label { Text = "Start:" };
+            startLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
             row1.AddChild(startLabel);
 
             var startInput = new SpinBox
@@ -744,8 +755,9 @@ public partial class SceneEditorScreen : BaseScreen
                 MaxValue = 600.0,
                 Step = 0.1,
                 Value = slot.StartSeconds,
-                CustomMinimumSize = new Vector2(80, 32)
+                CustomMinimumSize = new Vector2(85, 34)
             };
+            StyleEditorInput(startInput.GetLineEdit());
             startInput.ValueChanged += val =>
             {
                 slot.StartSeconds = val;
@@ -755,6 +767,7 @@ public partial class SceneEditorScreen : BaseScreen
             row1.AddChild(startInput);
 
             var endLabel = new Label { Text = "End:" };
+            endLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
             row1.AddChild(endLabel);
 
             var endInput = new SpinBox
@@ -763,8 +776,9 @@ public partial class SceneEditorScreen : BaseScreen
                 MaxValue = 600.0,
                 Step = 0.1,
                 Value = slot.EndSeconds,
-                CustomMinimumSize = new Vector2(80, 32)
+                CustomMinimumSize = new Vector2(85, 34)
             };
+            StyleEditorInput(endInput.GetLineEdit());
             endInput.ValueChanged += val =>
             {
                 slot.EndSeconds = val;
@@ -776,18 +790,21 @@ public partial class SceneEditorScreen : BaseScreen
             var previewBtn = new Button
             {
                 Text = "Preview Line",
-                CustomMinimumSize = new Vector2(120, 32)
+                CustomMinimumSize = new Vector2(110, 34)
             };
+            StyleActionPill(previewBtn, new Color(0.380f, 0.710f, 1.000f));
             previewBtn.Pressed += () => PreviewSlot(slot);
+            UiSoundManager.Attach(previewBtn);
             row1.AddChild(previewBtn);
 
             var deleteBtn = new Button
             {
                 Text = "Delete",
-                CustomMinimumSize = new Vector2(70, 32)
+                CustomMinimumSize = new Vector2(70, 34)
             };
-            deleteBtn.AddThemeColorOverride("font_color", new Color(1.0f, 0.4f, 0.4f));
+            StyleDangerPill(deleteBtn);
             deleteBtn.Pressed += () => DeleteSlotAtIndex(index);
+            UiSoundManager.Attach(deleteBtn);
             row1.AddChild(deleteBtn);
 
             // Row 2: Prompt / Subtitle Input
@@ -795,7 +812,8 @@ public partial class SceneEditorScreen : BaseScreen
             row2.AddThemeConstantOverride("separation", 8);
             mainVBox.AddChild(row2);
 
-            var promptLabel = new Label { Text = "💬 Subtitle / Prompt:" };
+            var promptLabel = new Label { Text = "Subtitle / Prompt:" };
+            promptLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
             row2.AddChild(promptLabel);
 
             var promptInput = new LineEdit
@@ -803,8 +821,9 @@ public partial class SceneEditorScreen : BaseScreen
                 Text = slot.Prompt,
                 PlaceholderText = "Enter character dialogue prompt / subtitle...",
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                CustomMinimumSize = new Vector2(0, 32)
+                CustomMinimumSize = new Vector2(0, 34)
             };
+            StyleEditorInput(promptInput);
             promptInput.TextChanged += text =>
             {
                 slot.Prompt = text;
@@ -828,7 +847,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"🎧 Previewing with 3s lead-in: {slot.CharacterName} ({leadInStart:F1}s → {slot.EndSeconds:F1}s)";
+            _statusLabel.Text = $"Previewing with 3s lead-in: {slot.CharacterName} ({leadInStart:F1}s -> {slot.EndSeconds:F1}s)";
         }
     }
 
@@ -856,13 +875,13 @@ public partial class SceneEditorScreen : BaseScreen
         var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
         if (doc is null)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "❌ No scene loaded to save.";
+            if (_statusLabel is not null) _statusLabel.Text = "No scene loaded to save.";
             return false;
         }
 
         if (_editableSlots.Count == 0)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "❌ At least 1 speech slot is required.";
+            if (_statusLabel is not null) _statusLabel.Text = "At least 1 speech slot is required.";
             return false;
         }
 
@@ -939,7 +958,7 @@ public partial class SceneEditorScreen : BaseScreen
         catch (Exception ex)
         {
             GD.PrintErr($"[SceneEditor] Validation failed: {ex.Message}");
-            if (_statusLabel is not null) _statusLabel.Text = $"❌ Validation error: {ex.Message}";
+            if (_statusLabel is not null) _statusLabel.Text = $"Validation error: {ex.Message}";
             return false;
         }
 
@@ -971,7 +990,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = "✅ Scene, speech timeline, and subtitles saved successfully!";
+            _statusLabel.Text = "Scene, speech timeline, and subtitles saved successfully!";
         }
 
         return true;
@@ -995,5 +1014,323 @@ public partial class SceneEditorScreen : BaseScreen
     {
         PauseVideo();
         Navigator?.NavigateTo(AppScreen.Setup);
+    }
+
+    private void ApplyStyling()
+    {
+        var titleLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/TitleLabel");
+        if (titleLabel is not null)
+            titleLabel.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
+
+        var titleNameLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid/TitleNameLabel");
+        if (titleNameLabel is not null)
+            titleNameLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
+
+        var durationLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid/DurationLabel");
+        if (durationLabel is not null)
+            durationLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
+
+        var timelineLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/TimelineLabel");
+        if (timelineLabel is not null)
+            timelineLabel.AddThemeColorOverride("font_color", new Color(0.18f, 0.20f, 0.35f));
+
+        var sectionLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/SectionLabel");
+        if (sectionLabel is not null)
+            sectionLabel.AddThemeColorOverride("font_color", new Color(0.18f, 0.20f, 0.35f));
+
+        if (_statusLabel is not null)
+            _statusLabel.AddThemeColorOverride("font_color", new Color(0.15f, 0.55f, 0.30f));
+
+        if (_videoTimeLabel is not null)
+            _videoTimeLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
+
+        // Style Inputs
+        StyleEditorInput(_titleInput);
+        if (_durationInput is not null)
+        {
+            StyleEditorInput(_durationInput.GetLineEdit());
+        }
+
+        // Video panel styling
+        var videoPanel = GetNodeOrNull<PanelContainer>("ScrollContainer/CenterContainer/VBoxContainer/VideoContainer/VideoPanel");
+        if (videoPanel is not null)
+        {
+            var vpStyle = new StyleBoxFlat
+            {
+                BgColor = Colors.Black,
+                CornerRadiusTopLeft = 12,
+                CornerRadiusTopRight = 12,
+                CornerRadiusBottomLeft = 12,
+                CornerRadiusBottomRight = 12
+            };
+            videoPanel.AddThemeStyleboxOverride("panel", vpStyle);
+        }
+
+        // Timeline container styling
+        if (_timelineContainer is not null)
+        {
+            var timelineBox = new StyleBoxFlat
+            {
+                BgColor = new Color(0.965f, 0.975f, 0.990f),
+                BorderWidthLeft = 1,
+                BorderWidthTop = 1,
+                BorderWidthRight = 1,
+                BorderWidthBottom = 1,
+                BorderColor = new Color(0.820f, 0.860f, 0.920f),
+                CornerRadiusTopLeft = 10,
+                CornerRadiusTopRight = 10,
+                CornerRadiusBottomLeft = 10,
+                CornerRadiusBottomRight = 10
+            };
+            _timelineContainer.AddThemeStyleboxOverride("panel", timelineBox);
+        }
+
+        // Video playback controls
+        if (_seekBackButton is not null) StyleOutlinePill(_seekBackButton, 10);
+        if (_playPauseButton is not null) StyleActionPill(_playPauseButton, new Color(0.380f, 0.710f, 1.000f));
+        if (_seekForwardButton is not null) StyleOutlinePill(_seekForwardButton, 10);
+        if (_stopButton is not null) StyleOutlinePill(_stopButton, 10);
+
+        // Timeline buttons
+        if (_autoDetectButton is not null) StylePrimaryButton(_autoDetectButton, new Color(0.460f, 0.380f, 0.920f));
+        if (_addBoxButton is not null) StyleOutlinePill(_addBoxButton, 10);
+        if (_cutBoxButton is not null) StyleOutlinePill(_cutBoxButton, 10);
+        if (_deleteBoxButton is not null) StyleDangerPill(_deleteBoxButton);
+
+        // Action buttons
+        if (_saveAndProceedButton is not null) StylePrimaryButton(_saveAndProceedButton, new Color(0.460f, 0.380f, 0.920f));
+        if (_saveButton is not null) StyleActionPill(_saveButton, new Color(0.380f, 0.710f, 1.000f));
+        if (_backButton is not null) StyleOutlinePill(_backButton, 12);
+    }
+
+    private static void SetupButton(Button btn, Action onClick)
+    {
+        btn.Pressed += onClick;
+        UiSoundManager.Attach(btn);
+    }
+
+    private static void StyleEditorInput(LineEdit? input)
+    {
+        if (input is null) return;
+        var normal = new StyleBoxFlat
+        {
+            BgColor = new Color(0.970f, 0.980f, 0.995f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.800f, 0.840f, 0.900f),
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 6,
+            ContentMarginBottom = 6
+        };
+        var focus = new StyleBoxFlat
+        {
+            BgColor = Colors.White,
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.380f, 0.710f, 1.000f),
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 6,
+            ContentMarginBottom = 6
+        };
+        input.AddThemeStyleboxOverride("normal", normal);
+        input.AddThemeStyleboxOverride("focus", focus);
+        input.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
+        input.AddThemeColorOverride("font_selected_color", Colors.White);
+        input.AddThemeColorOverride("font_placeholder_color", new Color(0.55f, 0.58f, 0.68f));
+        input.AddThemeColorOverride("selection_color", new Color(0.380f, 0.710f, 1.000f, 0.5f));
+    }
+
+    private static void StyleOutlinePill(Button btn, int radius)
+    {
+        var normal = new StyleBoxFlat
+        {
+            BgColor = new Color(0.955f, 0.975f, 1.0f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.780f, 0.850f, 0.950f),
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomLeft = radius,
+            CornerRadiusBottomRight = radius,
+            ContentMarginLeft = 12,
+            ContentMarginRight = 12,
+            ContentMarginTop = 6,
+            ContentMarginBottom = 6
+        };
+        var hover = new StyleBoxFlat
+        {
+            BgColor = new Color(0.910f, 0.945f, 0.990f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.38f, 0.71f, 1.0f),
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomLeft = radius,
+            CornerRadiusBottomRight = radius,
+            ContentMarginLeft = 12,
+            ContentMarginRight = 12,
+            ContentMarginTop = 6,
+            ContentMarginBottom = 6
+        };
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", normal);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
+        btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+    }
+
+    private static void StyleActionPill(Button btn, Color accentColor)
+    {
+        var normal = new StyleBoxFlat
+        {
+            BgColor = new Color(accentColor.R, accentColor.G, accentColor.B, 0.15f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = accentColor,
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 6,
+            ContentMarginBottom = 6
+        };
+        var hover = new StyleBoxFlat
+        {
+            BgColor = accentColor,
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = accentColor,
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 6,
+            ContentMarginBottom = 6
+        };
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", normal);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", new Color(0.15f, 0.20f, 0.35f));
+        btn.AddThemeColorOverride("font_hover_color", Colors.White);
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+    }
+
+    private static void StyleDangerPill(Button btn)
+    {
+        var normal = new StyleBoxFlat
+        {
+            BgColor = new Color(1.0f, 0.92f, 0.92f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(1.0f, 0.70f, 0.70f),
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 6,
+            ContentMarginBottom = 6
+        };
+        var hover = new StyleBoxFlat
+        {
+            BgColor = new Color(0.92f, 0.25f, 0.25f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.92f, 0.25f, 0.25f),
+            CornerRadiusTopLeft = 8,
+            CornerRadiusTopRight = 8,
+            CornerRadiusBottomLeft = 8,
+            CornerRadiusBottomRight = 8,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 6,
+            ContentMarginBottom = 6
+        };
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", normal);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", new Color(0.75f, 0.15f, 0.15f));
+        btn.AddThemeColorOverride("font_hover_color", Colors.White);
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+    }
+
+    private static void StylePrimaryButton(Button btn, Color mainColor)
+    {
+        var normal = new StyleBoxFlat
+        {
+            BgColor = mainColor,
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = new Color(0.76f, 0.70f, 1.0f),
+            CornerRadiusTopLeft = 12,
+            CornerRadiusTopRight = 12,
+            CornerRadiusBottomLeft = 12,
+            CornerRadiusBottomRight = 12,
+            ContentMarginLeft = 16,
+            ContentMarginRight = 16,
+            ContentMarginTop = 8,
+            ContentMarginBottom = 8
+        };
+        var hover = new StyleBoxFlat
+        {
+            BgColor = mainColor.Lightened(0.12f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = Colors.White,
+            CornerRadiusTopLeft = 12,
+            CornerRadiusTopRight = 12,
+            CornerRadiusBottomLeft = 12,
+            CornerRadiusBottomRight = 12,
+            ContentMarginLeft = 16,
+            ContentMarginRight = 16,
+            ContentMarginTop = 8,
+            ContentMarginBottom = 8
+        };
+        btn.AddThemeStyleboxOverride("normal", normal);
+        btn.AddThemeStyleboxOverride("hover", hover);
+        btn.AddThemeStyleboxOverride("pressed", normal);
+        btn.AddThemeStyleboxOverride("focus", hover);
+        btn.AddThemeColorOverride("font_color", Colors.White);
+        btn.AddThemeColorOverride("font_hover_color", Colors.White);
+        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
     }
 }

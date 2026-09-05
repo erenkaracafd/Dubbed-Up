@@ -216,6 +216,7 @@ public partial class SettingsScreen : BaseScreen
 		}
 
 		_micGainMultiplier = (float)(value / 100.0);
+		Microphone.GodotLiveMicrophoneService.Instance.ApplyMicGain(_micGainMultiplier);
 	}
 
 	private void OnMicLatencyChanged(double value)
@@ -401,10 +402,11 @@ public partial class SettingsScreen : BaseScreen
 		config.Save("user://audio_settings.cfg");
 
 		Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = micLatency / 1000.0;
+		Microphone.GodotLiveMicrophoneService.Instance.ApplyMicGain((float)(micGain / 100.0));
 
 		if (_statusLabel is not null)
 		{
-			_statusLabel.Text = "✅ Settings saved!";
+			_statusLabel.Text = "Settings saved!";
 		}
 	}
 
@@ -434,6 +436,7 @@ public partial class SettingsScreen : BaseScreen
 		config.Save("user://audio_settings.cfg");
 
 		Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = micLatency / 1000.0;
+		Microphone.GodotLiveMicrophoneService.Instance.ApplyMicGain((float)(micGain / 100.0));
 	}
 
 	private void OnBackPressed()

@@ -136,6 +136,7 @@ public partial class RecordingScreen : BaseScreen
         if (_cancelButton is not null) SetupButton(_cancelButton, OnCancelPressed);
 
         Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
+        Microphone.GodotLiveMicrophoneService.Instance.RestartMicrophoneCapture();
         LoadSceneVideo();
         UpdateUiState();
     }
@@ -795,6 +796,7 @@ public partial class RecordingScreen : BaseScreen
         try
         {
             LoadGameplaySettings();
+            Microphone.GodotLiveMicrophoneService.Instance.RestartMicrophoneCapture();
             _isRecordingActive = true;
             _isMicCapturing = false;
             _recordingElapsed = 0.0;
