@@ -44,29 +44,23 @@ public partial class TimelineWaveformEditor : Control
     private double _dragOrigStartSec = 0.0;
     private double _dragOrigEndSec = 0.0;
 
-    private static readonly Color[] PresetColors =
+    public static readonly Color[] PresetColors =
     [
-        new Color(1.0f, 0.70f, 0.25f, 0.45f),  // Amber
-        new Color(0.25f, 0.85f, 1.0f, 0.45f),  // Cyan
-        new Color(0.50f, 1.0f, 0.45f, 0.45f),  // Lime Green
-        new Color(1.0f, 0.45f, 0.75f, 0.45f),  // Hot Pink
-        new Color(0.85f, 0.55f, 1.0f, 0.45f),  // Purple
-        new Color(1.0f, 0.35f, 0.35f, 0.45f),  // Coral Red
-        new Color(0.35f, 0.65f, 1.0f, 0.45f),  // Sky Blue
-        new Color(1.0f, 0.90f, 0.30f, 0.45f),  // Yellow Gold
-        new Color(0.30f, 1.0f, 0.85f, 0.45f),  // Turquoise
-        new Color(0.95f, 0.50f, 0.90f, 0.45f),  // Magenta
-        new Color(0.60f, 0.80f, 0.20f, 0.45f),  // Olive
-        new Color(1.0f, 0.60f, 0.40f, 0.45f),  // Peach
-        new Color(0.40f, 0.90f, 0.60f, 0.45f),  // Mint
-        new Color(0.70f, 0.70f, 1.0f, 0.45f),  // Lavender
-        new Color(0.90f, 0.40f, 0.50f, 0.45f),  // Rose
-        new Color(0.40f, 1.0f, 0.40f, 0.45f),  // Emerald
-        new Color(1.0f, 0.80f, 0.50f, 0.45f),  // Sunset Orange
-        new Color(0.50f, 0.75f, 0.95f, 0.45f),  // Ice Blue
-        new Color(0.80f, 0.95f, 0.40f, 0.45f),  // Chartreuse
-        new Color(0.95f, 0.65f, 0.80f, 0.45f),  // Bubblegum
+        new Color(0.20f, 0.60f, 0.95f),  // Sky Blue
+        new Color(0.95f, 0.40f, 0.30f),  // Coral Red
+        new Color(0.15f, 0.75f, 0.45f),  // Emerald Green
+        new Color(0.95f, 0.65f, 0.15f),  // Amber Orange
+        new Color(0.65f, 0.35f, 0.95f),  // Violet Purple
+        new Color(0.95f, 0.30f, 0.60f),  // Pink Rose
+        new Color(0.05f, 0.75f, 0.80f),  // Teal Cyan
+        new Color(0.85f, 0.45f, 0.10f),  // Rust Orange
+        new Color(0.40f, 0.50f, 0.95f),  // Indigo
+        new Color(0.50f, 0.78f, 0.20f),  // Apple Green
+        new Color(0.85f, 0.20f, 0.40f),  // Ruby
+        new Color(0.15f, 0.70f, 0.65f),  // Deep Mint
     ];
+
+    public static Color GetPresetColor(int index) => PresetColors[Math.Abs(index) % PresetColors.Length];
 
     public override void _Ready()
     {
@@ -82,7 +76,7 @@ public partial class TimelineWaveformEditor : Control
         for (int i = 0; i < slots.Count; i++)
         {
             var s = slots[i];
-            s.BoxColor = PresetColors[i % PresetColors.Length];
+            s.BoxColor = GetPresetColor(i);
             _slots.Add(s);
         }
 
@@ -189,32 +183,43 @@ public partial class TimelineWaveformEditor : Control
             }
         }
 
-        // 4. Transparent Speech Selection Boxes (Overlaid on Waveform)
+        // 4. Vibrant Speech Selection Boxes (Overlaid on Waveform)
         for (int i = 0; i < _slots.Count; i++)
         {
             var slot = _slots[i];
             var xStart = (float)(Math.Clamp(slot.StartSeconds / _totalDuration, 0.0, 1.0) * size.X);
             var xEnd = (float)(Math.Clamp(slot.EndSeconds / _totalDuration, 0.0, 1.0) * size.X);
-            var width = Math.Max(14.0f, xEnd - xStart);
+            var width = Math.Max(16.0f, xEnd - xStart);
             var yTop = 16.0f;
             var boxHeight = size.Y - 18.0f;
             var yBottom = yTop + boxHeight;
 
             var isSelected = (i == _selectedSlotIndex);
             var baseColor = slot.BoxColor;
-            var boxColor = isSelected ? new Color(0.2f, 0.95f, 0.45f, 0.35f) : new Color(baseColor.R, baseColor.G, baseColor.B, 0.20f);
-            var borderColor = isSelected ? new Color(0.4f, 1.0f, 0.6f, 0.95f) : new Color(baseColor.R, baseColor.G, baseColor.B, 0.70f);
+            var boxColor = isSelected
+                ? new Color(baseColor.R, baseColor.G, baseColor.B, 0.45f)
+                : new Color(baseColor.R, baseColor.G, baseColor.B, 0.28f);
+            var borderColor = isSelected
+                ? Colors.White
+                : new Color(baseColor.R, baseColor.G, baseColor.B, 0.92f);
 
             var slotRect = new Rect2(xStart, yTop, width, boxHeight);
 
             // Fill transparent colored box
             DrawRect(slotRect, boxColor);
-            // Ultra-thin sleek 1px border so waveform peaks are completely visible
-            DrawRect(slotRect, borderColor, false, 1.0f);
+            // Crisp border
+            DrawRect(slotRect, borderColor, false, isSelected ? 2.5f : 1.5f);
+
+            if (isSelected)
+            {
+                // Subtle glowing accent border for selected box
+                var glowRect = new Rect2(xStart - 1, yTop - 1, width + 2, boxHeight + 2);
+                DrawRect(glowRect, new Color(baseColor.R, baseColor.G, baseColor.B, 0.65f), false, 1.5f);
+            }
 
             // Corner handles on Left & Right edges for precise resize grasping
             var cornerSize = 7.0f;
-            var handleColor = isSelected ? new Color(0.4f, 1.0f, 0.6f, 1.0f) : new Color(1.0f, 1.0f, 1.0f, 0.90f);
+            var handleColor = isSelected ? Colors.White : new Color(1.0f, 1.0f, 1.0f, 0.85f);
 
             // Left top & bottom corners
             DrawLine(new Vector2(xStart, yTop), new Vector2(xStart + cornerSize, yTop), handleColor, 2.0f);
@@ -233,22 +238,23 @@ public partial class TimelineWaveformEditor : Control
             var midY = yTop + (boxHeight / 2.0f);
             var dotRadius = isSelected ? 6.5f : 5.0f;
             DrawCircle(new Vector2(midX, midY), dotRadius + 1.5f, new Color(0.05f, 0.08f, 0.14f, 0.95f));
-            DrawCircle(new Vector2(midX, midY), dotRadius, isSelected ? new Color(0.3f, 1.0f, 0.5f, 1.0f) : new Color(0.9f, 0.95f, 1.0f, 0.95f));
+            DrawCircle(new Vector2(midX, midY), dotRadius, isSelected ? Colors.White : new Color(baseColor.R, baseColor.G, baseColor.B, 1.0f));
             DrawArc(new Vector2(midX, midY), dotRadius + 1.5f, 0, Mathf.Tau, 16, borderColor, 1.2f);
 
-            // Header Tag (Number & Character Name)
+            // Header Tag (Number & Character Name) with high-contrast badge
             var tagText = $"#{i + 1} {slot.CharacterName}";
             var tagWidth = Math.Min(width, 160);
-            var tagBgRect = new Rect2(xStart, yTop, tagWidth, 16);
-            DrawRect(tagBgRect, new Color(0.0f, 0.0f, 0.0f, 0.80f));
-            DrawString(font, new Vector2(xStart + 4, yTop + 12), tagText, HorizontalAlignment.Left, (int)tagWidth - 20, 11, new Color(1.0f, 1.0f, 1.0f, 1.0f));
+            var tagBgRect = new Rect2(xStart, yTop, tagWidth, 17);
+            DrawRect(tagBgRect, new Color(0.08f, 0.10f, 0.16f, 0.92f));
+            DrawRect(tagBgRect, borderColor, false, 1.0f);
+            DrawString(font, new Vector2(xStart + 5, yTop + 13), tagText, HorizontalAlignment.Left, (int)tagWidth - 20, 11, Colors.White);
 
             // Delete 'x' Icon button at top right of the box if width allows
             if (width >= 35)
             {
-                var deleteIconRect = new Rect2(xStart + width - 16, yTop, 16, 16);
-                DrawRect(deleteIconRect, isSelected ? new Color(0.9f, 0.2f, 0.2f, 0.9f) : new Color(0.0f, 0.0f, 0.0f, 0.7f));
-                DrawString(font, new Vector2(xStart + width - 13, yTop + 12), "✕", HorizontalAlignment.Left, -1, 10, new Color(1.0f, 1.0f, 1.0f, 1.0f));
+                var deleteIconRect = new Rect2(xStart + width - 16, yTop, 16, 17);
+                DrawRect(deleteIconRect, new Color(0.85f, 0.25f, 0.25f, 0.90f));
+                DrawString(font, new Vector2(xStart + width - 13, yTop + 13), "✕", HorizontalAlignment.Left, -1, 10, Colors.White);
             }
         }
 
