@@ -12,6 +12,10 @@ using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
 
+/// <summary>
+/// Online lobby: a connect view (name, host or join) and a room view (scene, characters, players).
+/// The layout is built in code with <see cref="UiKit"/>; network flow is driven by <see cref="NetworkLobbyManager"/>.
+/// </summary>
 public partial class LobbyScreen : BaseScreen
 {
     private LineEdit? _playerNameInput;
@@ -22,12 +26,17 @@ public partial class LobbyScreen : BaseScreen
     private Button? _leaveButton;
     private Button? _readyButton;
     private Button? _startButton;
-    private Button? _backButton;
     private VBoxContainer? _playersListContainer;
     private Label? _statusLabel;
+    private Label? _roomLabel;
     private Control? _connectionPanel;
     private Control? _lobbyPanel;
+    private Control? _nameAvatarSlot;
+    private Label? _playerCountLabel;
 
+    private Panel? _sceneArt;
+    private Label? _sceneTitleLabel;
+    private Label? _sceneMetaLabel;
     private OptionButton? _sceneOptionButton;
     private Label? _guestSceneLabel;
     private Label? _sceneNoticeLabel;
@@ -36,6 +45,7 @@ public partial class LobbyScreen : BaseScreen
 
     private NetworkLobbyManager? _lobbyManager;
     private bool _isLocalReady = false;
+    private bool? _shownInLobby;
 
     public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
     {
@@ -52,46 +62,19 @@ public partial class LobbyScreen : BaseScreen
 
             UpdatePanelsVisibility(_lobbyManager.IsConnectedToLobby);
             OnPlayerListUpdated();
+
+            // Dev aid alongside --start-screen: `-- --start-screen=Lobby --auto-host` opens a hosted room.
+            if (OS.GetCmdlineUserArgs().Contains("--auto-host") && !_lobbyManager.IsConnectedToLobby)
+            {
+                Callable.From(OnHostPressed).CallDeferred();
+            }
         }
     }
 
     public override void _Ready()
     {
-        _statusLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/StatusLabel");
-        _connectionPanel = GetNodeOrNull<Control>("CenterArea/VBoxContainer/ConnectionPanel");
-        _lobbyPanel = GetNodeOrNull<Control>("CenterArea/VBoxContainer/LobbyPanel");
-        _playersListContainer = GetNodeOrNull<VBoxContainer>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/PlayersListContainer");
-
-        _playerNameInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PlayerNameInput");
-        _addressInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/AddressInput");
-        _portInput = GetNodeOrNull<LineEdit>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/PortInput");
-        _hostButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/HostButton");
-        _joinButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/ConnectionPanel/Margin/VBoxContainer/ButtonsHBox/JoinButton");
-        _readyButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/ReadyButton");
-        _startButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/StartButton");
-        _leaveButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/ActionsHBox/LeaveButton");
-        _backButton = GetNodeOrNull<Button>("TopBar/TopMargin/TopHBox/BackButton");
-
-        _sceneOptionButton = GetNodeOrNull<OptionButton>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection/SceneOptionButton");
-        _guestSceneLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection/GuestSceneLabel");
-        _sceneNoticeLabel = GetNodeOrNull<Label>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/SceneSection/SceneNoticeLabel");
-        _characterListContainer = GetNodeOrNull<HFlowContainer>("CenterArea/VBoxContainer/LobbyPanel/Margin/VBoxContainer/CharacterSection/CharacterListContainer");
-
-        if (_sceneOptionButton is not null)
-        {
-            _sceneOptionButton.ItemSelected += OnSceneOptionSelected;
-            StyleOptionButton(_sceneOptionButton);
-        }
-
+        BuildLayout();
         PopulateSceneDropdown();
-        ApplyStyling();
-
-        if (_hostButton is not null) SetupButton(_hostButton, OnHostPressed);
-        if (_joinButton is not null) SetupButton(_joinButton, OnJoinPressed);
-        if (_readyButton is not null) SetupButton(_readyButton, OnReadyPressed);
-        if (_startButton is not null) SetupButton(_startButton, OnStartPressed);
-        if (_leaveButton is not null) SetupButton(_leaveButton, OnLeavePressed);
-        if (_backButton is not null) SetupButton(_backButton, OnBackPressed);
 
         if (_lobbyManager is not null)
         {
@@ -102,148 +85,6 @@ public partial class LobbyScreen : BaseScreen
         {
             UpdatePanelsVisibility(false);
         }
-    }
-
-    private void SetupButton(Button btn, Action action)
-    {
-        btn.Pressed += action;
-        UiSoundManager.Attach(btn);
-    }
-
-    private void ApplyStyling()
-    {
-        // Top bar
-        var topBar = GetNodeOrNull<PanelContainer>("TopBar");
-        if (topBar is not null)
-        {
-            var topBarStyle = new StyleBoxFlat
-            {
-                BgColor = new Color(1.0f, 1.0f, 1.0f, 0.90f),
-                BorderWidthBottom = 1,
-                BorderColor = new Color(0.886f, 0.902f, 0.941f, 0.8f),
-                ShadowColor = new Color(0.1f, 0.1f, 0.2f, 0.04f),
-                ShadowSize = 6
-            };
-            topBar.AddThemeStyleboxOverride("panel", topBarStyle);
-        }
-
-        // Panels
-        var panelStyle = new StyleBoxFlat
-        {
-            BgColor = new Color(0.965f, 0.980f, 1.000f),
-            BorderWidthLeft = 2,
-            BorderWidthTop = 2,
-            BorderWidthRight = 2,
-            BorderWidthBottom = 2,
-            BorderColor = new Color(0.780f, 0.850f, 0.950f),
-            CornerRadiusTopLeft = 24,
-            CornerRadiusTopRight = 24,
-            CornerRadiusBottomLeft = 24,
-            CornerRadiusBottomRight = 24,
-            ShadowColor = new Color(0.12f, 0.18f, 0.35f, 0.10f),
-            ShadowSize = 18,
-            ShadowOffset = new Vector2(0, 6)
-        };
-
-        if (_connectionPanel is PanelContainer cp) cp.AddThemeStyleboxOverride("panel", panelStyle);
-        if (_lobbyPanel is PanelContainer lp) lp.AddThemeStyleboxOverride("panel", panelStyle);
-
-        // Buttons
-        if (_hostButton is not null) StyleActionPill(_hostButton, new Color(1.0f, 0.540f, 0.680f), 24);
-        if (_joinButton is not null) StyleActionPill(_joinButton, new Color(0.280f, 0.650f, 0.950f), 24);
-        if (_startButton is not null) StyleActionPill(_startButton, new Color(1.0f, 0.540f, 0.680f), 23);
-        if (_readyButton is not null) StyleActionPill(_readyButton, new Color(0.600f, 0.480f, 0.950f), 23);
-        if (_leaveButton is not null) StyleOutlinePill(_leaveButton, 23);
-        if (_backButton is not null) StyleOutlinePill(_backButton, 18);
-
-        // Inputs
-        StyleInput(_playerNameInput);
-        StyleInput(_addressInput);
-        StyleInput(_portInput);
-    }
-
-    private static void StyleInput(LineEdit? input)
-    {
-        if (input is null) return;
-        var box = new StyleBoxFlat
-        {
-            BgColor = new Color(0.97f, 0.98f, 1.0f),
-            BorderWidthLeft = 2,
-            BorderWidthTop = 2,
-            BorderWidthRight = 2,
-            BorderWidthBottom = 2,
-            BorderColor = new Color(0.886f, 0.902f, 0.941f),
-            CornerRadiusTopLeft = 14,
-            CornerRadiusTopRight = 14,
-            CornerRadiusBottomLeft = 14,
-            CornerRadiusBottomRight = 14,
-            ContentMarginLeft = 14,
-            ContentMarginRight = 14
-        };
-        input.AddThemeStyleboxOverride("normal", box);
-        input.AddThemeStyleboxOverride("focus", box);
-        input.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
-    }
-
-    private static void StyleActionPill(Button btn, Color color, int radius)
-    {
-        var normal = new StyleBoxFlat { BgColor = color, CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 6, ShadowColor = new Color(color.R, color.G, color.B, 0.3f) };
-        var hover = new StyleBoxFlat { BgColor = color.Lightened(0.15f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 10, ShadowColor = new Color(color.R, color.G, color.B, 0.4f) };
-        var pressed = new StyleBoxFlat { BgColor = color.Darkened(0.15f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius, ShadowSize = 1 };
-
-        btn.AddThemeStyleboxOverride("normal", normal);
-        btn.AddThemeStyleboxOverride("hover", hover);
-        btn.AddThemeStyleboxOverride("pressed", pressed);
-        btn.AddThemeStyleboxOverride("focus", hover);
-        btn.AddThemeColorOverride("font_color", Colors.White);
-        btn.AddThemeColorOverride("font_hover_color", Colors.White);
-        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
-        btn.PivotOffset = new Vector2(btn.CustomMinimumSize.X > 0 ? btn.CustomMinimumSize.X / 2f : 60f, 23f);
-
-        btn.MouseEntered += () =>
-        {
-            var tween = btn.CreateTween();
-            tween.TweenProperty(btn, "scale", new Vector2(1.04f, 1.04f), 0.12)
-                .SetTrans(Tween.TransitionType.Back)
-                .SetEase(Tween.EaseType.Out);
-        };
-        btn.MouseExited += () =>
-        {
-            var tween = btn.CreateTween();
-            tween.TweenProperty(btn, "scale", Vector2.One, 0.10)
-                .SetTrans(Tween.TransitionType.Quad)
-                .SetEase(Tween.EaseType.Out);
-        };
-    }
-
-    private static void StyleOutlinePill(Button btn, int radius)
-    {
-        var normal = new StyleBoxFlat { BgColor = Colors.White, BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.886f, 0.902f, 0.941f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
-        var hover = new StyleBoxFlat { BgColor = new Color(0.95f, 0.97f, 1.0f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius };
-
-        btn.AddThemeStyleboxOverride("normal", normal);
-        btn.AddThemeStyleboxOverride("hover", hover);
-        btn.AddThemeStyleboxOverride("pressed", normal);
-        btn.AddThemeStyleboxOverride("focus", hover);
-        btn.AddThemeColorOverride("font_color", new Color(0.294f, 0.322f, 0.439f));
-        btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
-        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
-        btn.PivotOffset = new Vector2(btn.CustomMinimumSize.X > 0 ? btn.CustomMinimumSize.X / 2f : 55f, 18f);
-
-        btn.MouseEntered += () =>
-        {
-            var tween = btn.CreateTween();
-            tween.TweenProperty(btn, "scale", new Vector2(1.04f, 1.04f), 0.12)
-                .SetTrans(Tween.TransitionType.Back)
-                .SetEase(Tween.EaseType.Out);
-        };
-        btn.MouseExited += () =>
-        {
-            var tween = btn.CreateTween();
-            tween.TweenProperty(btn, "scale", Vector2.One, 0.10)
-                .SetTrans(Tween.TransitionType.Quad)
-                .SetEase(Tween.EaseType.Out);
-        };
     }
 
     public override void _ExitTree()
@@ -258,16 +99,322 @@ public partial class LobbyScreen : BaseScreen
         }
     }
 
+    // ───────────────────────── Layout ─────────────────────────
+
+    private void BuildLayout()
+    {
+        var margin = new MarginContainer();
+        margin.SetAnchorsPreset(LayoutPreset.FullRect);
+        margin.AddThemeConstantOverride("margin_left", 40);
+        margin.AddThemeConstantOverride("margin_right", 40);
+        margin.AddThemeConstantOverride("margin_top", 28);
+        margin.AddThemeConstantOverride("margin_bottom", 28);
+        AddChild(margin);
+
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 22);
+        margin.AddChild(column);
+
+        // Header
+        var header = new HBoxContainer();
+        header.AddThemeConstantOverride("separation", 16);
+        column.AddChild(header);
+
+        var backButton = UiKit.CreateButton("Back", "arrow-left", outline: true, UiKit.Soft, UiKit.Ink, OnBackPressed);
+        backButton.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        header.AddChild(backButton);
+
+        var titleBox = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        titleBox.AddThemeConstantOverride("separation", 0);
+        header.AddChild(titleBox);
+        titleBox.AddChild(UiKit.Heading("Play online", 32));
+        _roomLabel = UiKit.Body("Not connected", 13);
+        titleBox.AddChild(_roomLabel);
+
+        _statusLabel = UiKit.Body(string.Empty, 14);
+        _statusLabel.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        _statusLabel.HorizontalAlignment = HorizontalAlignment.Right;
+        header.AddChild(_statusLabel);
+
+        // Both views share the remaining space; only one is visible at a time.
+        var body = new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
+        column.AddChild(body);
+
+        _connectionPanel = BuildConnectView();
+        body.AddChild(_connectionPanel);
+
+        _lobbyPanel = BuildRoomView();
+        body.AddChild(_lobbyPanel);
+    }
+
+    private Control BuildConnectView()
+    {
+        var center = new CenterContainer();
+        center.SetAnchorsPreset(LayoutPreset.FullRect);
+
+        var stack = new VBoxContainer { CustomMinimumSize = new Vector2(860, 0) };
+        stack.AddThemeConstantOverride("separation", 20);
+        center.AddChild(stack);
+
+        // Identity card: avatar, name, port
+        var identity = new PanelContainer();
+        identity.AddThemeStyleboxOverride("panel", UiKit.CardBox(padding: 20));
+        stack.AddChild(identity);
+
+        var identityRow = new HBoxContainer();
+        identityRow.AddThemeConstantOverride("separation", 18);
+        identity.AddChild(identityRow);
+
+        _nameAvatarSlot = new CenterContainer { CustomMinimumSize = new Vector2(64, 64) };
+        identityRow.AddChild(_nameAvatarSlot);
+
+        var nameBox = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        nameBox.AddThemeConstantOverride("separation", 6);
+        identityRow.AddChild(nameBox);
+        nameBox.AddChild(UiKit.Body("Your name", 13));
+        _playerNameInput = new LineEdit { Text = "Player 1", PlaceholderText = "Your name", MaxLength = 24 };
+        UiKit.StyleInput(_playerNameInput);
+        _playerNameInput.TextChanged += _ => RefreshNameAvatar();
+        nameBox.AddChild(_playerNameInput);
+
+        var portBox = new VBoxContainer { CustomMinimumSize = new Vector2(130, 0) };
+        portBox.AddThemeConstantOverride("separation", 6);
+        identityRow.AddChild(portBox);
+        portBox.AddChild(UiKit.Body("Port", 13));
+        _portInput = new LineEdit { Text = NetworkLobbyManager.DefaultPort.ToString(), PlaceholderText = "7777", MaxLength = 5 };
+        UiKit.StyleInput(_portInput);
+        portBox.AddChild(_portInput);
+
+        RefreshNameAvatar();
+
+        // Host / join choice
+        var choices = new HBoxContainer();
+        choices.AddThemeConstantOverride("separation", 20);
+        stack.AddChild(choices);
+
+        var hostCard = BuildChoiceCard("users", UiKit.Pink, "Host a room", "Friends join with your IP address.");
+        choices.AddChild(hostCard.Card);
+        hostCard.Content.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 46) });
+        _hostButton = UiKit.CreateButton("Host", "users", outline: false, UiKit.Pink, Colors.White, OnHostPressed);
+        _hostButton.CustomMinimumSize = new Vector2(0, 50);
+        hostCard.Content.AddChild(_hostButton);
+
+        var joinCard = BuildChoiceCard("globe", UiKit.Sky, "Join a room", "Enter the host's IP address.");
+        choices.AddChild(joinCard.Card);
+        _addressInput = new LineEdit { Text = "127.0.0.1", PlaceholderText = "e.g. 192.168.1.20" };
+        UiKit.StyleInput(_addressInput);
+        joinCard.Content.AddChild(_addressInput);
+        _joinButton = UiKit.CreateButton("Join", "globe", outline: false, UiKit.Sky, Colors.White, OnJoinPressed);
+        _joinButton.CustomMinimumSize = new Vector2(0, 50);
+        joinCard.Content.AddChild(_joinButton);
+
+        return center;
+    }
+
+    private static (PanelContainer Card, VBoxContainer Content) BuildChoiceCard(string icon, Color accent, string title, string caption)
+    {
+        var card = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        card.AddThemeStyleboxOverride("panel", UiKit.CardBox(padding: 24, border: accent.Lerp(Colors.White, 0.6f)));
+
+        var content = new VBoxContainer();
+        content.AddThemeConstantOverride("separation", 12);
+        card.AddChild(content);
+
+        var top = new HBoxContainer();
+        top.AddThemeConstantOverride("separation", 14);
+        content.AddChild(top);
+
+        var bubble = new PanelContainer { CustomMinimumSize = new Vector2(52, 52), SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        var bubbleBox = UiKit.RoundedBox(accent, 26, padding: 13);
+        bubbleBox.CornerDetail = 24;
+        bubbleBox.ShadowColor = accent with { A = 0.35f };
+        bubbleBox.ShadowSize = 10;
+        bubble.AddThemeStyleboxOverride("panel", bubbleBox);
+        bubble.AddChild(new TextureRect
+        {
+            Texture = UiIcons.Get(icon),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            CustomMinimumSize = new Vector2(26, 26),
+        });
+        top.AddChild(bubble);
+
+        var text = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, Alignment = BoxContainer.AlignmentMode.Center };
+        text.AddThemeConstantOverride("separation", 0);
+        top.AddChild(text);
+        text.AddChild(UiKit.Heading(title, 22));
+        text.AddChild(UiKit.Body(caption, 13));
+
+        return (card, content);
+    }
+
+    private Control BuildRoomView()
+    {
+        var row = new HBoxContainer();
+        row.SetAnchorsPreset(LayoutPreset.FullRect);
+        row.AddThemeConstantOverride("separation", 22);
+
+        // Left: scene + characters
+        var left = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1.35f };
+        left.AddThemeConstantOverride("separation", 18);
+        row.AddChild(left);
+
+        var sceneCard = new PanelContainer();
+        sceneCard.AddThemeStyleboxOverride("panel", UiKit.CardBox(padding: 18));
+        left.AddChild(sceneCard);
+
+        var sceneRow = new HBoxContainer();
+        sceneRow.AddThemeConstantOverride("separation", 18);
+        sceneCard.AddChild(sceneRow);
+
+        _sceneArt = new Panel { CustomMinimumSize = new Vector2(208, 117), ClipChildren = ClipChildrenMode.Only };
+        _sceneArt.AddThemeStyleboxOverride("panel", UiKit.RoundedBox(Colors.White, 16));
+        sceneRow.AddChild(_sceneArt);
+
+        var sceneInfo = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, Alignment = BoxContainer.AlignmentMode.Center };
+        sceneInfo.AddThemeConstantOverride("separation", 4);
+        sceneRow.AddChild(sceneInfo);
+
+        sceneInfo.AddChild(UiKit.Body("Scene", 12));
+        _sceneTitleLabel = UiKit.Heading("No scene", 24);
+        _sceneTitleLabel.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        sceneInfo.AddChild(_sceneTitleLabel);
+        _sceneMetaLabel = UiKit.Body(string.Empty, 13);
+        _sceneMetaLabel.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        sceneInfo.AddChild(_sceneMetaLabel);
+
+        _sceneOptionButton = new OptionButton { CustomMinimumSize = new Vector2(0, 42), FitToLongestItem = false };
+        _sceneOptionButton.AddThemeFontSizeOverride("font_size", 14);
+        StyleOptionButton(_sceneOptionButton);
+        _sceneOptionButton.ItemSelected += OnSceneOptionSelected;
+        sceneInfo.AddChild(_sceneOptionButton);
+
+        _guestSceneLabel = UiKit.Body(string.Empty, 13);
+        _guestSceneLabel.Visible = false;
+        sceneInfo.AddChild(_guestSceneLabel);
+
+        _sceneNoticeLabel = UiKit.Body(string.Empty, 13, UiKit.Danger);
+        _sceneNoticeLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        _sceneNoticeLabel.Visible = false;
+        sceneInfo.AddChild(_sceneNoticeLabel);
+
+        var charactersCard = new PanelContainer();
+        charactersCard.AddThemeStyleboxOverride("panel", UiKit.CardBox(padding: 20));
+        left.AddChild(charactersCard);
+
+        var charactersStack = new VBoxContainer();
+        charactersStack.AddThemeConstantOverride("separation", 14);
+        charactersCard.AddChild(charactersStack);
+
+        var charactersHeader = new HBoxContainer();
+        charactersStack.AddChild(charactersHeader);
+        var charactersTitle = UiKit.Heading("Characters", 20);
+        charactersTitle.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        charactersHeader.AddChild(charactersTitle);
+        charactersHeader.AddChild(UiKit.Body("Click to claim", 13));
+
+        _characterListContainer = new HFlowContainer();
+        _characterListContainer.AddThemeConstantOverride("h_separation", 12);
+        _characterListContainer.AddThemeConstantOverride("v_separation", 12);
+        charactersStack.AddChild(_characterListContainer);
+
+        // Right: players + actions
+        var right = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        right.AddThemeConstantOverride("separation", 18);
+        row.AddChild(right);
+
+        var playersCard = new PanelContainer();
+        playersCard.AddThemeStyleboxOverride("panel", UiKit.CardBox(padding: 20));
+        right.AddChild(playersCard);
+        right.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+
+        var playersStack = new VBoxContainer();
+        playersStack.AddThemeConstantOverride("separation", 14);
+        playersCard.AddChild(playersStack);
+
+        var playersHeader = new HBoxContainer();
+        playersStack.AddChild(playersHeader);
+        var playersTitle = UiKit.Heading("Players", 20);
+        playersTitle.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        playersHeader.AddChild(playersTitle);
+        _playerCountLabel = UiKit.Body(string.Empty, 13);
+        playersHeader.AddChild(_playerCountLabel);
+
+        _playersListContainer = new VBoxContainer();
+        _playersListContainer.AddThemeConstantOverride("separation", 10);
+        playersStack.AddChild(_playersListContainer);
+
+        var actions = new HBoxContainer();
+        actions.AddThemeConstantOverride("separation", 12);
+        right.AddChild(actions);
+
+        _leaveButton = UiKit.CreateButton("Leave", "log-out", outline: true, UiKit.Soft, UiKit.Ink, OnLeavePressed);
+        _leaveButton.CustomMinimumSize = new Vector2(0, 52);
+        actions.AddChild(_leaveButton);
+
+        _readyButton = UiKit.CreateButton("Ready up", "check", outline: false, UiKit.Lilac, Colors.White, OnReadyPressed);
+        _readyButton.CustomMinimumSize = new Vector2(0, 52);
+        _readyButton.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        actions.AddChild(_readyButton);
+
+        _startButton = UiKit.CreateButton("Start", "play", outline: false, UiKit.Pink, Colors.White, OnStartPressed);
+        _startButton.CustomMinimumSize = new Vector2(0, 52);
+        _startButton.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        actions.AddChild(_startButton);
+
+        return row;
+    }
+
+    private void RefreshNameAvatar()
+    {
+        if (_nameAvatarSlot is null) return;
+        foreach (var child in _nameAvatarSlot.GetChildren())
+        {
+            _nameAvatarSlot.RemoveChild(child);
+            child.QueueFree();
+        }
+        _nameAvatarSlot.AddChild(UiKit.CreateAvatar(_playerNameInput?.Text ?? "?", UiKit.Lilac, 60));
+    }
+
     private void UpdatePanelsVisibility(bool inLobby)
     {
         if (_connectionPanel is not null) _connectionPanel.Visible = !inLobby;
         if (_lobbyPanel is not null) _lobbyPanel.Visible = inLobby;
+
+        if (_shownInLobby != inLobby)
+        {
+            _shownInLobby = inLobby;
+            var shown = inLobby ? _lobbyPanel : _connectionPanel;
+            if (shown is not null)
+            {
+                shown.Modulate = new Color(1, 1, 1, 0);
+                shown.CreateTween().TweenProperty(shown, "modulate:a", 1.0f, 0.3f)
+                     .SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.Out);
+            }
+        }
+
+        UpdateRoomLabel();
 
         if (inLobby)
         {
             UpdateSceneNotice();
         }
     }
+
+    private void UpdateRoomLabel()
+    {
+        if (_roomLabel is null) return;
+        if (_lobbyManager is null || !_lobbyManager.IsConnectedToLobby)
+        {
+            _roomLabel.Text = "Not connected";
+        }
+        else
+        {
+            _roomLabel.Text = _lobbyManager.IsHost ? "You're hosting" : "Connected to host";
+        }
+    }
+
+    // ───────────────────────── Connect flow ─────────────────────────
 
     private void OnHostPressed()
     {
@@ -347,6 +494,8 @@ public partial class LobbyScreen : BaseScreen
     {
         _lobbyManager?.LeaveGame();
         _isLocalReady = false;
+        UpdateReadyButton();
+        if (_statusLabel is not null) _statusLabel.Text = string.Empty;
         UpdatePanelsVisibility(false);
     }
 
@@ -354,10 +503,14 @@ public partial class LobbyScreen : BaseScreen
     {
         _isLocalReady = !_isLocalReady;
         _lobbyManager?.SetReadyState(_isLocalReady);
-        if (_readyButton is not null)
-        {
-            _readyButton.Text = _isLocalReady ? "Not Ready" : "Ready";
-        }
+        UpdateReadyButton();
+    }
+
+    private void UpdateReadyButton()
+    {
+        if (_readyButton is null) return;
+        _readyButton.Text = _isLocalReady ? "Ready" : "Ready up";
+        UiKit.StylePill(_readyButton, _isLocalReady ? UiKit.Mint : UiKit.Lilac, Colors.White, outline: false);
     }
 
     private void OnStartPressed()
@@ -368,7 +521,6 @@ public partial class LobbyScreen : BaseScreen
         }
 
         var sceneId = _lobbyManager.SelectedSceneId;
-        var sceneTitle = _lobbyManager.SelectedSceneTitle;
 
         // Check if any peer is missing this scene or has checksum mismatch
         var incompatiblePeers = _lobbyManager.Players.Values
@@ -388,12 +540,7 @@ public partial class LobbyScreen : BaseScreen
             {
                 _statusLabel.Text = $"Can't start: {detailText}";
             }
-            if (_sceneNoticeLabel is not null)
-            {
-                _sceneNoticeLabel.Text = $"Missing scene: {detailText}";
-                _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
-                _sceneNoticeLabel.Visible = true;
-            }
+            ShowSceneNotice($"Missing scene: {detailText}");
             return;
         }
 
@@ -413,12 +560,7 @@ public partial class LobbyScreen : BaseScreen
             var notice = $"Unclaimed: {string.Join(", ", unassignedNames)}";
 
             if (_statusLabel is not null) _statusLabel.Text = notice;
-            if (_sceneNoticeLabel is not null)
-            {
-                _sceneNoticeLabel.Text = notice;
-                _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
-                _sceneNoticeLabel.Visible = true;
-            }
+            ShowSceneNotice(notice);
             return;
         }
 
@@ -441,6 +583,8 @@ public partial class LobbyScreen : BaseScreen
         UpdatePanelsVisibility(isConnected);
     }
 
+    // ───────────────────────── Scene ─────────────────────────
+
     private void PopulateSceneDropdown()
     {
         if (_sceneOptionButton is null) return;
@@ -461,10 +605,7 @@ public partial class LobbyScreen : BaseScreen
         for (var i = 0; i < _availableScenes.Count; i++)
         {
             var sc = _availableScenes[i];
-            var charCount = sc.Document.Characters.Count;
-            var durSec = sc.DurationMilliseconds / 1000f;
-            var text = $"{sc.Title} ({charCount} Chars, {durSec:F0}s)";
-            _sceneOptionButton.AddItem(text, i);
+            _sceneOptionButton.AddItem(sc.Title, i);
 
             if (sc.SceneId.Equals(currentSelectedId, StringComparison.OrdinalIgnoreCase))
             {
@@ -562,6 +703,7 @@ public partial class LobbyScreen : BaseScreen
 
     private void UpdateSceneNotice()
     {
+        UpdateSceneCard();
         if (_lobbyManager is null) return;
 
         var isHost = _lobbyManager.IsHost;
@@ -591,21 +733,11 @@ public partial class LobbyScreen : BaseScreen
                     var reason = _lobbyManager.GetPeerMismatchReason(p.PeerId);
                     return string.IsNullOrEmpty(reason) ? p.PlayerName : $"{p.PlayerName} ({reason})";
                 });
-                var detailText = string.Join(", ", details);
-
-                if (_sceneNoticeLabel is not null)
-                {
-                    _sceneNoticeLabel.Text = $"Missing scene: {detailText}";
-                    _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
-                    _sceneNoticeLabel.Visible = true;
-                }
+                ShowSceneNotice($"Missing scene: {string.Join(", ", details)}");
             }
-            else
+            else if (_sceneNoticeLabel is not null)
             {
-                if (_sceneNoticeLabel is not null)
-                {
-                    _sceneNoticeLabel.Visible = false;
-                }
+                _sceneNoticeLabel.Visible = false;
             }
         }
         else
@@ -616,33 +748,56 @@ public partial class LobbyScreen : BaseScreen
 
             if (_guestSceneLabel is not null)
             {
-                if (hasVideo)
-                {
-                    _guestSceneLabel.Text = sceneTitle;
-                    _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.18f, 0.65f, 0.35f));
-                }
-                else
-                {
-                    _guestSceneLabel.Text = $"{sceneTitle} (not installed)";
-                    _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
-                }
+                _guestSceneLabel.Text = hasVideo ? "Picked by the host" : "Not installed on this computer";
+                _guestSceneLabel.AddThemeColorOverride("font_color", hasVideo ? UiKit.Mint : UiKit.Danger);
             }
 
-            if (_sceneNoticeLabel is not null)
+            if (!hasVideo)
             {
-                if (!hasVideo)
-                {
-                    _sceneNoticeLabel.Text = $"You don't have \"{sceneTitle}\". The host needs to pick a scene everyone has.";
-                    _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
-                    _sceneNoticeLabel.Visible = true;
-                }
-                else
-                {
-                    _sceneNoticeLabel.Visible = false;
-                }
+                ShowSceneNotice($"You don't have \"{sceneTitle}\". The host needs to pick a scene everyone has.");
+            }
+            else if (_sceneNoticeLabel is not null)
+            {
+                _sceneNoticeLabel.Visible = false;
             }
         }
     }
+
+    private void ShowSceneNotice(string text)
+    {
+        if (_sceneNoticeLabel is null) return;
+        _sceneNoticeLabel.Text = text;
+        _sceneNoticeLabel.Visible = true;
+    }
+
+    private void UpdateSceneCard()
+    {
+        var package = Coordinator?.SelectedScenePackage;
+        var title = package?.Title ?? _lobbyManager?.SelectedSceneTitle;
+
+        if (_sceneTitleLabel is not null) _sceneTitleLabel.Text = string.IsNullOrEmpty(title) ? "No scene" : title;
+        if (_sceneMetaLabel is not null)
+        {
+            _sceneMetaLabel.Text = package is null
+                ? string.Empty
+                : $"{package.Document.VoiceSlots.Count} lines  ·  {package.Document.Characters.Count} characters  ·  {package.Document.DurationMilliseconds / 1000.0:F0}s";
+        }
+
+        if (_sceneArt is null) return;
+        foreach (var child in _sceneArt.GetChildren())
+        {
+            _sceneArt.RemoveChild(child);
+            child.QueueFree();
+        }
+
+        if (package is not null)
+        {
+            var index = _availableScenes.ToList().FindIndex(s => s.PackageDirectory == package.PackageDirectory);
+            UiKit.FillSceneArt(_sceneArt, package, UiKit.PaletteColor(Math.Max(0, index)), initialSize: 48);
+        }
+    }
+
+    // ───────────────────────── Characters & players ─────────────────────────
 
     private void PopulateCharacterList()
     {
@@ -650,6 +805,7 @@ public partial class LobbyScreen : BaseScreen
 
         foreach (var child in _characterListContainer.GetChildren())
         {
+            _characterListContainer.RemoveChild(child);
             child.QueueFree();
         }
 
@@ -659,62 +815,75 @@ public partial class LobbyScreen : BaseScreen
         var characters = scene.Document.Characters;
         var localPeerId = _lobbyManager.LocalPeerId;
 
-        foreach (var charDef in characters)
+        for (var i = 0; i < characters.Count; i++)
         {
+            var charDef = characters[i];
             var owner = _lobbyManager.Players.Values.FirstOrDefault(p => p.AssignedCharacterIds.Contains(charDef.CharacterId));
-            var btn = new Button
-            {
-                CustomMinimumSize = new Vector2(130, 38),
-            };
+            var isMine = owner is not null && owner.PeerId == localPeerId;
+            var color = UiKit.PaletteColor(i + 1);
+            var charId = charDef.CharacterId;
 
-            if (owner is null)
+            var ownerText = owner is null ? "Free" : isMine ? "You" : owner.PlayerName;
+            var tile = CreateCharacterTile(charDef.DisplayName, ownerText, color, isMine, takenByOther: owner is not null && !isMine);
+            if (owner is null || isMine)
             {
-                // Free to claim
-                btn.Text = charDef.DisplayName;
-                StyleOutlinePill(btn, 14);
-                btn.Disabled = false;
-                var charId = charDef.CharacterId;
-                btn.Pressed += () => _lobbyManager?.ToggleCharacterClaim(charId);
-            }
-            else if (owner.PeerId == localPeerId)
-            {
-                // Claimed by local player (Click to release)
-                btn.Text = $"{charDef.DisplayName} (you)";
-                StyleActionPill(btn, new Color(0.600f, 0.480f, 0.950f), 14);
-                btn.Disabled = false;
-                var charId = charDef.CharacterId;
-                btn.Pressed += () => _lobbyManager?.ToggleCharacterClaim(charId);
-            }
-            else
-            {
-                // Claimed by someone else (Locked)
-                btn.Text = $"{charDef.DisplayName} ({owner.PlayerName})";
-                StyleDisabledPill(btn, 14);
-                btn.Disabled = true;
+                tile.GuiInput += e =>
+                {
+                    if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
+                    {
+                        UiSoundManager.Instance.PlayClick();
+                        _lobbyManager?.ToggleCharacterClaim(charId);
+                    }
+                };
             }
 
-            _characterListContainer.AddChild(btn);
+            _characterListContainer.AddChild(tile);
         }
     }
 
-    private static void StyleDisabledPill(Button btn, int radius)
+    private static PanelContainer CreateCharacterTile(string name, string ownerText, Color color, bool isMine, bool takenByOther)
     {
-        var box = new StyleBoxFlat
+        var tile = new PanelContainer
         {
-            BgColor = new Color(0.92f, 0.93f, 0.96f),
-            BorderWidthLeft = 1,
-            BorderWidthTop = 1,
-            BorderWidthRight = 1,
-            BorderWidthBottom = 1,
-            BorderColor = new Color(0.82f, 0.84f, 0.88f),
-            CornerRadiusTopLeft = radius,
-            CornerRadiusTopRight = radius,
-            CornerRadiusBottomLeft = radius,
-            CornerRadiusBottomRight = radius,
+            CustomMinimumSize = new Vector2(196, 0),
+            MouseFilter = takenByOther ? MouseFilterEnum.Ignore : MouseFilterEnum.Stop,
+            MouseDefaultCursorShape = takenByOther ? CursorShape.Arrow : CursorShape.PointingHand,
+            Modulate = new Color(1, 1, 1, takenByOther ? 0.6f : 1f),
         };
-        btn.AddThemeStyleboxOverride("disabled", box);
-        btn.AddThemeColorOverride("font_disabled_color", new Color(0.55f, 0.58f, 0.65f));
-        btn.MouseDefaultCursorShape = Control.CursorShape.Forbidden;
+
+        var box = UiKit.RoundedBox(isMine ? color.Lerp(Colors.White, 0.85f) : UiKit.Soft, 20, padding: 10);
+        box.BorderWidthLeft = 2;
+        box.BorderWidthTop = 2;
+        box.BorderWidthRight = 2;
+        box.BorderWidthBottom = 2;
+        box.BorderColor = isMine ? color : UiKit.Line;
+        if (isMine)
+        {
+            box.ShadowColor = color with { A = 0.3f };
+            box.ShadowSize = 12;
+            box.ShadowOffset = new Vector2(0, 4);
+        }
+        tile.AddThemeStyleboxOverride("panel", box);
+
+        var row = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 12);
+        tile.AddChild(row);
+
+        row.AddChild(UiKit.CreateAvatar(name, color, 40));
+
+        var text = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
+        text.AddThemeConstantOverride("separation", 0);
+        row.AddChild(text);
+
+        var title = UiKit.Heading(name, 16);
+        title.MouseFilter = MouseFilterEnum.Ignore;
+        text.AddChild(title);
+        var owner = UiKit.Body(ownerText, 12, isMine ? color.Darkened(0.2f) : UiKit.Muted);
+        owner.MouseFilter = MouseFilterEnum.Ignore;
+        text.AddChild(owner);
+
+        if (!takenByOther) UiKit.AttachHoverBounce(tile);
+        return tile;
     }
 
     private void OnPlayerListUpdated()
@@ -726,6 +895,7 @@ public partial class LobbyScreen : BaseScreen
 
         foreach (var child in _playersListContainer.GetChildren())
         {
+            _playersListContainer.RemoveChild(child);
             child.QueueFree();
         }
 
@@ -733,50 +903,38 @@ public partial class LobbyScreen : BaseScreen
         var incompatiblePeersCount = 0;
         var sceneChars = Coordinator?.SelectedScenePackage?.Document.Characters ?? [];
 
-        foreach (var p in players)
+        // The manager owns ready state (the host starts ready), so mirror it on the button.
+        if (_lobbyManager.IsConnectedToLobby && _lobbyManager.Players.TryGetValue(_lobbyManager.LocalPeerId, out var localPlayer))
         {
-            var item = new HBoxContainer();
-            item.AddThemeConstantOverride("separation", 14);
+            _isLocalReady = localPlayer.IsReady;
+            UpdateReadyButton();
+        }
 
-            var hostBadge = p.IsHost ? " (host)" : "";
-            var readyBadge = p.IsReady ? "Ready" : "Waiting";
+        if (_playerCountLabel is not null)
+        {
+            _playerCountLabel.Text = players.Count == 1 ? "1 player" : $"{players.Count} players";
+        }
 
+        for (var i = 0; i < players.Count; i++)
+        {
+            var p = players[i];
             var charNames = p.AssignedCharacterIds
                 .Select(id => sceneChars.FirstOrDefault(c => c.CharacterId == id)?.DisplayName ?? id)
                 .ToList();
-            var charText = charNames.Count > 0 ? $" · {string.Join(", ", charNames)}" : "";
 
-            var sceneBadge = "";
-            var hasIssue = false;
-            if (!p.IsHost)
+            string? issue = null;
+            if (!p.IsHost && !_lobbyManager.PeerHasScene(p.PeerId))
             {
-                var hasScene = _lobbyManager.PeerHasScene(p.PeerId);
-                if (!hasScene)
-                {
-                    var reason = _lobbyManager.GetPeerMismatchReason(p.PeerId);
-                    sceneBadge = string.IsNullOrEmpty(reason) ? " · missing scene" : $" · {reason}";
-                    incompatiblePeersCount++;
-                    hasIssue = true;
-                }
+                var reason = _lobbyManager.GetPeerMismatchReason(p.PeerId);
+                issue = string.IsNullOrEmpty(reason) ? "Missing scene" : reason;
+                incompatiblePeersCount++;
             }
 
-            var label = new Label
-            {
-                Text = $"{p.PlayerName}{hostBadge} · {readyBadge}{charText}{sceneBadge}",
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            };
+            var row = CreatePlayerRow(p.PlayerName, charNames, p.IsHost, p.IsReady, issue, UiKit.PaletteColor(i + 2));
+            _playersListContainer.AddChild(row);
 
-            if (hasIssue)
-            {
-                label.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
-            }
-            else
-            {
-                label.AddThemeColorOverride("font_color", new Color(0.18f, 0.16f, 0.38f));
-            }
-
-            item.AddChild(label);
-            _playersListContainer.AddChild(item);
+            row.Modulate = new Color(1, 1, 1, 0);
+            row.CreateTween().TweenProperty(row, "modulate:a", 1.0f, 0.25f).SetDelay(i * 0.04);
         }
 
         PopulateCharacterList();
@@ -796,7 +954,58 @@ public partial class LobbyScreen : BaseScreen
 
             _startButton.Disabled = !allReady || incompatiblePeersCount > 0 || !everyPlayerHasChar || !allRequiredClaimed;
         }
+
+        UpdateRoomLabel();
     }
+
+    private static PanelContainer CreatePlayerRow(string name, IReadOnlyList<string> characters, bool isHost, bool isReady, string? issue, Color color)
+    {
+        var row = new PanelContainer();
+        var box = UiKit.RoundedBox(UiKit.Soft, 20, padding: 10);
+        if (issue is not null)
+        {
+            box.BorderWidthLeft = 2;
+            box.BorderWidthTop = 2;
+            box.BorderWidthRight = 2;
+            box.BorderWidthBottom = 2;
+            box.BorderColor = UiKit.Danger with { A = 0.6f };
+        }
+        row.AddThemeStyleboxOverride("panel", box);
+
+        var line = new HBoxContainer();
+        line.AddThemeConstantOverride("separation", 12);
+        row.AddChild(line);
+
+        line.AddChild(UiKit.CreateAvatar(name, color, 42));
+
+        var text = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, Alignment = BoxContainer.AlignmentMode.Center };
+        text.AddThemeConstantOverride("separation", 0);
+        line.AddChild(text);
+
+        var title = UiKit.Heading(name, 17);
+        title.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        text.AddChild(title);
+
+        var detail = issue ?? (characters.Count > 0 ? string.Join(", ", characters) : "No character yet");
+        var detailLabel = UiKit.Body(detail, 12, issue is not null ? UiKit.Danger : UiKit.Muted);
+        detailLabel.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        text.AddChild(detailLabel);
+
+        if (isHost)
+        {
+            var hostChip = UiKit.CreateChip("Host", UiKit.Lilac);
+            hostChip.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            line.AddChild(hostChip);
+        }
+
+        var status = UiKit.CreateChip(isReady ? "Ready" : "Waiting", isReady ? UiKit.Mint : new Color(0.86f, 0.88f, 0.93f), isReady ? Colors.White : UiKit.Muted);
+        status.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        line.AddChild(status);
+
+        return row;
+    }
+
+    // ───────────────────────── Game start ─────────────────────────
 
     private void OnGameStarted(string sceneId, string checksum)
     {
@@ -810,12 +1019,7 @@ public partial class LobbyScreen : BaseScreen
             {
                 _statusLabel.Text = $"Scene \"{sceneId}\" is not installed.";
             }
-            if (_sceneNoticeLabel is not null)
-            {
-                _sceneNoticeLabel.Text = $"Scene \"{sceneId}\" is not installed.";
-                _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
-                _sceneNoticeLabel.Visible = true;
-            }
+            ShowSceneNotice($"Scene \"{sceneId}\" is not installed.");
             return;
         }
 
@@ -879,43 +1083,32 @@ public partial class LobbyScreen : BaseScreen
 
     private static void StyleOptionButton(OptionButton btn)
     {
-        var normal = new StyleBoxFlat
+        StyleBoxFlat Make(Color bg, Color border, int width) => new()
         {
-            BgColor = new Color(0.970f, 0.980f, 0.995f),
-            BorderWidthLeft = 1,
-            BorderWidthTop = 1,
-            BorderWidthRight = 1,
-            BorderWidthBottom = 1,
-            BorderColor = new Color(0.820f, 0.860f, 0.920f),
-            CornerRadiusTopLeft = 10,
-            CornerRadiusTopRight = 10,
-            CornerRadiusBottomLeft = 10,
-            CornerRadiusBottomRight = 10,
-            ContentMarginLeft = 14,
-            ContentMarginRight = 14
+            BgColor = bg,
+            CornerRadiusTopLeft = 21,
+            CornerRadiusTopRight = 21,
+            CornerRadiusBottomLeft = 21,
+            CornerRadiusBottomRight = 21,
+            CornerDetail = 12,
+            BorderWidthLeft = width,
+            BorderWidthTop = width,
+            BorderWidthRight = width,
+            BorderWidthBottom = width,
+            BorderColor = border,
+            ContentMarginLeft = 18,
+            ContentMarginRight = 14,
+            AntiAliasing = true,
         };
-        var hover = new StyleBoxFlat
-        {
-            BgColor = Colors.White,
-            BorderWidthLeft = 2,
-            BorderWidthTop = 2,
-            BorderWidthRight = 2,
-            BorderWidthBottom = 2,
-            BorderColor = new Color(0.460f, 0.380f, 0.920f),
-            CornerRadiusTopLeft = 10,
-            CornerRadiusTopRight = 10,
-            CornerRadiusBottomLeft = 10,
-            CornerRadiusBottomRight = 10,
-            ContentMarginLeft = 14,
-            ContentMarginRight = 14
-        };
-        btn.AddThemeStyleboxOverride("normal", normal);
-        btn.AddThemeStyleboxOverride("hover", hover);
-        btn.AddThemeStyleboxOverride("pressed", normal);
-        btn.AddThemeStyleboxOverride("focus", hover);
-        btn.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
-        btn.AddThemeColorOverride("font_hover_color", new Color(0.118f, 0.106f, 0.294f));
-        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+
+        btn.AddThemeStyleboxOverride("normal", Make(UiKit.Soft, UiKit.Line, 2));
+        btn.AddThemeStyleboxOverride("hover", Make(Colors.White, UiKit.Lilac, 2));
+        btn.AddThemeStyleboxOverride("pressed", Make(UiKit.Soft, UiKit.Lilac, 2));
+        btn.AddThemeStyleboxOverride("focus", Make(new Color(1, 1, 1, 0), UiKit.Lilac with { A = 0.5f }, 2));
+        btn.AddThemeColorOverride("font_color", UiKit.Ink);
+        btn.AddThemeColorOverride("font_hover_color", UiKit.Ink);
+        btn.AddThemeColorOverride("font_pressed_color", UiKit.Ink);
+        btn.AddThemeColorOverride("font_focus_color", UiKit.Ink);
+        btn.MouseDefaultCursorShape = CursorShape.PointingHand;
     }
 }
-
