@@ -66,24 +66,35 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         }
         catch { /* Ignore */ }
 
+        ApplyStartScene();
         NavigateTo(GetStartScreen());
     }
 
     // Dev aid: `godot --path . -- --start-screen=ScenePicker` opens a screen directly.
     private static AppScreen GetStartScreen()
     {
-        foreach (var arg in OS.GetCmdlineUserArgs())
-        {
-            const string prefix = "--start-screen=";
-            if (arg.StartsWith(prefix, StringComparison.Ordinal)
-                && Enum.TryParse<AppScreen>(arg[prefix.Length..], ignoreCase: true, out var screen))
-            {
-                return screen;
-            }
-        }
-
-        return AppScreen.MainMenu;
+        var value = GetUserArg("--start-screen=");
+        return value is not null && Enum.TryParse<AppScreen>(value, ignoreCase: true, out var screen)
+            ? screen
+            : AppScreen.MainMenu;
     }
+
+    // Dev aid: `-- --start-scene=<scene id>` preselects a scene (useful with --start-screen=SceneEditor).
+    private void ApplyStartScene()
+    {
+        var sceneId = GetUserArg("--start-scene=");
+        if (sceneId is null) return;
+
+        var match = new Workshop.SteamWorkshopService().GetAvailableScenes()
+            .FirstOrDefault(s => s.SceneId.Equals(sceneId, StringComparison.OrdinalIgnoreCase));
+        if (match is not null)
+        {
+            Coordinator.SelectedScenePackage = match;
+        }
+    }
+
+    private static string? GetUserArg(string prefix) =>
+        OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith(prefix, StringComparison.Ordinal))?[prefix.Length..];
 
     public void NavigateTo(AppScreen screen)
     {

@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UI/Screens/SceneEditorScreen.cs" id="1_editor"]
+[ext_resource type="Script" path="res://UI/Controls/MenuBackgroundVisuals.cs" id="2_bg_visuals"]
 
 [node name="SceneEditorScreen" type="Control"]
 layout_mode = 3
@@ -11,178 +12,12 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_editor")
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="MenuBackgroundVisuals" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="CenterContainer" type="CenterContainer" parent="ScrollContainer"]
-layout_mode = 2
-custom_minimum_size = Vector2(850, 0)
-size_flags_horizontal = 3
-
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer"]
-layout_mode = 2
-custom_minimum_size = Vector2(840, 0)
-theme_override_constants/separation = 12
-
-[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-theme_type_variation = &"HeadingLabel"
-layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "Scene Editor"
-horizontal_alignment = 1
-
-[node name="HeaderGrid" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 16
-
-[node name="TitleNameLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
-layout_mode = 2
-text = "Title"
-
-[node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
-custom_minimum_size = Vector2(340, 36)
-layout_mode = 2
-placeholder_text = "Scene title"
-
-[node name="DurationLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
-layout_mode = 2
-text = "Length (s)"
-
-[node name="DurationInput" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-min_value = 1.0
-max_value = 600.0
-step = 0.5
-value = 22.0
-
-[node name="VideoContainer" type="AspectRatioContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(840, 360)
-layout_mode = 2
-ratio = 1.77778
-alignment_horizontal = 1
-alignment_vertical = 1
-
-[node name="VideoPanel" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoContainer"]
-layout_mode = 2
-
-[node name="VideoPlayer" type="VideoStreamPlayer" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoContainer/VideoPanel"]
-layout_mode = 2
-expand = true
-
-[node name="VideoControls" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 12
-
-[node name="SeekBackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
-custom_minimum_size = Vector2(100, 38)
-layout_mode = 2
-text = "-5s"
-
-[node name="PlayPauseButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
-custom_minimum_size = Vector2(160, 38)
-layout_mode = 2
-text = "Play"
-
-[node name="SeekForwardButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
-custom_minimum_size = Vector2(100, 38)
-layout_mode = 2
-text = "+5s"
-
-[node name="StopButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
-custom_minimum_size = Vector2(110, 38)
-layout_mode = 2
-text = "Reset"
-
-[node name="VideoTimeLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/VideoControls"]
-custom_minimum_size = Vector2(160, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "0.0s / 22.0s"
-horizontal_alignment = 2
-
-[node name="TimeSlider" type="HSlider" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(820, 24)
-layout_mode = 2
-max_value = 22.0
-step = 0.1
-
-[node name="TimelineLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-theme_type_variation = &"HeadingLabel"
-layout_mode = 2
-theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 15
-text = "Timeline"
-
-[node name="TimelineContainer" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(840, 115)
-layout_mode = 2
-
-[node name="TimelineButtons" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 12
-
-[node name="AutoDetectButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
-custom_minimum_size = Vector2(230, 40)
-layout_mode = 2
-text = "Auto-Detect Lines"
-
-[node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
-custom_minimum_size = Vector2(180, 40)
-layout_mode = 2
-text = "Add Box"
-
-[node name="CutBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
-custom_minimum_size = Vector2(180, 40)
-layout_mode = 2
-text = "Split (C)"
-
-[node name="DeleteBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
-custom_minimum_size = Vector2(170, 40)
-layout_mode = 2
-text = "Delete"
-
-[node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-theme_type_variation = &"HeadingLabel"
-layout_mode = 2
-theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 18
-text = "Lines"
-
-[node name="SlotsContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="StatusLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 1, 0.5, 1)
-theme_override_font_sizes/font_size = 14
-horizontal_alignment = 1
-
-[node name="ActionsContainer" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 16
-
-[node name="SaveAndProceedButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
-custom_minimum_size = Vector2(280, 44)
-layout_mode = 2
-text = "Save & Exit"
-
-[node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
-custom_minimum_size = Vector2(180, 44)
-layout_mode = 2
-text = "Save"
-
-[node name="BackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
-custom_minimum_size = Vector2(160, 44)
-layout_mode = 2
-text = "Back"
+mouse_filter = 2
+script = ExtResource("2_bg_visuals")

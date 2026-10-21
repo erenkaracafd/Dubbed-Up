@@ -11,28 +11,24 @@ using Godot;
 
 namespace DubbedUp.Godot.UI.Screens;
 
+/// <summary>
+/// Scene editor: video preview with transport controls, an editable list of dialogue lines
+/// and a waveform timeline with draggable speech boxes. The layout is built in code with <see cref="UiKit"/>.
+/// </summary>
 public partial class SceneEditorScreen : BaseScreen
 {
     private LineEdit? _titleInput;
     private SpinBox? _durationInput;
+    private Label? _metaLabel;
     private AspectRatioContainer? _videoContainer;
     private VideoStreamPlayer? _videoPlayer;
-    private Button? _seekBackButton;
     private Button? _playPauseButton;
-    private Button? _seekForwardButton;
-    private Button? _stopButton;
     private Label? _videoTimeLabel;
     private HSlider? _timeSlider;
-    private PanelContainer? _timelineContainer;
-    private Button? _autoDetectButton;
-    private Button? _addBoxButton;
-    private Button? _cutBoxButton;
-    private Button? _deleteBoxButton;
+    private ScrollContainer? _linesScroll;
     private VBoxContainer? _slotsContainer;
+    private Label? _lineCountLabel;
     private Label? _statusLabel;
-    private Button? _saveAndProceedButton;
-    private Button? _saveButton;
-    private Button? _backButton;
 
     private TimelineWaveformEditor? _timelineEditor;
     private readonly List<EditableVoiceSlot> _editableSlots = [];
@@ -65,156 +61,363 @@ public partial class SceneEditorScreen : BaseScreen
 
     public override void _Ready()
     {
-        _titleInput = GetNodeOrNull<LineEdit>("ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid/TitleInput");
-        _durationInput = GetNodeOrNull<SpinBox>("ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid/DurationInput");
-        _videoContainer = GetNodeOrNull<AspectRatioContainer>("ScrollContainer/CenterContainer/VBoxContainer/VideoContainer");
-        _videoPlayer = GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoContainer/VideoPanel/VideoPlayer") ?? GetNodeOrNull<VideoStreamPlayer>("ScrollContainer/CenterContainer/VBoxContainer/VideoPanel/VideoPlayer");
-        _seekBackButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/SeekBackButton");
-        _playPauseButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/PlayPauseButton");
-        _seekForwardButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/SeekForwardButton");
-        _stopButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/StopButton");
-        _videoTimeLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/VideoControls/VideoTimeLabel");
-        _timeSlider = GetNodeOrNull<HSlider>("ScrollContainer/CenterContainer/VBoxContainer/TimeSlider");
-        _timelineContainer = GetNodeOrNull<PanelContainer>("ScrollContainer/CenterContainer/VBoxContainer/TimelineContainer");
-        _autoDetectButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/AutoDetectButton");
-        _addBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/AddBoxButton");
-        _cutBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/CutBoxButton");
-        _deleteBoxButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons/DeleteBoxButton");
-        _slotsContainer = GetNodeOrNull<VBoxContainer>("ScrollContainer/CenterContainer/VBoxContainer/SlotsContainer");
-        _statusLabel = GetNodeOrNull<Label>("ScrollContainer/CenterContainer/VBoxContainer/StatusLabel");
-        _saveAndProceedButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/SaveAndProceedButton");
-        _saveButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/SaveButton");
-        _backButton = GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer/BackButton");
-
-        // Create and add TimelineWaveformEditor
-        if (_timelineContainer is not null)
-        {
-            _timelineEditor = new TimelineWaveformEditor();
-            _timelineContainer.AddChild(_timelineEditor);
-            _timelineEditor.SeekRequested += OnTimelineSeekRequested;
-            _timelineEditor.SlotSelected += OnTimelineSlotSelected;
-            _timelineEditor.SlotChanged += OnTimelineSlotChanged;
-            _timelineEditor.SlotDeleteRequested += DeleteSlotAtIndex;
-            _timelineEditor.SlotSplitRequested += SplitSlotAtIndex;
-        }
-
-        // Video Controls
-        if (_seekBackButton is not null)
-        {
-            _seekBackButton.Text = "-5s";
-            _seekBackButton.Pressed += () => SeekRelative(-5.0);
-            StyleOutlinePill(_seekBackButton, new Color(0.280f, 0.650f, 0.950f), 18);
-            UiSoundManager.Attach(_seekBackButton);
-        }
-        if (_playPauseButton is not null)
-        {
-            _playPauseButton.Text = "Play";
-            _playPauseButton.Pressed += OnPlayPausePressed;
-            StyleActionPill(_playPauseButton, new Color(0.280f, 0.650f, 0.950f), 18);
-            UiSoundManager.Attach(_playPauseButton);
-        }
-        if (_seekForwardButton is not null)
-        {
-            _seekForwardButton.Text = "+5s";
-            _seekForwardButton.Pressed += () => SeekRelative(5.0);
-            StyleOutlinePill(_seekForwardButton, new Color(0.280f, 0.650f, 0.950f), 18);
-            UiSoundManager.Attach(_seekForwardButton);
-        }
-        if (_stopButton is not null)
-        {
-            _stopButton.Text = "Reset";
-            _stopButton.Pressed += OnStopPressed;
-            StyleOutlinePill(_stopButton, new Color(0.450f, 0.500f, 0.650f), 18);
-            UiSoundManager.Attach(_stopButton);
-        }
-
-        // Timeline box buttons
-        if (_autoDetectButton is not null)
-        {
-            _autoDetectButton.Text = "Auto-Detect Lines";
-            _autoDetectButton.Pressed += OnAutoDetectPressed;
-            StyleActionPill(_autoDetectButton, new Color(0.600f, 0.480f, 0.950f), 20);
-            UiSoundManager.Attach(_autoDetectButton);
-        }
-        if (_addBoxButton is not null)
-        {
-            _addBoxButton.Text = "Add Box";
-            _addBoxButton.Pressed += OnAddBoxPressed;
-            StyleActionPill(_addBoxButton, new Color(0.20f, 0.72f, 0.50f), 20);
-            UiSoundManager.Attach(_addBoxButton);
-        }
-        if (_cutBoxButton is not null)
-        {
-            _cutBoxButton.Text = "Split (C)";
-            _cutBoxButton.Pressed += OnCutSelectedBoxPressed;
-            StyleActionPill(_cutBoxButton, new Color(1.0f, 0.650f, 0.250f), 20);
-            UiSoundManager.Attach(_cutBoxButton);
-        }
-        if (_deleteBoxButton is not null)
-        {
-            _deleteBoxButton.Text = "Delete";
-            _deleteBoxButton.Pressed += OnDeleteSelectedBoxPressed;
-            StyleOutlinePill(_deleteBoxButton, new Color(0.95f, 0.35f, 0.35f), 20);
-            UiSoundManager.Attach(_deleteBoxButton);
-        }
-
-        // Bottom Screen Actions
-        if (_saveAndProceedButton is not null)
-        {
-            _saveAndProceedButton.Text = "Save & Exit";
-            _saveAndProceedButton.Pressed += OnSaveAndProceedPressed;
-            StyleActionPill(_saveAndProceedButton, new Color(1.0f, 0.540f, 0.680f), 22);
-            UiSoundManager.Attach(_saveAndProceedButton);
-        }
-        if (_saveButton is not null)
-        {
-            _saveButton.Text = "Save";
-            _saveButton.Pressed += OnSavePressed;
-            StyleActionPill(_saveButton, new Color(0.280f, 0.650f, 0.950f), 22);
-            UiSoundManager.Attach(_saveButton);
-        }
-        if (_backButton is not null)
-        {
-            _backButton.Text = "Back";
-            _backButton.Pressed += OnBackPressed;
-            StyleOutlinePill(_backButton, new Color(0.350f, 0.400f, 0.550f), 20);
-            UiSoundManager.Attach(_backButton);
-        }
-
-        UiIcons.Apply(_playPauseButton, "play");
-        UiIcons.Apply(_stopButton, "rotate-ccw");
-        UiIcons.Apply(_autoDetectButton, "audio-waveform");
-        UiIcons.Apply(_addBoxButton, "plus");
-        UiIcons.Apply(_cutBoxButton, "scissors");
-        UiIcons.Apply(_deleteBoxButton, "trash-2");
-        UiIcons.Apply(_saveAndProceedButton, "check");
-        UiIcons.Apply(_saveButton, "save");
-        UiIcons.Apply(_backButton, "arrow-left");
-
-        if (_durationInput is not null)
-        {
-            _durationInput.ValueChanged += OnDurationChanged;
-        }
-
-        if (_timeSlider is not null)
-        {
-            _timeSlider.DragStarted += () => _isSliderDragging = true;
-            _timeSlider.DragEnded += _ =>
-            {
-                _isSliderDragging = false;
-                if (_timeSlider is not null) SeekTo(_timeSlider.Value);
-            };
-            _timeSlider.ValueChanged += val =>
-            {
-                if (_isSliderDragging) SeekTo(val);
-            };
-        }
+        BuildLayout();
 
         if (Coordinator is not null)
         {
             LoadSceneData();
         }
     }
+
+    // ───────────────────────── Layout ─────────────────────────
+
+    private void BuildLayout()
+    {
+        var margin = new MarginContainer();
+        margin.SetAnchorsPreset(LayoutPreset.FullRect);
+        foreach (var side in new[] { "margin_left", "margin_right", "margin_top", "margin_bottom" })
+        {
+            margin.AddThemeConstantOverride(side, 24);
+        }
+        AddChild(margin);
+
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 14);
+        margin.AddChild(column);
+
+        column.AddChild(BuildHeader());
+
+        var main = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
+        main.AddThemeConstantOverride("separation", 16);
+        column.AddChild(main);
+        main.AddChild(BuildPreviewColumn());
+        main.AddChild(BuildLinesCard());
+
+        column.AddChild(BuildTimelineCard());
+    }
+
+    private Control BuildHeader()
+    {
+        var header = new HBoxContainer();
+        header.AddThemeConstantOverride("separation", 12);
+
+        var back = UiKit.CreateButton("Back", "arrow-left", outline: true, UiKit.Soft, UiKit.Ink, OnBackPressed);
+        back.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        header.AddChild(back);
+
+        var titleBox = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        titleBox.AddThemeConstantOverride("separation", -2);
+        header.AddChild(titleBox);
+
+        _titleInput = new LineEdit { PlaceholderText = "Scene title", MaxLength = 80, CaretBlink = true };
+        StyleTitleInput(_titleInput);
+        titleBox.AddChild(_titleInput);
+
+        _metaLabel = UiKit.Body(string.Empty, 13);
+        var metaRow = new HBoxContainer();
+        metaRow.AddThemeConstantOverride("separation", 10);
+        metaRow.AddChild(new Control { CustomMinimumSize = new Vector2(2, 0) });
+        metaRow.AddChild(_metaLabel);
+        titleBox.AddChild(metaRow);
+
+        var lengthBox = new HBoxContainer { SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        lengthBox.AddThemeConstantOverride("separation", 8);
+        header.AddChild(lengthBox);
+        var lengthLabel = UiKit.Body("Length", 13);
+        lengthLabel.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        lengthBox.AddChild(lengthLabel);
+        _durationInput = new SpinBox { MinValue = 1.0, MaxValue = 600.0, Step = 0.5, Value = 22.0, Suffix = "s", CustomMinimumSize = new Vector2(104, 40) };
+        StyleFieldInput(_durationInput.GetLineEdit(), 40);
+        _durationInput.ValueChanged += OnDurationChanged;
+        lengthBox.AddChild(_durationInput);
+
+        _statusLabel = UiKit.Body(string.Empty, 13);
+        _statusLabel.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        header.AddChild(_statusLabel);
+
+        var save = UiKit.CreateButton("Save", "save", outline: true, UiKit.Soft, UiKit.Ink, OnSavePressed);
+        save.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        header.AddChild(save);
+
+        var saveAndExit = UiKit.CreateButton("Save & Exit", "check", outline: false, UiKit.Pink, Colors.White, OnSaveAndProceedPressed);
+        saveAndExit.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        header.AddChild(saveAndExit);
+
+        return header;
+    }
+
+    private Control BuildPreviewColumn()
+    {
+        var left = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1.25f };
+        left.AddThemeConstantOverride("separation", 10);
+
+        // Rounded dark frame; the video keeps its aspect ratio inside it
+        var frame = new PanelContainer { SizeFlagsVertical = SizeFlags.ExpandFill, ClipChildren = ClipChildrenMode.AndDraw };
+        var frameBox = UiKit.RoundedBox(new Color(0.07f, 0.06f, 0.16f), 22);
+        frameBox.ShadowColor = new Color(0.07f, 0.06f, 0.16f, 0.22f);
+        frameBox.ShadowSize = 18;
+        frameBox.ShadowOffset = new Vector2(0, 8);
+        frame.AddThemeStyleboxOverride("panel", frameBox);
+        left.AddChild(frame);
+
+        _videoContainer = new AspectRatioContainer
+        {
+            Ratio = 16f / 9f,
+            AlignmentHorizontal = AspectRatioContainer.AlignmentMode.Center,
+            AlignmentVertical = AspectRatioContainer.AlignmentMode.Center,
+        };
+        frame.AddChild(_videoContainer);
+        _videoPlayer = new VideoStreamPlayer { Expand = true };
+        _videoContainer.AddChild(_videoPlayer);
+
+        // Transport bar
+        var transport = new PanelContainer();
+        transport.AddThemeStyleboxOverride("panel", UiKit.CardBox(padding: 8));
+        left.AddChild(transport);
+
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 8);
+        transport.AddChild(row);
+
+        row.AddChild(CreateSmallButton("-5s", () => SeekRelative(-5.0)));
+
+        _playPauseButton = UiKit.CreateButton("Play", "play", outline: false, UiKit.Sky, Colors.White, OnPlayPausePressed);
+        _playPauseButton.CustomMinimumSize = new Vector2(104, 40);
+        row.AddChild(_playPauseButton);
+
+        row.AddChild(CreateSmallButton("+5s", () => SeekRelative(5.0)));
+        row.AddChild(UiKit.CreateIconButton("rotate-ccw", UiKit.Soft, UiKit.Ink, OnStopPressed, 40));
+
+        _timeSlider = new HSlider { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter, Step = 0.1, MaxValue = 22.0 };
+        StyleSlider(_timeSlider);
+        _timeSlider.DragStarted += () => _isSliderDragging = true;
+        _timeSlider.DragEnded += _ =>
+        {
+            _isSliderDragging = false;
+            if (_timeSlider is not null) SeekTo(_timeSlider.Value);
+        };
+        _timeSlider.ValueChanged += val =>
+        {
+            if (_isSliderDragging) SeekTo(val);
+        };
+        row.AddChild(_timeSlider);
+
+        _videoTimeLabel = UiKit.Heading("0.0s / 22.0s", 14);
+        _videoTimeLabel.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        _videoTimeLabel.CustomMinimumSize = new Vector2(96, 0);
+        _videoTimeLabel.HorizontalAlignment = HorizontalAlignment.Right;
+        row.AddChild(_videoTimeLabel);
+
+        return left;
+    }
+
+    private Control BuildLinesCard()
+    {
+        var card = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        card.AddThemeStyleboxOverride("panel", UiKit.CardBox(padding: 16));
+
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 12);
+        card.AddChild(stack);
+
+        var header = new HBoxContainer();
+        header.AddThemeConstantOverride("separation", 8);
+        stack.AddChild(header);
+
+        var title = UiKit.Heading("Lines", 20);
+        title.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        header.AddChild(title);
+        _lineCountLabel = UiKit.Body(string.Empty, 13);
+        _lineCountLabel.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        _lineCountLabel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        header.AddChild(_lineCountLabel);
+
+        var autoDetect = UiKit.CreateButton("Auto-detect", "audio-waveform", outline: true, new Color(0.96f, 0.95f, 1.0f), UiKit.Lilac, OnAutoDetectPressed);
+        autoDetect.CustomMinimumSize = new Vector2(0, 38);
+        autoDetect.AddThemeFontSizeOverride("font_size", 14);
+        header.AddChild(autoDetect);
+
+        var add = UiKit.CreateButton("Add", "plus", outline: false, UiKit.Lilac, Colors.White, OnAddBoxPressed);
+        add.CustomMinimumSize = new Vector2(0, 38);
+        add.AddThemeFontSizeOverride("font_size", 14);
+        header.AddChild(add);
+
+        _linesScroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        UiKit.StyleScrollBar(_linesScroll.GetVScrollBar());
+        stack.AddChild(_linesScroll);
+
+        var padding = new MarginContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        padding.AddThemeConstantOverride("margin_right", 8);
+        _linesScroll.AddChild(padding);
+
+        _slotsContainer = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        _slotsContainer.AddThemeConstantOverride("separation", 8);
+        padding.AddChild(_slotsContainer);
+
+        return card;
+    }
+
+    private Control BuildTimelineCard()
+    {
+        var card = new PanelContainer();
+        card.AddThemeStyleboxOverride("panel", UiKit.CardBox(padding: 14));
+
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 10);
+        card.AddChild(stack);
+
+        var toolbar = new HBoxContainer();
+        toolbar.AddThemeConstantOverride("separation", 8);
+        stack.AddChild(toolbar);
+
+        var title = UiKit.Heading("Timeline", 18);
+        title.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        toolbar.AddChild(title);
+        var hint = UiKit.Body("Drag the dot to move a box, its edges to resize", 12);
+        hint.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        hint.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        toolbar.AddChild(hint);
+
+        var split = UiKit.CreateButton("Split (C)", "scissors", outline: true, new Color(1.0f, 0.97f, 0.92f), new Color(0.85f, 0.50f, 0.10f), OnCutSelectedBoxPressed);
+        split.CustomMinimumSize = new Vector2(0, 36);
+        split.AddThemeFontSizeOverride("font_size", 14);
+        toolbar.AddChild(split);
+
+        var delete = UiKit.CreateButton("Delete", "trash-2", outline: true, new Color(1.0f, 0.95f, 0.96f), UiKit.Danger, OnDeleteSelectedBoxPressed);
+        delete.CustomMinimumSize = new Vector2(0, 36);
+        delete.AddThemeFontSizeOverride("font_size", 14);
+        toolbar.AddChild(delete);
+
+        _timelineEditor = new TimelineWaveformEditor { CustomMinimumSize = new Vector2(0, 124) };
+        stack.AddChild(_timelineEditor);
+        _timelineEditor.SeekRequested += OnTimelineSeekRequested;
+        _timelineEditor.SlotSelected += OnTimelineSlotSelected;
+        _timelineEditor.SlotChanged += OnTimelineSlotChanged;
+        _timelineEditor.SlotDeleteRequested += DeleteSlotAtIndex;
+        _timelineEditor.SlotSplitRequested += SplitSlotAtIndex;
+
+        return card;
+    }
+
+    private static Button CreateSmallButton(string text, Action onPressed)
+    {
+        var button = UiKit.CreateButton(text, null, outline: true, UiKit.Soft, UiKit.Ink, onPressed);
+        button.CustomMinimumSize = new Vector2(58, 40);
+        button.AddThemeFontSizeOverride("font_size", 14);
+        foreach (var state in new[] { "normal", "hover", "pressed", "focus" })
+        {
+            if (button.GetThemeStylebox(state) is StyleBoxFlat box)
+            {
+                box.ContentMarginLeft = 10;
+                box.ContentMarginRight = 10;
+            }
+        }
+        return button;
+    }
+
+    private static void StyleTitleInput(LineEdit input)
+    {
+        StyleBoxFlat Make(Color bg, Color border) => new()
+        {
+            BgColor = bg,
+            CornerRadiusTopLeft = 14,
+            CornerRadiusTopRight = 14,
+            CornerRadiusBottomLeft = 14,
+            CornerRadiusBottomRight = 14,
+            BorderWidthBottom = 2,
+            BorderWidthTop = 2,
+            BorderWidthLeft = 2,
+            BorderWidthRight = 2,
+            BorderColor = border,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 2,
+            ContentMarginBottom = 2,
+            AntiAliasing = true,
+        };
+
+        input.AddThemeStyleboxOverride("normal", Make(new Color(1, 1, 1, 0), new Color(1, 1, 1, 0)));
+        input.AddThemeStyleboxOverride("focus", Make(new Color(1, 1, 1, 0.9f), new Color(0.38f, 0.66f, 1.0f)));
+        input.AddThemeColorOverride("font_color", UiKit.Ink);
+        input.AddThemeColorOverride("font_placeholder_color", UiKit.Muted with { A = 0.7f });
+        input.AddThemeFontSizeOverride("font_size", 28);
+        var headingFont = ThemeDB.GetProjectTheme()?.GetFont("font", "HeadingLabel");
+        if (headingFont is not null) input.AddThemeFontOverride("font", headingFont);
+    }
+
+    private static void StyleFieldInput(LineEdit input, int height = 34)
+    {
+        StyleBoxFlat Make(Color border) => new()
+        {
+            BgColor = Colors.White,
+            CornerRadiusTopLeft = 12,
+            CornerRadiusTopRight = 12,
+            CornerRadiusBottomLeft = 12,
+            CornerRadiusBottomRight = 12,
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = border,
+            ContentMarginLeft = 10,
+            ContentMarginRight = 8,
+            AntiAliasing = true,
+        };
+
+        input.CustomMinimumSize = new Vector2(input.CustomMinimumSize.X, height);
+        input.AddThemeStyleboxOverride("normal", Make(UiKit.Line));
+        input.AddThemeStyleboxOverride("focus", Make(new Color(0.38f, 0.66f, 1.0f)));
+        input.AddThemeColorOverride("font_color", UiKit.Ink);
+        input.AddThemeColorOverride("font_placeholder_color", UiKit.Muted with { A = 0.8f });
+        input.AddThemeFontSizeOverride("font_size", 14);
+    }
+
+    private static void StyleSlider(HSlider slider)
+    {
+        var track = UiKit.RoundedBox(new Color(0.88f, 0.90f, 0.96f), 3);
+        track.ContentMarginTop = 3;
+        track.ContentMarginBottom = 3;
+        var fill = UiKit.RoundedBox(UiKit.Sky, 3);
+        fill.ContentMarginTop = 3;
+        fill.ContentMarginBottom = 3;
+        slider.AddThemeStyleboxOverride("slider", track);
+        slider.AddThemeStyleboxOverride("grabber_area", fill);
+        slider.AddThemeStyleboxOverride("grabber_area_highlight", fill);
+
+        var knob = CreateKnobTexture(UiKit.Sky);
+        slider.AddThemeIconOverride("grabber", knob);
+        slider.AddThemeIconOverride("grabber_highlight", knob);
+    }
+
+    private static ImageTexture CreateKnobTexture(Color color)
+    {
+        const int size = 18;
+        var image = Image.CreateEmpty(size, size, false, Image.Format.Rgba8);
+        var center = new Vector2(size / 2f - 0.5f, size / 2f - 0.5f);
+        for (var y = 0; y < size; y++)
+        {
+            for (var x = 0; x < size; x++)
+            {
+                var d = new Vector2(x, y).DistanceTo(center);
+                var outer = Mathf.Clamp(size / 2f - d, 0, 1);       // anti-aliased white ring
+                var inner = Mathf.Clamp(size / 2f - 3 - d, 0, 1);   // coloured core
+                var pixel = Colors.White.Lerp(color, inner);
+                image.SetPixel(x, y, pixel with { A = outer });
+            }
+        }
+        return ImageTexture.CreateFromImage(image);
+    }
+
+    private void UpdateMeta()
+    {
+        var count = _editableSlots.Count;
+        var lineText = count == 1 ? "1 line" : $"{count} lines";
+        var characters = _editableSlots.Select(s => s.CharacterName).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().Count();
+        if (_metaLabel is not null) _metaLabel.Text = $"{lineText}  ·  {characters} characters  ·  {_totalDuration:F1}s";
+        if (_lineCountLabel is not null) _lineCountLabel.Text = lineText;
+    }
+
+    // ───────────────────────── Loading ─────────────────────────
 
     private void LoadSceneData()
     {
@@ -247,6 +450,7 @@ public partial class SceneEditorScreen : BaseScreen
         LoadVideoAndAudioWaveform();
         RebuildSlotsUi();
         SyncTimelineData();
+        SeekTo(0.0);
 
         if (_statusLabel is not null)
         {
@@ -401,6 +605,7 @@ public partial class SceneEditorScreen : BaseScreen
         }
 
         SyncTimelineData();
+        UpdateMeta();
 
         if (_statusLabel is not null)
         {
@@ -424,6 +629,8 @@ public partial class SceneEditorScreen : BaseScreen
         _timelineEditor.SetData(_totalDuration, timelineSlots, _currentWaveform);
     }
 
+    // ───────────────────────── Timeline & selection ─────────────────────────
+
     private void OnTimelineSeekRequested(double targetSeconds)
     {
         SeekTo(targetSeconds);
@@ -433,14 +640,6 @@ public partial class SceneEditorScreen : BaseScreen
     {
         _selectedSlotIndex = slotIndex;
         UpdateSlotCardsHighlight();
-        if (slotIndex >= 0 && slotIndex < _editableSlots.Count)
-        {
-            var slot = _editableSlots[slotIndex];
-            if (_statusLabel is not null)
-            {
-                _statusLabel.Text = $"#{slotIndex + 1} {slot.CharacterName} · {slot.StartSeconds:F1}–{slot.EndSeconds:F1}s";
-            }
-        }
     }
 
     private void SelectSlotIndex(int index)
@@ -464,6 +663,8 @@ public partial class SceneEditorScreen : BaseScreen
         _selectedSlotIndex = slotIndex;
         RebuildSlotsUi();
     }
+
+    // ───────────────────────── Playback ─────────────────────────
 
     private void OnPlayPausePressed()
     {
@@ -537,6 +738,70 @@ public partial class SceneEditorScreen : BaseScreen
 
         _timelineEditor?.SetPlayhead(clamped);
     }
+
+    public override void _Process(double delta)
+    {
+        if (_videoPlayer is not null && _videoContainer is not null)
+        {
+            var tex = _videoPlayer.GetVideoTexture();
+            if (tex is not null && tex.GetHeight() > 0)
+            {
+                float r = (float)tex.GetWidth() / tex.GetHeight();
+                if (Math.Abs(_videoContainer.Ratio - r) > 0.01f)
+                {
+                    _videoContainer.Ratio = r;
+                }
+            }
+        }
+
+        if (_videoPlayer is not null && _videoPlayer.Stream is not null && _videoPlayer.IsPlaying() && !_videoPlayer.Paused)
+        {
+            var pos = _videoPlayer.GetStreamPosition();
+            _isPlaying = true;
+
+            if (_timeSlider is not null && !_isSliderDragging)
+            {
+                _timeSlider.Value = pos;
+            }
+
+            if (_videoTimeLabel is not null)
+            {
+                _videoTimeLabel.Text = $"{pos:F1}s / {_totalDuration:F1}s";
+            }
+
+            _timelineEditor?.SetPlayhead(pos);
+
+            if (_isPreviewingSlot && pos >= _previewEndSec)
+            {
+                PauseVideo();
+                _isPreviewingSlot = false;
+            }
+
+            if (pos >= _totalDuration)
+            {
+                PauseVideo();
+                SeekTo(0.0);
+            }
+        }
+    }
+
+    private void PreviewSlot(EditableVoiceSlot slot)
+    {
+        if (_videoPlayer is null || _videoPlayer.Stream is null) return;
+
+        _isPreviewingSlot = true;
+        _previewEndSec = slot.EndSeconds;
+        var leadInStart = Math.Max(0.0, slot.StartSeconds - 3.0);
+        SeekTo(leadInStart);
+        PlayVideo();
+
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = string.Empty;
+        }
+    }
+
+    // ───────────────────────── Line editing ─────────────────────────
 
     private void OnAutoDetectPressed()
     {
@@ -709,7 +974,6 @@ public partial class SceneEditorScreen : BaseScreen
     {
         if (index >= 0 && index < _editableSlots.Count)
         {
-            var charName = _editableSlots[index].CharacterName;
             _editableSlots.RemoveAt(index);
             _selectedSlotIndex = Math.Min(index, _editableSlots.Count - 1);
             RebuildSlotsUi();
@@ -722,360 +986,145 @@ public partial class SceneEditorScreen : BaseScreen
         }
     }
 
-    public override void _Process(double delta)
-    {
-        if (_videoPlayer is not null && _videoContainer is not null)
-        {
-            var tex = _videoPlayer.GetVideoTexture();
-            if (tex is not null && tex.GetHeight() > 0)
-            {
-                float r = (float)tex.GetWidth() / tex.GetHeight();
-                if (Math.Abs(_videoContainer.Ratio - r) > 0.01f)
-                {
-                    _videoContainer.Ratio = r;
-                }
-            }
-        }
-
-        if (_videoPlayer is not null && _videoPlayer.Stream is not null && _videoPlayer.IsPlaying() && !_videoPlayer.Paused)
-        {
-            var pos = _videoPlayer.GetStreamPosition();
-            _isPlaying = true;
-
-            if (_timeSlider is not null && !_isSliderDragging)
-            {
-                _timeSlider.Value = pos;
-            }
-
-            if (_videoTimeLabel is not null)
-            {
-                _videoTimeLabel.Text = $"{pos:F1}s / {_totalDuration:F1}s";
-            }
-
-            _timelineEditor?.SetPlayhead(pos);
-
-            if (_isPreviewingSlot && pos >= _previewEndSec)
-            {
-                PauseVideo();
-                _isPreviewingSlot = false;
-            }
-
-            if (pos >= _totalDuration)
-            {
-                PauseVideo();
-                SeekTo(0.0);
-            }
-        }
-    }
-
     private void RebuildSlotsUi()
     {
+        UpdateMeta();
         if (_slotsContainer is null) return;
 
         foreach (var child in _slotsContainer.GetChildren())
         {
+            _slotsContainer.RemoveChild(child);
             child.QueueFree();
         }
 
         if (_editableSlots.Count == 0)
         {
-            var emptyPanel = new PanelContainer
-            {
-                CustomMinimumSize = new Vector2(840, 70)
-            };
-            var emptyStyle = new StyleBoxFlat
-            {
-                BgColor = Colors.White,
-                BorderWidthLeft = 2,
-                BorderWidthTop = 2,
-                BorderWidthRight = 2,
-                BorderWidthBottom = 2,
-                BorderColor = new Color(0.886f, 0.902f, 0.941f),
-                CornerRadiusTopLeft = 14,
-                CornerRadiusTopRight = 14,
-                CornerRadiusBottomLeft = 14,
-                CornerRadiusBottomRight = 14
-            };
-            emptyPanel.AddThemeStyleboxOverride("panel", emptyStyle);
-
-            var emptyLabel = new Label
-            {
-                Text = "No lines yet.",
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            emptyLabel.AddThemeColorOverride("font_color", new Color(0.45f, 0.50f, 0.65f));
-            emptyLabel.AddThemeFontSizeOverride("font_size", 14);
-            emptyPanel.AddChild(emptyLabel);
-            _slotsContainer.AddChild(emptyPanel);
+            var empty = UiKit.Body("No lines yet. Add one or auto-detect them from the audio.", 14);
+            empty.HorizontalAlignment = HorizontalAlignment.Center;
+            empty.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+            empty.CustomMinimumSize = new Vector2(0, 80);
+            empty.VerticalAlignment = VerticalAlignment.Center;
+            _slotsContainer.AddChild(empty);
             return;
         }
 
         for (int i = 0; i < _editableSlots.Count; i++)
         {
-            var index = i;
-            var slot = _editableSlots[i];
-            var slotColor = TimelineWaveformEditor.GetPresetColor(index);
-            bool isSelected = (index == _selectedSlotIndex);
-
-            var panel = new PanelContainer
-            {
-                Name = $"SlotCard_{index}",
-                CustomMinimumSize = new Vector2(840, 0),
-                MouseFilter = Control.MouseFilterEnum.Pass
-            };
-
-            var cardStyle = new StyleBoxFlat
-            {
-                BgColor = Colors.White,
-                CornerRadiusTopLeft = 14,
-                CornerRadiusTopRight = 14,
-                CornerRadiusBottomLeft = 14,
-                CornerRadiusBottomRight = 14,
-                BorderWidthLeft = isSelected ? 8 : 6,
-                BorderWidthTop = isSelected ? 2 : 1,
-                BorderWidthRight = isSelected ? 2 : 1,
-                BorderWidthBottom = isSelected ? 2 : 1,
-                BorderColor = isSelected ? slotColor : new Color(0.886f, 0.902f, 0.941f),
-                ShadowColor = isSelected
-                    ? new Color(slotColor.R, slotColor.G, slotColor.B, 0.28f)
-                    : new Color(0.12f, 0.18f, 0.35f, 0.08f),
-                ShadowSize = isSelected ? 12 : 6,
-                ShadowOffset = new Vector2(0, 3)
-            };
-            panel.AddThemeStyleboxOverride("panel", cardStyle);
-
-            panel.GuiInput += @event =>
-            {
-                if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
-                {
-                    SelectSlotIndex(index);
-                }
-            };
-
-            var margin = new MarginContainer();
-            margin.AddThemeConstantOverride("margin_left", 18);
-            margin.AddThemeConstantOverride("margin_right", 18);
-            margin.AddThemeConstantOverride("margin_top", 14);
-            margin.AddThemeConstantOverride("margin_bottom", 14);
-            panel.AddChild(margin);
-
-            var mainVBox = new VBoxContainer();
-            mainVBox.AddThemeConstantOverride("separation", 10);
-            margin.AddChild(mainVBox);
-
-            // Row 1: Header / Controls Row
-            var row1 = new HBoxContainer();
-            row1.AddThemeConstantOverride("separation", 12);
-            mainVBox.AddChild(row1);
-
-            // 1. Number Badge Pill
-            var badgePanel = new PanelContainer
-            {
-                CustomMinimumSize = new Vector2(42, 32),
-                SizeFlagsVertical = Control.SizeFlags.ShrinkCenter
-            };
-            var badgeStyle = new StyleBoxFlat
-            {
-                BgColor = slotColor,
-                CornerRadiusTopLeft = 8,
-                CornerRadiusTopRight = 8,
-                CornerRadiusBottomLeft = 8,
-                CornerRadiusBottomRight = 8,
-                ContentMarginLeft = 8,
-                ContentMarginRight = 8,
-                ContentMarginTop = 3,
-                ContentMarginBottom = 3
-            };
-            badgePanel.AddThemeStyleboxOverride("panel", badgeStyle);
-
-            var numLabel = new Label
-            {
-                Text = $"#{index + 1}",
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            numLabel.AddThemeColorOverride("font_color", Colors.White);
-            numLabel.AddThemeFontSizeOverride("font_size", 13);
-            badgePanel.AddChild(numLabel);
-            row1.AddChild(badgePanel);
-
-            // 2. Character Name
-            var charLabel = new Label
-            {
-                Text = "Character",
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            charLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.40f));
-            charLabel.AddThemeFontSizeOverride("font_size", 13);
-            row1.AddChild(charLabel);
-
-            var charNameInput = new LineEdit
-            {
-                Text = slot.CharacterName,
-                PlaceholderText = "Name",
-                CustomMinimumSize = new Vector2(170, 34),
-                SizeFlagsVertical = Control.SizeFlags.ShrinkCenter
-            };
-            StyleCardInput(charNameInput);
-            charNameInput.FocusEntered += () => SelectSlotIndex(index);
-            charNameInput.TextChanged += text =>
-            {
-                slot.CharacterName = text;
-                slot.CharacterId = ToKebabCaseId(text);
-                SyncTimelineData();
-            };
-            row1.AddChild(charNameInput);
-
-            // 3. Timing Section
-            var startLabel = new Label
-            {
-                Text = "Start",
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            startLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.40f));
-            startLabel.AddThemeFontSizeOverride("font_size", 13);
-            row1.AddChild(startLabel);
-
-            SpinBox? endInput = null;
-
-            var startInput = new SpinBox
-            {
-                MinValue = 0.0,
-                MaxValue = 600.0,
-                Step = 0.1,
-                Value = slot.StartSeconds,
-                CustomMinimumSize = new Vector2(85, 34),
-                SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
-                Suffix = "s"
-            };
-            StyleCardInput(startInput.GetLineEdit());
-            startInput.GetLineEdit().Alignment = HorizontalAlignment.Center;
-            startInput.FocusEntered += () => SelectSlotIndex(index);
-            row1.AddChild(startInput);
-
-            var endLabel = new Label
-            {
-                Text = "End",
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            endLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.40f));
-            endLabel.AddThemeFontSizeOverride("font_size", 13);
-            row1.AddChild(endLabel);
-
-            endInput = new SpinBox
-            {
-                MinValue = 0.1,
-                MaxValue = 600.0,
-                Step = 0.1,
-                Value = slot.EndSeconds,
-                CustomMinimumSize = new Vector2(85, 34),
-                SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
-                Suffix = "s"
-            };
-            StyleCardInput(endInput.GetLineEdit());
-            endInput.GetLineEdit().Alignment = HorizontalAlignment.Center;
-            endInput.FocusEntered += () => SelectSlotIndex(index);
-            row1.AddChild(endInput);
-
-            var durationChip = new Label
-            {
-                Name = "DurationChip",
-                Text = $"({Math.Max(0, slot.EndSeconds - slot.StartSeconds):F1}s)",
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            durationChip.AddThemeColorOverride("font_color", new Color(0.48f, 0.52f, 0.64f));
-            durationChip.AddThemeFontSizeOverride("font_size", 12);
-            row1.AddChild(durationChip);
-
-            startInput.ValueChanged += val =>
-            {
-                slot.StartSeconds = Math.Round(val, 1);
-                if (slot.EndSeconds <= slot.StartSeconds)
-                {
-                    slot.EndSeconds = Math.Round(slot.StartSeconds + 0.5, 1);
-                    if (endInput is not null) endInput.Value = slot.EndSeconds;
-                }
-                SyncTimelineData();
-                durationChip.Text = $"({Math.Max(0, slot.EndSeconds - slot.StartSeconds):F1}s)";
-            };
-
-            endInput.ValueChanged += val =>
-            {
-                slot.EndSeconds = Math.Round(val, 1);
-                if (slot.EndSeconds <= slot.StartSeconds)
-                {
-                    slot.StartSeconds = Math.Round(Math.Max(0, slot.EndSeconds - 0.5), 1);
-                    startInput.Value = slot.StartSeconds;
-                }
-                SyncTimelineData();
-                durationChip.Text = $"({Math.Max(0, slot.EndSeconds - slot.StartSeconds):F1}s)";
-            };
-
-            // Spacer
-            var spacer = new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-            row1.AddChild(spacer);
-
-            // 4. Preview Button
-            var previewBtn = new Button
-            {
-                Text = "Preview",
-                CustomMinimumSize = new Vector2(105, 34),
-                SizeFlagsVertical = Control.SizeFlags.ShrinkCenter
-            };
-            StyleActionPill(previewBtn, new Color(0.280f, 0.650f, 0.950f), 10);
-            UiSoundManager.Attach(previewBtn);
-            previewBtn.Pressed += () =>
-            {
-                SelectSlotIndex(index);
-                PreviewSlot(slot);
-            };
-            row1.AddChild(previewBtn);
-
-            // 5. Delete Button
-            var deleteBtn = new Button
-            {
-                Text = "Delete",
-                CustomMinimumSize = new Vector2(88, 34),
-                SizeFlagsVertical = Control.SizeFlags.ShrinkCenter
-            };
-            StyleOutlinePill(deleteBtn, new Color(0.95f, 0.35f, 0.35f), 10);
-            UiSoundManager.Attach(deleteBtn);
-            deleteBtn.Pressed += () => DeleteSlotAtIndex(index);
-            row1.AddChild(deleteBtn);
-
-            // Row 2: Prompt / Subtitle
-            var row2 = new HBoxContainer();
-            row2.AddThemeConstantOverride("separation", 10);
-            mainVBox.AddChild(row2);
-
-            var promptLabel = new Label
-            {
-                Text = "Line",
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            promptLabel.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
-            promptLabel.AddThemeFontSizeOverride("font_size", 13);
-            row2.AddChild(promptLabel);
-
-            var promptInput = new LineEdit
-            {
-                Text = slot.Prompt,
-                PlaceholderText = "What the character says",
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                CustomMinimumSize = new Vector2(0, 36)
-            };
-            StyleCardInput(promptInput);
-            promptInput.FocusEntered += () => SelectSlotIndex(index);
-            promptInput.TextChanged += text =>
-            {
-                slot.Prompt = text;
-                SyncTimelineData();
-            };
-            row2.AddChild(promptInput);
-
-            _slotsContainer.AddChild(panel);
+            _slotsContainer.AddChild(CreateLineCard(i, _editableSlots[i]));
         }
+
+        UpdateSlotCardsHighlight();
+    }
+
+    private PanelContainer CreateLineCard(int index, EditableVoiceSlot slot)
+    {
+        var color = TimelineWaveformEditor.GetPresetColor(index);
+        var card = new PanelContainer { MouseFilter = MouseFilterEnum.Pass };
+        card.GuiInput += e =>
+        {
+            if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) SelectSlotIndex(index);
+        };
+
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 8);
+        card.AddChild(stack);
+
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 8);
+        stack.AddChild(row);
+
+        var badge = new PanelContainer { CustomMinimumSize = new Vector2(30, 30), SizeFlagsVertical = SizeFlags.ShrinkCenter, MouseFilter = MouseFilterEnum.Ignore };
+        var badgeBox = UiKit.RoundedBox(color, 15);
+        badgeBox.CornerDetail = 16;
+        badge.AddThemeStyleboxOverride("panel", badgeBox);
+        var number = UiKit.Heading($"{index + 1}", 13, Colors.White);
+        number.HorizontalAlignment = HorizontalAlignment.Center;
+        number.VerticalAlignment = VerticalAlignment.Center;
+        badge.AddChild(number);
+        row.AddChild(badge);
+
+        var nameInput = new LineEdit { Text = slot.CharacterName, PlaceholderText = "Character", SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        StyleFieldInput(nameInput);
+        nameInput.FocusEntered += () => SelectSlotIndex(index);
+        nameInput.TextChanged += text =>
+        {
+            slot.CharacterName = text;
+            slot.CharacterId = ToKebabCaseId(text);
+            SyncTimelineData();
+            UpdateMeta();
+        };
+        row.AddChild(nameInput);
+
+        SpinBox? endInput = null;
+        var startInput = CreateTimeInput(slot.StartSeconds, 0.0);
+        startInput.FocusEntered += () => SelectSlotIndex(index);
+        row.AddChild(startInput);
+
+        var dash = UiKit.Body("–", 14);
+        dash.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        row.AddChild(dash);
+
+        endInput = CreateTimeInput(slot.EndSeconds, 0.1);
+        endInput.FocusEntered += () => SelectSlotIndex(index);
+        row.AddChild(endInput);
+
+        startInput.ValueChanged += val =>
+        {
+            slot.StartSeconds = Math.Round(val, 1);
+            if (slot.EndSeconds <= slot.StartSeconds)
+            {
+                slot.EndSeconds = Math.Round(slot.StartSeconds + 0.5, 1);
+                if (endInput is not null) endInput.Value = slot.EndSeconds;
+            }
+            SyncTimelineData();
+        };
+
+        endInput.ValueChanged += val =>
+        {
+            slot.EndSeconds = Math.Round(val, 1);
+            if (slot.EndSeconds <= slot.StartSeconds)
+            {
+                slot.StartSeconds = Math.Round(Math.Max(0, slot.EndSeconds - 0.5), 1);
+                startInput.Value = slot.StartSeconds;
+            }
+            SyncTimelineData();
+        };
+
+        row.AddChild(UiKit.CreateIconButton("play", UiKit.Sky with { A = 0.14f }, UiKit.Sky, () =>
+        {
+            SelectSlotIndex(index);
+            PreviewSlot(slot);
+        }, 34));
+        row.AddChild(UiKit.CreateIconButton("trash-2", UiKit.Danger with { A = 0.12f }, UiKit.Danger, () => DeleteSlotAtIndex(index), 34));
+
+        var promptInput = new LineEdit { Text = slot.Prompt, PlaceholderText = "What the character says", SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        StyleFieldInput(promptInput);
+        promptInput.FocusEntered += () => SelectSlotIndex(index);
+        promptInput.TextChanged += text =>
+        {
+            slot.Prompt = text;
+            SyncTimelineData();
+        };
+        stack.AddChild(promptInput);
+
+        return card;
+    }
+
+    private static SpinBox CreateTimeInput(double value, double min)
+    {
+        var input = new SpinBox
+        {
+            MinValue = min,
+            MaxValue = 600.0,
+            Step = 0.1,
+            Value = value,
+            Suffix = "s",
+            CustomMinimumSize = new Vector2(74, 34),
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+        };
+        StyleFieldInput(input.GetLineEdit());
+        input.GetLineEdit().Alignment = HorizontalAlignment.Center;
+        return input;
     }
 
     private void UpdateSlotCardsHighlight()
@@ -1085,213 +1134,33 @@ public partial class SceneEditorScreen : BaseScreen
         var children = _slotsContainer.GetChildren();
         for (int i = 0; i < children.Count; i++)
         {
-            if (children[i] is PanelContainer panel)
-            {
-                bool isSelected = (i == _selectedSlotIndex);
-                var slotColor = TimelineWaveformEditor.GetPresetColor(i);
+            if (children[i] is not PanelContainer card) continue;
 
-                var cardStyle = new StyleBoxFlat
-                {
-                    BgColor = Colors.White,
-                    CornerRadiusTopLeft = 14,
-                    CornerRadiusTopRight = 14,
-                    CornerRadiusBottomLeft = 14,
-                    CornerRadiusBottomRight = 14,
-                    BorderWidthLeft = isSelected ? 8 : 6,
-                    BorderWidthTop = isSelected ? 2 : 1,
-                    BorderWidthRight = isSelected ? 2 : 1,
-                    BorderWidthBottom = isSelected ? 2 : 1,
-                    BorderColor = isSelected ? slotColor : new Color(0.886f, 0.902f, 0.941f),
-                    ShadowColor = isSelected
-                        ? new Color(slotColor.R, slotColor.G, slotColor.B, 0.28f)
-                        : new Color(0.12f, 0.18f, 0.35f, 0.08f),
-                    ShadowSize = isSelected ? 12 : 6,
-                    ShadowOffset = new Vector2(0, 3)
-                };
-                panel.AddThemeStyleboxOverride("panel", cardStyle);
+            var selected = i == _selectedSlotIndex;
+            var color = TimelineWaveformEditor.GetPresetColor(i);
+            var box = UiKit.RoundedBox(selected ? color.Lerp(Colors.White, 0.9f) : UiKit.Soft, 18, padding: 10);
+            box.BorderWidthLeft = 2;
+            box.BorderWidthTop = 2;
+            box.BorderWidthRight = 2;
+            box.BorderWidthBottom = 2;
+            box.BorderColor = selected ? color : new Color(1, 1, 1, 0);
+            if (selected)
+            {
+                box.ShadowColor = color with { A = 0.25f };
+                box.ShadowSize = 10;
+                box.ShadowOffset = new Vector2(0, 3);
+            }
+            card.AddThemeStyleboxOverride("panel", box);
+
+            if (selected && _linesScroll is not null)
+            {
+                var target = card;
+                Callable.From(() => _linesScroll?.EnsureControlVisible(target)).CallDeferred();
             }
         }
     }
 
-    private static void StyleCardInput(LineEdit input)
-    {
-        if (input is null) return;
-
-        var normal = new StyleBoxFlat
-        {
-            BgColor = new Color(0.975f, 0.982f, 0.995f),
-            BorderWidthLeft = 1,
-            BorderWidthTop = 1,
-            BorderWidthRight = 1,
-            BorderWidthBottom = 1,
-            BorderColor = new Color(0.850f, 0.880f, 0.925f),
-            CornerRadiusTopLeft = 8,
-            CornerRadiusTopRight = 8,
-            CornerRadiusBottomLeft = 8,
-            CornerRadiusBottomRight = 8,
-            ContentMarginLeft = 10,
-            ContentMarginRight = 10,
-            ContentMarginTop = 6,
-            ContentMarginBottom = 6
-        };
-
-        var focus = new StyleBoxFlat
-        {
-            BgColor = Colors.White,
-            BorderWidthLeft = 2,
-            BorderWidthTop = 2,
-            BorderWidthRight = 2,
-            BorderWidthBottom = 2,
-            BorderColor = new Color(0.280f, 0.650f, 0.950f),
-            CornerRadiusTopLeft = 8,
-            CornerRadiusTopRight = 8,
-            CornerRadiusBottomLeft = 8,
-            CornerRadiusBottomRight = 8,
-            ContentMarginLeft = 10,
-            ContentMarginRight = 10,
-            ContentMarginTop = 6,
-            ContentMarginBottom = 6
-        };
-
-        input.AddThemeStyleboxOverride("normal", normal);
-        input.AddThemeStyleboxOverride("focus", focus);
-        input.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
-        input.AddThemeColorOverride("font_placeholder_color", new Color(0.550f, 0.580f, 0.680f, 0.85f));
-    }
-
-    private static void StyleActionPill(Button btn, Color color, int radius = 20)
-    {
-        var normal = new StyleBoxFlat
-        {
-            BgColor = color,
-            CornerRadiusTopLeft = radius,
-            CornerRadiusTopRight = radius,
-            CornerRadiusBottomLeft = radius,
-            CornerRadiusBottomRight = radius,
-            ContentMarginLeft = 14,
-            ContentMarginRight = 14,
-            ContentMarginTop = 6,
-            ContentMarginBottom = 6,
-            ShadowSize = 4,
-            ShadowColor = new Color(color.R, color.G, color.B, 0.25f)
-        };
-        var hover = new StyleBoxFlat
-        {
-            BgColor = color.Lightened(0.12f),
-            CornerRadiusTopLeft = radius,
-            CornerRadiusTopRight = radius,
-            CornerRadiusBottomLeft = radius,
-            CornerRadiusBottomRight = radius,
-            ContentMarginLeft = 14,
-            ContentMarginRight = 14,
-            ContentMarginTop = 6,
-            ContentMarginBottom = 6,
-            ShadowSize = 8,
-            ShadowColor = new Color(color.R, color.G, color.B, 0.35f)
-        };
-        var pressed = new StyleBoxFlat
-        {
-            BgColor = color.Darkened(0.12f),
-            CornerRadiusTopLeft = radius,
-            CornerRadiusTopRight = radius,
-            CornerRadiusBottomLeft = radius,
-            CornerRadiusBottomRight = radius,
-            ContentMarginLeft = 14,
-            ContentMarginRight = 14,
-            ContentMarginTop = 6,
-            ContentMarginBottom = 6,
-            ShadowSize = 1
-        };
-
-        btn.AddThemeStyleboxOverride("normal", normal);
-        btn.AddThemeStyleboxOverride("hover", hover);
-        btn.AddThemeStyleboxOverride("pressed", pressed);
-        btn.AddThemeStyleboxOverride("focus", hover);
-        btn.AddThemeColorOverride("font_color", Colors.White);
-        btn.AddThemeColorOverride("font_hover_color", Colors.White);
-        btn.AddThemeColorOverride("font_pressed_color", Colors.White);
-        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
-    }
-
-    private static void StyleOutlinePill(Button btn, Color color, int radius = 20)
-    {
-        var normal = new StyleBoxFlat
-        {
-            BgColor = Colors.White,
-            BorderWidthLeft = 2,
-            BorderWidthTop = 2,
-            BorderWidthRight = 2,
-            BorderWidthBottom = 2,
-            BorderColor = new Color(0.85f, 0.88f, 0.94f),
-            CornerRadiusTopLeft = radius,
-            CornerRadiusTopRight = radius,
-            CornerRadiusBottomLeft = radius,
-            CornerRadiusBottomRight = radius,
-            ContentMarginLeft = 14,
-            ContentMarginRight = 14,
-            ContentMarginTop = 6,
-            ContentMarginBottom = 6
-        };
-        var hover = new StyleBoxFlat
-        {
-            BgColor = new Color(color.R, color.G, color.B, 0.12f),
-            BorderWidthLeft = 2,
-            BorderWidthTop = 2,
-            BorderWidthRight = 2,
-            BorderWidthBottom = 2,
-            BorderColor = color,
-            CornerRadiusTopLeft = radius,
-            CornerRadiusTopRight = radius,
-            CornerRadiusBottomLeft = radius,
-            CornerRadiusBottomRight = radius,
-            ContentMarginLeft = 14,
-            ContentMarginRight = 14,
-            ContentMarginTop = 6,
-            ContentMarginBottom = 6
-        };
-        var pressed = new StyleBoxFlat
-        {
-            BgColor = new Color(color.R, color.G, color.B, 0.22f),
-            BorderWidthLeft = 2,
-            BorderWidthTop = 2,
-            BorderWidthRight = 2,
-            BorderWidthBottom = 2,
-            BorderColor = color,
-            CornerRadiusTopLeft = radius,
-            CornerRadiusTopRight = radius,
-            CornerRadiusBottomLeft = radius,
-            CornerRadiusBottomRight = radius,
-            ContentMarginLeft = 14,
-            ContentMarginRight = 14,
-            ContentMarginTop = 6,
-            ContentMarginBottom = 6
-        };
-
-        btn.AddThemeStyleboxOverride("normal", normal);
-        btn.AddThemeStyleboxOverride("hover", hover);
-        btn.AddThemeStyleboxOverride("pressed", pressed);
-        btn.AddThemeStyleboxOverride("focus", hover);
-        btn.AddThemeColorOverride("font_color", color);
-        btn.AddThemeColorOverride("font_hover_color", color);
-        btn.AddThemeColorOverride("font_pressed_color", color);
-        btn.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
-    }
-
-    private void PreviewSlot(EditableVoiceSlot slot)
-    {
-        if (_videoPlayer is null || _videoPlayer.Stream is null) return;
-
-        _isPreviewingSlot = true;
-        _previewEndSec = slot.EndSeconds;
-        var leadInStart = Math.Max(0.0, slot.StartSeconds - 3.0);
-        SeekTo(leadInStart);
-        PlayVideo();
-
-        if (_statusLabel is not null)
-        {
-            _statusLabel.Text = string.Empty;
-        }
-    }
+    // ───────────────────────── Saving ─────────────────────────
 
     private static string ToKebabCaseId(string input)
     {

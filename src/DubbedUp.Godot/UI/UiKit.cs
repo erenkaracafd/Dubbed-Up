@@ -111,6 +111,45 @@ public static class UiKit
         return button;
     }
 
+    /// <summary>Round icon-only button (e.g. preview / delete on list rows).</summary>
+    public static Button CreateIconButton(string icon, Color background, Color foreground, Action? onPressed, int size = 36)
+    {
+        var button = new Button
+        {
+            Icon = UiIcons.Get(icon),
+            IconAlignment = HorizontalAlignment.Center,
+            CustomMinimumSize = new Vector2(size, size),
+            SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
+            MouseDefaultCursorShape = Control.CursorShape.PointingHand,
+        };
+
+        StyleBoxFlat Make(Color bg) => new()
+        {
+            BgColor = bg,
+            CornerRadiusTopLeft = size / 2,
+            CornerRadiusTopRight = size / 2,
+            CornerRadiusBottomLeft = size / 2,
+            CornerRadiusBottomRight = size / 2,
+            CornerDetail = 16,
+            AntiAliasing = true,
+        };
+
+        button.AddThemeStyleboxOverride("normal", Make(background));
+        button.AddThemeStyleboxOverride("hover", Make(background.Darkened(0.06f)));
+        button.AddThemeStyleboxOverride("pressed", Make(background.Darkened(0.12f)));
+        button.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
+        button.AddThemeConstantOverride("icon_max_width", (int)(size * 0.45f));
+        foreach (var name in new[] { "icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color", "icon_hover_pressed_color" })
+        {
+            button.AddThemeColorOverride(name, foreground);
+        }
+
+        if (onPressed is not null) button.Pressed += onPressed;
+        UiSoundManager.Attach(button);
+        AttachHoverBounce(button);
+        return button;
+    }
+
     public static void StylePill(Button button, Color background, Color foreground, bool outline)
     {
         StyleBoxFlat Make(Color bg, int shadow, float borderAlpha) => new()

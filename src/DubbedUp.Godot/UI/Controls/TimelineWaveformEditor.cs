@@ -64,7 +64,7 @@ public partial class TimelineWaveformEditor : Control
 
     public override void _Ready()
     {
-        CustomMinimumSize = new Vector2(820, 115);
+        CustomMinimumSize = new Vector2(400, 115);
         MouseFilter = MouseFilterEnum.Stop;
         FocusMode = FocusModeEnum.All;
     }
@@ -124,28 +124,40 @@ public partial class TimelineWaveformEditor : Control
         var size = Size;
         if (size.X <= 0 || size.Y <= 0 || _totalDuration <= 0) return;
 
-        // 1. Background Frame
-        var bgRect = new Rect2(Vector2.Zero, size);
-        DrawRect(bgRect, new Color(0.06f, 0.08f, 0.12f, 1.0f));
-        DrawRect(bgRect, new Color(0.20f, 0.35f, 0.55f, 0.9f), false, 2.0f);
+        // 1. Rounded light track
+        var track = new StyleBoxFlat
+        {
+            BgColor = TrackColor,
+            CornerRadiusTopLeft = 14,
+            CornerRadiusTopRight = 14,
+            CornerRadiusBottomLeft = 14,
+            CornerRadiusBottomRight = 14,
+            CornerDetail = 8,
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = TrackBorderColor,
+            AntiAliasing = true,
+        };
+        DrawStyleBox(track, new Rect2(Vector2.Zero, size));
 
         // 2. Time Grid & Ruler Marks
         var font = GetThemeDefaultFont() ?? ThemeDB.FallbackFont;
         var fontSize = 11;
         var stepSec = _totalDuration > 60.0 ? 5.0 : (_totalDuration > 20.0 ? 2.0 : 1.0);
 
-        for (double t = 0; t <= _totalDuration; t += stepSec)
+        for (double t = stepSec; t <= _totalDuration; t += stepSec)
         {
             var x = (float)((t / _totalDuration) * size.X);
             var isMajor = ((int)Math.Round(t)) % 5 == 0;
-            var lineColor = isMajor ? new Color(0.45f, 0.55f, 0.70f, 0.7f) : new Color(0.20f, 0.25f, 0.35f, 0.4f);
-            var lineH = isMajor ? size.Y : 18.0f;
+            var lineH = isMajor ? size.Y - 4 : 12.0f;
 
-            DrawLine(new Vector2(x, 0), new Vector2(x, lineH), lineColor, 1.0f);
+            DrawLine(new Vector2(x, 4), new Vector2(x, lineH), isMajor ? GridMajorColor : GridMinorColor, 1.0f);
 
             if (isMajor && x < size.X - 35)
             {
-                DrawString(font, new Vector2(x + 4, 13), $"{t:F0}s", HorizontalAlignment.Left, -1, fontSize, new Color(0.8f, 0.88f, 1.0f, 0.9f));
+                DrawString(font, new Vector2(x + 4, 13), $"{t:F0}s", HorizontalAlignment.Left, -1, fontSize, RulerTextColor);
             }
         }
 
@@ -153,7 +165,7 @@ public partial class TimelineWaveformEditor : Control
         var centerY = size.Y * 0.56f;
         var maxAmpH = size.Y * 0.36f;
 
-        DrawLine(new Vector2(0, centerY), new Vector2(size.X, centerY), new Color(0.25f, 0.40f, 0.60f, 0.5f), 1.0f);
+        DrawLine(new Vector2(8, centerY), new Vector2(size.X - 8, centerY), GridMinorColor, 1.0f);
 
         if (_waveformPoints is not null && _waveformPoints.Length > 0)
         {
@@ -168,8 +180,8 @@ public partial class TimelineWaveformEditor : Control
                 var amp = Math.Max(1.5f, Math.Clamp(rawAmp, 0.0f, 1.0f) * maxAmpH);
 
                 var barColor = rawAmp > 0.05f
-                    ? new Color(0.20f, 0.85f, 1.0f, 0.85f)
-                    : new Color(0.15f, 0.45f, 0.65f, 0.40f);
+                    ? WaveColor
+                    : WaveColor with { A = 0.18f };
 
                 DrawLine(new Vector2(x, centerY - amp), new Vector2(x, centerY + amp), barColor, barWidth);
             }
@@ -179,7 +191,7 @@ public partial class TimelineWaveformEditor : Control
             for (float x = 0; x < size.X; x += 4)
             {
                 var idleAmp = (float)(Math.Sin(x * 0.05) * 3.0);
-                DrawLine(new Vector2(x, centerY - idleAmp), new Vector2(x, centerY + idleAmp), new Color(0.2f, 0.5f, 0.7f, 0.4f), 2.0f);
+                DrawLine(new Vector2(x, centerY - idleAmp), new Vector2(x, centerY + idleAmp), WaveColor with { A = 0.18f }, 2.0f);
             }
         }
 
@@ -196,82 +208,80 @@ public partial class TimelineWaveformEditor : Control
 
             var isSelected = (i == _selectedSlotIndex);
             var baseColor = slot.BoxColor;
-            var boxColor = isSelected
-                ? new Color(baseColor.R, baseColor.G, baseColor.B, 0.45f)
-                : new Color(baseColor.R, baseColor.G, baseColor.B, 0.28f);
-            var borderColor = isSelected
-                ? Colors.White
-                : new Color(baseColor.R, baseColor.G, baseColor.B, 0.92f);
-
             var slotRect = new Rect2(xStart, yTop, width, boxHeight);
 
-            // Fill transparent colored box
-            DrawRect(slotRect, boxColor);
-            // Crisp border
-            DrawRect(slotRect, borderColor, false, isSelected ? 2.5f : 1.5f);
-
-            if (isSelected)
+            // Rounded translucent box; the selected one is filled stronger with a thicker outline
+            var box = new StyleBoxFlat
             {
-                // Subtle glowing accent border for selected box
-                var glowRect = new Rect2(xStart - 1, yTop - 1, width + 2, boxHeight + 2);
-                DrawRect(glowRect, new Color(baseColor.R, baseColor.G, baseColor.B, 0.65f), false, 1.5f);
-            }
+                BgColor = baseColor with { A = isSelected ? 0.30f : 0.16f },
+                BorderColor = baseColor with { A = isSelected ? 1.0f : 0.7f },
+                BorderWidthLeft = isSelected ? 3 : 2,
+                BorderWidthTop = isSelected ? 3 : 2,
+                BorderWidthRight = isSelected ? 3 : 2,
+                BorderWidthBottom = isSelected ? 3 : 2,
+                CornerRadiusTopLeft = 8,
+                CornerRadiusTopRight = 8,
+                CornerRadiusBottomLeft = 8,
+                CornerRadiusBottomRight = 8,
+                AntiAliasing = true,
+            };
+            DrawStyleBox(box, slotRect);
 
-            // Corner handles on Left & Right edges for precise resize grasping
-            var cornerSize = 7.0f;
-            var handleColor = isSelected ? Colors.White : new Color(1.0f, 1.0f, 1.0f, 0.85f);
-
-            // Left top & bottom corners
-            DrawLine(new Vector2(xStart, yTop), new Vector2(xStart + cornerSize, yTop), handleColor, 2.0f);
-            DrawLine(new Vector2(xStart, yTop), new Vector2(xStart, yTop + cornerSize), handleColor, 2.0f);
-            DrawLine(new Vector2(xStart, yBottom), new Vector2(xStart + cornerSize, yBottom), handleColor, 2.0f);
-            DrawLine(new Vector2(xStart, yBottom), new Vector2(xStart, yBottom - cornerSize), handleColor, 2.0f);
-
-            // Right top & bottom corners
-            DrawLine(new Vector2(xEnd, yTop), new Vector2(xEnd - cornerSize, yTop), handleColor, 2.0f);
-            DrawLine(new Vector2(xEnd, yTop), new Vector2(xEnd, yTop + cornerSize), handleColor, 2.0f);
-            DrawLine(new Vector2(xEnd, yBottom), new Vector2(xEnd - cornerSize, yBottom), handleColor, 2.0f);
-            DrawLine(new Vector2(xEnd, yBottom), new Vector2(xEnd, yBottom - cornerSize), handleColor, 2.0f);
+            // Resize handles: short rounded bars centred on both edges
+            var handleColor = baseColor.Darkened(isSelected ? 0.15f : 0.0f);
+            var handleTop = yTop + boxHeight * 0.32f;
+            var handleBottom = yTop + boxHeight * 0.68f;
+            DrawLine(new Vector2(xStart + 4, handleTop), new Vector2(xStart + 4, handleBottom), handleColor, 3.0f, true);
+            DrawLine(new Vector2(xEnd - 4, handleTop), new Vector2(xEnd - 4, handleBottom), handleColor, 3.0f, true);
 
             // Center Grip Dot for moving (Only moving happens by dragging this dot!)
             var midX = xStart + (width / 2.0f);
             var midY = yTop + (boxHeight / 2.0f);
             var dotRadius = isSelected ? 6.5f : 5.0f;
-            DrawCircle(new Vector2(midX, midY), dotRadius + 1.5f, new Color(0.05f, 0.08f, 0.14f, 0.95f));
-            DrawCircle(new Vector2(midX, midY), dotRadius, isSelected ? Colors.White : new Color(baseColor.R, baseColor.G, baseColor.B, 1.0f));
-            DrawArc(new Vector2(midX, midY), dotRadius + 1.5f, 0, Mathf.Tau, 16, borderColor, 1.2f);
+            DrawCircle(new Vector2(midX, midY), dotRadius + 2.0f, Colors.White, true, -1, true);
+            DrawCircle(new Vector2(midX, midY), dotRadius, baseColor, true, -1, true);
 
-            // Header Tag (Number & Character Name) with high-contrast badge
+            // Header Tag (Number & Character Name) as a rounded pill
             var tagText = $"#{i + 1} {slot.CharacterName}";
             var tagWidth = Math.Min(width, 160);
             var tagBgRect = new Rect2(xStart, yTop, tagWidth, 17);
-            DrawRect(tagBgRect, new Color(0.08f, 0.10f, 0.16f, 0.92f));
-            DrawRect(tagBgRect, borderColor, false, 1.0f);
-            DrawString(font, new Vector2(xStart + 5, yTop + 13), tagText, HorizontalAlignment.Left, (int)tagWidth - 20, 11, Colors.White);
+            var tag = new StyleBoxFlat
+            {
+                BgColor = baseColor with { A = 0.95f },
+                CornerRadiusTopLeft = 8,
+                CornerRadiusTopRight = 6,
+                CornerRadiusBottomLeft = 0,
+                CornerRadiusBottomRight = 6,
+                AntiAliasing = true,
+            };
+            DrawStyleBox(tag, tagBgRect);
+            DrawString(font, new Vector2(xStart + 6, yTop + 13), tagText, HorizontalAlignment.Left, (int)tagWidth - 24, 11, Colors.White);
 
-            // Delete 'x' Icon button at top right of the box if width allows
+            // Delete button (round, drawn X) at top right of the box if width allows
             if (width >= 35)
             {
-                var deleteIconRect = new Rect2(xStart + width - 16, yTop, 16, 17);
-                DrawRect(deleteIconRect, new Color(0.85f, 0.25f, 0.25f, 0.90f));
-                DrawString(font, new Vector2(xStart + width - 13, yTop + 13), "✕", HorizontalAlignment.Left, -1, 10, Colors.White);
+                var center = new Vector2(xStart + width - 8, yTop + 8.5f);
+                DrawCircle(center, 7.0f, DeleteColor, true, -1, true);
+                DrawLine(center + new Vector2(-3, -3), center + new Vector2(3, 3), Colors.White, 1.6f, true);
+                DrawLine(center + new Vector2(3, -3), center + new Vector2(-3, 3), Colors.White, 1.6f, true);
             }
         }
 
-        // 5. Red Moving Playhead
+        // 5. Playhead with a round knob
         var playheadX = (float)((_currentPlayhead / _totalDuration) * size.X);
-        var playheadColor = new Color(1.0f, 0.20f, 0.20f, 1.0f);
-
-        DrawLine(new Vector2(playheadX, 0), new Vector2(playheadX, size.Y), playheadColor, 2.5f);
-
-        var pointerPoints = new Vector2[]
-        {
-            new(playheadX - 7, 0),
-            new(playheadX + 7, 0),
-            new(playheadX, 11)
-        };
-        DrawColoredPolygon(pointerPoints, playheadColor);
+        DrawLine(new Vector2(playheadX, 4), new Vector2(playheadX, size.Y - 4), PlayheadColor, 2.0f, true);
+        DrawCircle(new Vector2(playheadX, 6), 6.5f, Colors.White, true, -1, true);
+        DrawCircle(new Vector2(playheadX, 6), 5.0f, PlayheadColor, true, -1, true);
     }
+
+    private static readonly Color TrackColor = new(0.975f, 0.98f, 1.0f);
+    private static readonly Color TrackBorderColor = new(0.84f, 0.87f, 0.94f);
+    private static readonly Color GridMinorColor = new(0.118f, 0.106f, 0.294f, 0.07f);
+    private static readonly Color GridMajorColor = new(0.118f, 0.106f, 0.294f, 0.15f);
+    private static readonly Color RulerTextColor = new(0.42f, 0.45f, 0.58f);
+    private static readonly Color WaveColor = new(0.52f, 0.42f, 0.95f, 0.55f);
+    private static readonly Color PlayheadColor = new(1.0f, 0.36f, 0.56f);
+    private static readonly Color DeleteColor = new(0.94f, 0.36f, 0.46f);
 
     public bool RequestSplitAtPlayhead()
     {
