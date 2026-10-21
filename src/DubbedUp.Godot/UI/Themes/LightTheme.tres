@@ -1,4 +1,19 @@
-[gd_resource type="Theme" load_steps=5 format=3]
+[gd_resource type="Theme" load_steps=9 format=3]
+
+[ext_resource type="FontFile" path="res://Content/Fonts/Nunito-Variable.ttf" id="1_body"]
+[ext_resource type="FontFile" path="res://Content/Fonts/Fredoka-Variable.ttf" id="2_display"]
+
+[sub_resource type="FontVariation" id="FontVariation_body"]
+base_font = ExtResource("1_body")
+variation_opentype = {
+2003265652: 600
+}
+
+[sub_resource type="FontVariation" id="FontVariation_display"]
+base_font = ExtResource("2_display")
+variation_opentype = {
+2003265652: 600
+}
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
 content_margin_left = 16.0
@@ -50,8 +65,17 @@ corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
 [resource]
+default_font = SubResource("FontVariation_body")
 default_font_size = 14
 Button/colors/font_color = Color(1, 1, 1, 1)
+Button/colors/icon_normal_color = Color(1, 1, 1, 1)
+Button/colors/icon_hover_color = Color(1, 1, 1, 1)
+Button/colors/icon_pressed_color = Color(1, 1, 1, 1)
+Button/colors/icon_focus_color = Color(1, 1, 1, 1)
+Button/colors/icon_disabled_color = Color(1, 1, 1, 0.6)
+Button/constants/h_separation = 8
+Button/constants/icon_max_width = 18
+Button/fonts/font = SubResource("FontVariation_display")
 Button/colors/font_hover_color = Color(1, 1, 1, 1)
 Button/colors/font_pressed_color = Color(1, 1, 1, 1)
 Button/colors/font_focus_color = Color(1, 1, 1, 1)
@@ -71,3 +95,5 @@ OptionButton/colors/font_pressed_color = Color(0.118, 0.106, 0.294, 1)
 CheckButton/colors/font_color = Color(0.118, 0.106, 0.294, 1)
 CheckButton/colors/font_hover_color = Color(0.118, 0.106, 0.294, 1)
 CheckButton/colors/font_pressed_color = Color(0.118, 0.106, 0.294, 1)
+HeadingLabel/base_type = &"Label"
+HeadingLabel/fonts/font = SubResource("FontVariation_display")

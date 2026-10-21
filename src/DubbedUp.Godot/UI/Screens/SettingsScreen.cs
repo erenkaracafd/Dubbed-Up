@@ -61,6 +61,10 @@ public partial class SettingsScreen : BaseScreen
 		_backButton = GetNodeOrNull<Button>("CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow/BackButton");
 
 		ApplyStyling();
+		UiIcons.Apply(_speakerTestButton, "volume-2");
+		UiIcons.Apply(_micTestButton, "mic");
+		UiIcons.Apply(_saveButton, "save");
+		UiIcons.Apply(_backButton, "arrow-left");
 
 		// Beep test player
 		_beepPlayer = new AudioStreamPlayer();

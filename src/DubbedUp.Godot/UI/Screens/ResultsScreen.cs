@@ -32,6 +32,10 @@ public partial class ResultsScreen : BaseScreen
         _menuButton = GetNodeOrNull<Button>("CenterArea/ResultsCard/CardMargin/VBoxContainer/BottomRow/MenuButton");
 
         ApplyStyling();
+        UiIcons.Apply(_nextRoundButton, "skip-forward");
+        UiIcons.Apply(_replayButton, "rotate-ccw");
+        UiIcons.Apply(_exportButton, "download");
+        UiIcons.Apply(_menuButton, "house");
 
         if (_nextRoundButton is not null)
         {

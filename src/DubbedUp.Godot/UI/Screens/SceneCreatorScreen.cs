@@ -66,6 +66,10 @@ public partial class SceneCreatorScreen : BaseScreen
             ?? GetNodeOrNull<Button>("ScrollContainer/CenterContainer/VBoxContainer/ButtonsHBox/CancelButton");
 
         ApplyStyling();
+        UiIcons.Apply(_backButton, "arrow-left");
+        UiIcons.Apply(_openFolderButton, "folder-open");
+        UiIcons.Apply(_refreshMediaButton, "refresh-cw");
+        UiIcons.Apply(_saveButton, "plus");
 
         if (_backButton is not null) SetupButton(_backButton, OnCancelPressed);
         if (_openFolderButton is not null) SetupButton(_openFolderButton, OnOpenFolderPressed);

@@ -24,8 +24,11 @@ The following development/runtime dependencies are referenced by project files. 
 | charset-normalizer 3.5.1, more-itertools 11.1.0, urllib3 2.7.0, filelock 3.32.5, setuptools 84.0.0 | Whisper/PyTorch support libraries | MIT |
 | idna 3.19, SymPy 1.14.0, NetworkX 3.6.1, Jinja2 3.1.6, MarkupSafe 3.0.3, fsspec 2026.7.0, mpmath 1.3.0, colorama 0.4.6 | Whisper/PyTorch support libraries | BSD-family licenses |
 | Microsoft Visual C++ 2015-2022 Redistributable (x64) | Native runtime required by PyTorch on Windows | Microsoft Software License Terms |
+| Fredoka (variable, from google/fonts) | Display font for headings and buttons; bundled in `src/DubbedUp.Godot/Content/Fonts` | SIL Open Font License 1.1 (`Fredoka-OFL.txt`) |
+| Nunito (variable, from google/fonts) | Body/UI font; bundled in `src/DubbedUp.Godot/Content/Fonts` | SIL Open Font License 1.1 (`Nunito-OFL.txt`) |
+| Lucide icons (lucide-static 0.460.0) | UI icon SVGs, recolored to white for tinting; bundled in `src/DubbedUp.Godot/Content/Icons` | ISC (`LICENSE-lucide.txt`) |
 
-No third-party media is included. Official scene media requires separate provenance and commercial-rights approval under `docs/CONTENT_POLICY.md`.
+Apart from the fonts and icons listed above, no third-party media is included. Official scene media requires separate provenance and commercial-rights approval under `docs/CONTENT_POLICY.md`.
 
 Steamworks.NET requires the Steam client and Valve's platform-specific `steam_api` native runtime for Steam-enabled builds. The game must continue to start and retain its ENet local/IP fallback when Steam is unavailable.
 

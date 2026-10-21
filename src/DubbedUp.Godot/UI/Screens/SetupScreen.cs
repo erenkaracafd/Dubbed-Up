@@ -52,6 +52,9 @@ public partial class SetupScreen : BaseScreen
         _startRoundButton = GetNodeOrNull<Button>("CenterArea/SetupCard/CardMargin/SplitHBox/RightControls/StartRoundButton");
 
         ApplyStyling();
+        UiIcons.Apply(_backButton, "arrow-left");
+        UiIcons.Apply(_editSceneButton, "pencil");
+        UiIcons.Apply(_startRoundButton, "mic");
         UpdateSetupInfo();
 
         if (_gameModeOption is not null)

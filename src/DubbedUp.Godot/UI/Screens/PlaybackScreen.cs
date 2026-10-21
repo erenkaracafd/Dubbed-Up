@@ -41,6 +41,11 @@ public partial class PlaybackScreen : BaseScreen
         _menuButton = GetNodeOrNull<Button>("CenterContainer/VBoxContainer/BackButton");
 
         ApplyStyling();
+        UiIcons.Apply(_playPauseButton, "pause");
+        UiIcons.Apply(_replayButton, "rotate-ccw");
+        UiIcons.Apply(_exportButton, "download");
+        UiIcons.Apply(_proceedButton, "thumbs-up");
+        UiIcons.Apply(_menuButton, "house");
 
         if (_playPauseButton is not null) SetupButton(_playPauseButton, OnPlayPausePressed);
         if (_replayButton is not null) SetupButton(_replayButton, OnReplayPressed);
@@ -112,6 +117,7 @@ public partial class PlaybackScreen : BaseScreen
             if (_playPauseButton is not null)
             {
                 _playPauseButton.Text = "Play";
+                UiIcons.Swap(_playPauseButton, "play");
             }
             UpdateStatusText("Paused");
         }
@@ -121,6 +127,7 @@ public partial class PlaybackScreen : BaseScreen
             if (_playPauseButton is not null)
             {
                 _playPauseButton.Text = "Pause";
+                UiIcons.Swap(_playPauseButton, "pause");
             }
             UpdateStatusText(string.Empty);
         }
@@ -134,6 +141,7 @@ public partial class PlaybackScreen : BaseScreen
             if (_playPauseButton is not null)
             {
                 _playPauseButton.Text = "Pause";
+                UiIcons.Swap(_playPauseButton, "pause");
             }
             if (_proceedButton is not null)
             {
@@ -184,6 +192,7 @@ public partial class PlaybackScreen : BaseScreen
         if (_playPauseButton is not null)
         {
             _playPauseButton.Text = "Play";
+            UiIcons.Swap(_playPauseButton, "play");
         }
 
         if (_proceedButton is not null)

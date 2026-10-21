@@ -30,6 +30,8 @@ public partial class VotingScreen : BaseScreen
         _menuButton = GetNodeOrNull<Button>("CenterArea/VotingCard/CardMargin/VBoxContainer/ActionsHBox/MenuButton");
 
         ApplyStyling();
+        UiIcons.Apply(_submitButton, "check");
+        UiIcons.Apply(_menuButton, "house");
 
         if (_submitButton is not null)
         {

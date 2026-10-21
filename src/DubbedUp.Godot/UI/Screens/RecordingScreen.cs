@@ -111,6 +111,14 @@ public partial class RecordingScreen : BaseScreen
         _cancelButton = GetNodeOrNull<Button>("CenterArea/VBoxContainer/BottomRow/CancelButton");
 
         ApplyStyling();
+        UiIcons.Apply(_previewOriginalButton, "play");
+        UiIcons.Apply(_recordButton, "mic");
+        UiIcons.Apply(_previewTakeButton, "play");
+        UiIcons.Apply(_reRecordButton, "rotate-ccw");
+        UiIcons.Apply(_prevSlotButton, "skip-back");
+        UiIcons.Apply(_nextSlotButton, "skip-forward");
+        UiIcons.Apply(_proceedButton, "eye");
+        UiIcons.Apply(_cancelButton, "x");
 
         _previewPlayer = new AudioStreamPlayer();
         AddChild(_previewPlayer);
@@ -338,6 +346,7 @@ public partial class RecordingScreen : BaseScreen
                 _previewOriginalDuration = 0.0;
                 _waveformVisualizer?.SetPlayhead(0, false);
                 if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Original";
+                UiIcons.Swap(_previewOriginalButton, "play");
                 if (_statusLabel is not null) _statusLabel.Text = string.Empty;
             }
             return;
@@ -366,6 +375,7 @@ public partial class RecordingScreen : BaseScreen
 
         _waveformVisualizer?.SetPlayhead(0.0, false);
         if (_previewTakeButton is not null) _previewTakeButton.Text = "Play Take";
+        UiIcons.Swap(_previewTakeButton, "play");
         if (_statusLabel is not null) _statusLabel.Text = string.Empty;
     }
 
@@ -428,10 +438,12 @@ public partial class RecordingScreen : BaseScreen
             if (isRecorded)
             {
                 _recordButton.Text = "Retake";
+                UiIcons.Swap(_recordButton, "rotate-ccw");
             }
             else
             {
                 _recordButton.Text = "Record";
+                UiIcons.Swap(_recordButton, "mic");
             }
         }
         if (_previewTakeButton is not null) _previewTakeButton.Visible = isRecorded;
@@ -593,6 +605,7 @@ public partial class RecordingScreen : BaseScreen
             _videoPlayer.Stop();
             _isPreviewingOriginal = false;
             if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Original";
+            UiIcons.Swap(_previewOriginalButton, "play");
             return;
         }
 
@@ -608,6 +621,7 @@ public partial class RecordingScreen : BaseScreen
         _videoPlayer.StreamPosition = _leadInStartSec;
 
         if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Stop";
+        UiIcons.Swap(_previewOriginalButton, "square");
         if (_statusLabel is not null) _statusLabel.Text = string.Empty;
     }
 
@@ -642,6 +656,7 @@ public partial class RecordingScreen : BaseScreen
                 _countdownLabel.Visible = true;
             }
             if (_recordButton is not null) _recordButton.Text = "Cancel";
+            UiIcons.Swap(_recordButton, "x");
             if (_statusLabel is not null) _statusLabel.Text = string.Empty;
         }
         else
@@ -681,6 +696,7 @@ public partial class RecordingScreen : BaseScreen
             }
 
             if (_recordButton is not null) _recordButton.Text = "Cancel";
+            UiIcons.Swap(_recordButton, "x");
             if (_countdownLabel is not null)
             {
                 _countdownLabel.Text = _leadInSec > 0 ? $"{_leadInSec:F1}" : "Recording";
@@ -817,6 +833,7 @@ public partial class RecordingScreen : BaseScreen
                     _waveformVisualizer?.SetPlayhead(0.0, false);
 
                     if (_previewTakeButton is not null) _previewTakeButton.Text = "Stop";
+                    UiIcons.Swap(_previewTakeButton, "square");
                     if (_statusLabel is not null) _statusLabel.Text = string.Empty;
                 }
             }

@@ -52,6 +52,15 @@ public partial class MainMenuScreen : BaseScreen
 
         ApplyOsuStyling();
 
+        UiIcons.Apply(_playButton, "play");
+        UiIcons.Apply(_onlinePlayButton, "globe");
+        UiIcons.Apply(_studioButton, "clapperboard");
+        UiIcons.Apply(_settingsButton, "settings");
+        UiIcons.Apply(_quitButton, "log-out");
+        UiIcons.Apply(_musicToggleButton, "volume-2");
+        UiIcons.Apply(_fullscreenButton, "maximize");
+        UpdateMusicButtonState();
+
         SetupButton(_playButton, OnPlayButtonPressed);
         SetupButton(_onlinePlayButton, OnOnlinePlayPressed);
         SetupButton(_studioButton, OnStudioPressed);
@@ -438,6 +447,7 @@ public partial class MainMenuScreen : BaseScreen
         if (_musicToggleButton is not null && _musicManager is not null)
         {
             _musicToggleButton.Text = _musicManager.IsMuted ? "Music: OFF" : "Music: ON";
+            UiIcons.Swap(_musicToggleButton, _musicManager.IsMuted ? "volume-x" : "volume-2");
         }
     }
 }

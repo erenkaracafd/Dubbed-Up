@@ -46,6 +46,7 @@ theme_override_font_sizes/font_size = 14
 text = "Back"
 
 [node name="ScreenTitle" type="Label" parent="TopBar/TopMargin/TopHBox"]
+theme_type_variation = &"HeadingLabel"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 20

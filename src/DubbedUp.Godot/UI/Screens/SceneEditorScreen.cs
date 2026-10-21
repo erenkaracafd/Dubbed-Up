@@ -181,6 +181,16 @@ public partial class SceneEditorScreen : BaseScreen
             UiSoundManager.Attach(_backButton);
         }
 
+        UiIcons.Apply(_playPauseButton, "play");
+        UiIcons.Apply(_stopButton, "rotate-ccw");
+        UiIcons.Apply(_autoDetectButton, "audio-waveform");
+        UiIcons.Apply(_addBoxButton, "plus");
+        UiIcons.Apply(_cutBoxButton, "scissors");
+        UiIcons.Apply(_deleteBoxButton, "trash-2");
+        UiIcons.Apply(_saveAndProceedButton, "check");
+        UiIcons.Apply(_saveButton, "save");
+        UiIcons.Apply(_backButton, "arrow-left");
+
         if (_durationInput is not null)
         {
             _durationInput.ValueChanged += OnDurationChanged;
@@ -482,6 +492,7 @@ public partial class SceneEditorScreen : BaseScreen
         }
 
         if (_playPauseButton is not null) _playPauseButton.Text = "Pause";
+        UiIcons.Swap(_playPauseButton, "pause");
     }
 
     private void PauseVideo()
@@ -491,6 +502,7 @@ public partial class SceneEditorScreen : BaseScreen
         _isPlaying = false;
         _videoPlayer.Paused = true;
         if (_playPauseButton is not null) _playPauseButton.Text = "Play";
+        UiIcons.Swap(_playPauseButton, "play");
     }
 
     private void OnStopPressed()

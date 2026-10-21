@@ -30,6 +30,7 @@ custom_minimum_size = Vector2(840, 0)
 theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+theme_type_variation = &"HeadingLabel"
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
 text = "Scene Editor"
@@ -114,6 +115,7 @@ max_value = 22.0
 step = 0.1
 
 [node name="TimelineLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+theme_type_variation = &"HeadingLabel"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 15
@@ -149,6 +151,7 @@ layout_mode = 2
 text = "Delete"
 
 [node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
+theme_type_variation = &"HeadingLabel"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 18
