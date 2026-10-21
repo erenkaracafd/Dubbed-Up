@@ -5,88 +5,184 @@ using Godot;
 namespace DubbedUp.Godot.UI.Controls;
 
 /// <summary>
-/// osu!-inspired dynamic floating ambient background layer.
-/// Renders smooth pastel geometric shapes that drift upward with subtle mouse parallax and beat pulsing.
+/// Soft animated ambient background shared by the menu screens.
+/// Draws slowly orbiting aurora glows plus rounded shapes (dots, rings, capsules, squircles)
+/// that float upward with a gentle sway, mouse parallax and beat pulsing.
 /// </summary>
 public partial class MenuBackgroundVisuals : Control
 {
+    private enum ShapeKind
+    {
+        Dot,
+        Ring,
+        Capsule,
+        Squircle,
+    }
+
     private struct Particle
     {
         public Vector2 Position;
         public float Speed;
-        public float Radius;
+        public float Size;
         public float Rotation;
         public float RotationSpeed;
-        public Color Color;
-        public int ShapeType; // 0 = Filled Circle, 1 = Hollow Ring, 2 = Rounded Square
+        public float SwayAmplitude;
+        public float SwayFrequency;
+        public float SwayPhase;
         public float ParallaxFactor;
+        public Color Color;
+        public ShapeKind Kind;
+        public StyleBoxFlat? Box;
     }
 
+    private struct Glow
+    {
+        public Vector2 Anchor;
+        public Vector2 Orbit;
+        public float Speed;
+        public float Phase;
+        public float Radius;
+        public Color Color;
+    }
+
+    private static readonly Color[] Palette =
+    [
+        new(1.00f, 0.56f, 0.72f), // blossom pink
+        new(0.36f, 0.70f, 1.00f), // sky blue
+        new(0.64f, 0.52f, 0.98f), // lilac
+        new(0.42f, 0.86f, 0.80f), // mint
+        new(1.00f, 0.74f, 0.52f), // peach
+    ];
+
+    private const int ParticleCount = 26;
+
     private readonly List<Particle> _particles = [];
-    private Vector2 _targetMouseOffset = Vector2.Zero;
-    private Vector2 _currentMouseOffset = Vector2.Zero;
-    private float _beatPulseScale = 1.0f;
-    private const int ParticleCount = 28;
+    private readonly List<Glow> _glows = [];
+    private readonly Random _rng = new();
+    private GradientTexture2D? _softTexture;
+    private Vector2 _mouseOffset = Vector2.Zero;
+    private float _beatPulse;
+    private float _time;
 
     public override void _Ready()
     {
         MouseFilter = MouseFilterEnum.Ignore;
         SetAnchorsPreset(LayoutPreset.FullRect);
-        InitializeParticles();
+        _softTexture = CreateSoftTexture();
+        InitializeScene();
     }
 
-    private void InitializeParticles()
+    public void TriggerBeatPulse()
     {
-        _particles.Clear();
-        var rng = new Random();
-        var viewportSize = GetViewportRect().Size;
-        if (viewportSize == Vector2.Zero) viewportSize = new Vector2(1280, 720);
+        _beatPulse = 1.0f;
+    }
 
-        var colors = new[]
+    private static GradientTexture2D CreateSoftTexture()
+    {
+        var gradient = new Gradient();
+        gradient.SetColor(0, new Color(1, 1, 1, 1));
+        gradient.SetColor(1, new Color(1, 1, 1, 0));
+        gradient.AddPoint(0.45f, new Color(1, 1, 1, 0.55f));
+
+        return new GradientTexture2D
         {
-            new Color(1.0f, 0.580f, 0.720f, 0.16f), // Soft Blossom Pink
-            new Color(0.350f, 0.720f, 1.000f, 0.16f), // Soft Ice Sky Blue
-            new Color(0.650f, 0.520f, 0.980f, 0.14f), // Gentle Lilac
-            new Color(1.0f, 0.680f, 0.800f, 0.12f), // Cotton Candy Pink
-            new Color(0.480f, 0.840f, 0.980f, 0.15f)  // Soft Aqua
+            Gradient = gradient,
+            Fill = GradientTexture2D.FillEnum.Radial,
+            FillFrom = new Vector2(0.5f, 0.5f),
+            FillTo = new Vector2(0.5f, 0.0f),
+            Width = 256,
+            Height = 256,
         };
+    }
 
-        for (var i = 0; i < ParticleCount; i++)
+    private void InitializeScene()
+    {
+        var size = GetViewportRect().Size;
+        if (size == Vector2.Zero) size = new Vector2(1280, 720);
+
+        _glows.Clear();
+        var glowAnchors = new[] { new Vector2(0.12f, 0.18f), new Vector2(0.88f, 0.22f), new Vector2(0.78f, 0.86f), new Vector2(0.20f, 0.84f) };
+        for (var i = 0; i < glowAnchors.Length; i++)
         {
-            _particles.Add(new Particle
+            _glows.Add(new Glow
             {
-                Position = new Vector2(
-                    (float)rng.NextDouble() * viewportSize.X,
-                    (float)rng.NextDouble() * viewportSize.Y
-                ),
-                Speed = (float)(14.0 + rng.NextDouble() * 26.0),
-                Radius = (float)(18.0 + rng.NextDouble() * 55.0),
-                Rotation = (float)(rng.NextDouble() * Math.PI * 2),
-                RotationSpeed = (float)((rng.NextDouble() - 0.5) * 0.4),
-                Color = colors[rng.Next(colors.Length)],
-                ShapeType = rng.Next(3),
-                ParallaxFactor = (float)(0.015 + rng.NextDouble() * 0.035)
+                Anchor = glowAnchors[i],
+                Orbit = new Vector2(RandRange(40, 90), RandRange(30, 70)),
+                Speed = RandRange(0.05f, 0.11f),
+                Phase = RandRange(0, Mathf.Tau),
+                Radius = RandRange(300, 420),
+                Color = Palette[i % Palette.Length] with { A = 0.30f },
             });
         }
+
+        _particles.Clear();
+        for (var i = 0; i < ParticleCount; i++)
+        {
+            _particles.Add(CreateParticle(new Vector2(RandRange(0, size.X), RandRange(0, size.Y))));
+        }
+    }
+
+    private Particle CreateParticle(Vector2 position)
+    {
+        var kind = (ShapeKind)_rng.Next(4);
+        var baseColor = Palette[_rng.Next(Palette.Length)];
+        var particle = new Particle
+        {
+            Position = position,
+            Speed = RandRange(8, 22),
+            Size = kind switch
+            {
+                ShapeKind.Dot => RandRange(6, 16),
+                ShapeKind.Ring => RandRange(18, 46),
+                ShapeKind.Capsule => RandRange(26, 54),
+                _ => RandRange(22, 44),
+            },
+            Rotation = RandRange(0, Mathf.Tau),
+            RotationSpeed = RandRange(-0.25f, 0.25f),
+            SwayAmplitude = RandRange(10, 34),
+            SwayFrequency = RandRange(0.15f, 0.45f),
+            SwayPhase = RandRange(0, Mathf.Tau),
+            ParallaxFactor = RandRange(0.012f, 0.045f),
+            Color = baseColor with { A = kind == ShapeKind.Dot ? 0.34f : 0.24f },
+            Kind = kind,
+        };
+
+        if (kind is ShapeKind.Capsule or ShapeKind.Squircle)
+        {
+            var filled = kind == ShapeKind.Capsule && _rng.Next(2) == 0;
+            var radius = kind == ShapeKind.Capsule ? (int)(particle.Size * 0.5f) : (int)(particle.Size * 0.38f);
+            particle.Box = new StyleBoxFlat
+            {
+                BgColor = particle.Color with { A = 0.14f },
+                DrawCenter = filled,
+                BorderColor = particle.Color,
+                BorderWidthLeft = filled ? 0 : 3,
+                BorderWidthTop = filled ? 0 : 3,
+                BorderWidthRight = filled ? 0 : 3,
+                BorderWidthBottom = filled ? 0 : 3,
+                CornerRadiusTopLeft = radius,
+                CornerRadiusTopRight = radius,
+                CornerRadiusBottomLeft = radius,
+                CornerRadiusBottomRight = radius,
+                CornerDetail = 12,
+                AntiAliasing = true,
+            };
+        }
+
+        return particle;
     }
 
     public override void _Process(double delta)
     {
         var dt = (float)delta;
-        var viewportSize = GetViewportRect().Size;
-        if (viewportSize.X <= 0 || viewportSize.Y <= 0) return;
+        _time += dt;
 
-        // Smooth mouse parallax
-        var mousePos = GetViewport().GetMousePosition();
-        var center = viewportSize * 0.5f;
-        _targetMouseOffset = (mousePos - center);
-        _currentMouseOffset = _currentMouseOffset.Lerp(_targetMouseOffset, dt * 3.0f);
+        var size = GetViewportRect().Size;
+        if (size.X <= 0 || size.Y <= 0) return;
 
-        // Decay beat pulse
-        if (_beatPulseScale > 1.0f)
-        {
-            _beatPulseScale = Mathf.MoveToward(_beatPulseScale, 1.0f, dt * 1.5f);
-        }
+        var target = GetViewport().GetMousePosition() - size * 0.5f;
+        _mouseOffset = _mouseOffset.Lerp(target, 1.0f - Mathf.Exp(-dt * 2.5f));
+        _beatPulse = Mathf.Max(0, _beatPulse - dt * 2.2f);
 
         for (var i = 0; i < _particles.Count; i++)
         {
@@ -94,11 +190,9 @@ public partial class MenuBackgroundVisuals : Control
             p.Position.Y -= p.Speed * dt;
             p.Rotation += p.RotationSpeed * dt;
 
-            // Wrap around bottom
-            if (p.Position.Y < -p.Radius * 2)
+            if (p.Position.Y < -80)
             {
-                p.Position.Y = viewportSize.Y + p.Radius * 2;
-                p.Position.X = (float)GD.RandRange(0, viewportSize.X);
+                p = CreateParticle(new Vector2(RandRange(0, size.X), size.Y + 80));
             }
 
             _particles[i] = p;
@@ -107,41 +201,63 @@ public partial class MenuBackgroundVisuals : Control
         QueueRedraw();
     }
 
-    public void TriggerBeatPulse()
-    {
-        _beatPulseScale = 1.08f;
-    }
-
     public override void _Draw()
     {
-        var viewportSize = GetViewportRect().Size;
+        var size = GetViewportRect().Size;
 
-        // Soft Ice Sky Tint Background (cooler, soothing light sky tone)
-        DrawRect(new Rect2(Vector2.Zero, viewportSize), new Color(0.925f, 0.955f, 0.988f, 1.0f));
+        // Soft vertical wash
+        var top = new Color(0.925f, 0.950f, 0.992f);
+        var bottom = new Color(0.965f, 0.940f, 0.990f);
+        DrawPolygon(
+            [Vector2.Zero, new Vector2(size.X, 0), size, new Vector2(0, size.Y)],
+            [top, top, bottom, bottom]);
+
+        if (_softTexture is null) return;
+
+        // Pulse eases out so beats feel springy rather than snappy
+        var pulse = 1.0f + 0.05f * EaseOutCubic(_beatPulse);
+
+        foreach (var g in _glows)
+        {
+            var t = _time * g.Speed + g.Phase;
+            var center = g.Anchor * size + new Vector2(Mathf.Sin(t) * g.Orbit.X, Mathf.Cos(t * 1.3f) * g.Orbit.Y) - _mouseOffset * 0.02f;
+            var radius = g.Radius * pulse;
+            DrawTextureRect(_softTexture, new Rect2(center - new Vector2(radius, radius), new Vector2(radius * 2, radius * 2)), false, g.Color);
+        }
 
         foreach (var p in _particles)
         {
-            var drawPos = p.Position - (_currentMouseOffset * p.ParallaxFactor);
-            var currentRadius = p.Radius * _beatPulseScale;
+            var sway = Mathf.Sin(_time * p.SwayFrequency * Mathf.Tau + p.SwayPhase) * p.SwayAmplitude;
+            var pos = new Vector2(p.Position.X + sway, p.Position.Y) - _mouseOffset * p.ParallaxFactor;
+            var s = p.Size * pulse;
 
-            switch (p.ShapeType)
+            switch (p.Kind)
             {
-                case 0: // Filled Circle
-                    DrawCircle(drawPos, currentRadius, p.Color);
+                case ShapeKind.Dot:
+                    DrawTextureRect(_softTexture, new Rect2(pos - new Vector2(s * 2, s * 2), new Vector2(s * 4, s * 4)), false, p.Color with { A = p.Color.A * 0.6f });
+                    DrawCircle(pos, s * 0.55f, p.Color, true, -1, true);
                     break;
 
-                case 1: // Hollow Ring
-                    DrawArc(drawPos, currentRadius, 0, Mathf.Tau, 32, p.Color, 3.0f, true);
+                case ShapeKind.Ring:
+                    DrawArc(pos, s, 0, Mathf.Tau, 48, p.Color, 3.0f, true);
                     break;
 
-                case 2: // Diamond / Rounded square
-                    var rect = new Rect2(drawPos - new Vector2(currentRadius * 0.7f, currentRadius * 0.7f), new Vector2(currentRadius * 1.4f, currentRadius * 1.4f));
-                    DrawSetTransform(drawPos, p.Rotation, Vector2.One);
-                    DrawRect(new Rect2(-currentRadius * 0.7f, -currentRadius * 0.7f, currentRadius * 1.4f, currentRadius * 1.4f), p.Color, false, 2.5f);
-                    DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
+                case ShapeKind.Capsule when p.Box is not null:
+                    DrawSetTransform(pos, p.Rotation, Vector2.One);
+                    p.Box.Draw(GetCanvasItem(), new Rect2(-s, -s * 0.5f, s * 2, s));
+                    DrawSetTransform(Vector2.Zero, 0, Vector2.One);
+                    break;
+
+                case ShapeKind.Squircle when p.Box is not null:
+                    DrawSetTransform(pos, p.Rotation, Vector2.One);
+                    p.Box.Draw(GetCanvasItem(), new Rect2(-s * 0.5f, -s * 0.5f, s, s));
+                    DrawSetTransform(Vector2.Zero, 0, Vector2.One);
                     break;
             }
         }
     }
-}
 
+    private static float EaseOutCubic(float x) => 1 - MathF.Pow(1 - x, 3);
+
+    private float RandRange(float min, float max) => min + (float)_rng.NextDouble() * (max - min);
+}

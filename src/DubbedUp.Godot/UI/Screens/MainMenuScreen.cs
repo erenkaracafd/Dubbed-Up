@@ -124,6 +124,8 @@ public partial class MainMenuScreen : BaseScreen
                 CornerRadiusTopRight = 140,
                 CornerRadiusBottomLeft = 140,
                 CornerRadiusBottomRight = 140,
+                CornerDetail = 48, // the default (8) makes the large circle visibly polygonal
+                AntiAliasing = true,
                 ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.22f), // Soft pink ambient glow
                 ShadowSize = 22,
                 ShadowOffset = new Vector2(0, 8),

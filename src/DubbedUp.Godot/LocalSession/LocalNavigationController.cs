@@ -66,7 +66,23 @@ public partial class LocalNavigationController : Node, IScreenNavigator
         }
         catch { /* Ignore */ }
 
-        NavigateTo(AppScreen.MainMenu);
+        NavigateTo(GetStartScreen());
+    }
+
+    // Dev aid: `godot --path . -- --start-screen=ScenePicker` opens a screen directly.
+    private static AppScreen GetStartScreen()
+    {
+        foreach (var arg in OS.GetCmdlineUserArgs())
+        {
+            const string prefix = "--start-screen=";
+            if (arg.StartsWith(prefix, StringComparison.Ordinal)
+                && Enum.TryParse<AppScreen>(arg[prefix.Length..], ignoreCase: true, out var screen))
+            {
+                return screen;
+            }
+        }
+
+        return AppScreen.MainMenu;
     }
 
     public void NavigateTo(AppScreen screen)
@@ -107,10 +123,15 @@ public partial class LocalNavigationController : Node, IScreenNavigator
             _isTransitioning = true;
             var oldScreen = _currentScreenInstance;
 
+            oldScreen.PivotOffset = oldScreen.GetViewportRect().Size * 0.5f;
             var outTween = CreateTween();
             outTween?.SetParallel(true);
-            outTween?.TweenProperty(oldScreen, "modulate:a", 0.0f, 0.09f);
-            outTween?.TweenProperty(oldScreen, "scale", new Vector2(1.02f, 1.02f), 0.09f);
+            outTween?.TweenProperty(oldScreen, "modulate:a", 0.0f, 0.16f)
+                   .SetTrans(Tween.TransitionType.Quad)
+                   .SetEase(Tween.EaseType.In);
+            outTween?.TweenProperty(oldScreen, "scale", new Vector2(1.015f, 1.015f), 0.16f)
+                   .SetTrans(Tween.TransitionType.Quad)
+                   .SetEase(Tween.EaseType.In);
 
             if (outTween is not null)
             {
@@ -141,14 +162,16 @@ public partial class LocalNavigationController : Node, IScreenNavigator
 
         // Start with 0 opacity and slight zoom-in
         screenNode.Modulate = new Color(1, 1, 1, 0);
-        screenNode.Scale = new Vector2(0.97f, 0.97f);
+        screenNode.Scale = new Vector2(0.985f, 0.985f);
         screenNode.PivotOffset = screenNode.GetViewportRect().Size * 0.5f;
 
         var inTween = screenNode.CreateTween();
         inTween?.SetParallel(true);
-        inTween?.TweenProperty(screenNode, "modulate:a", 1.0f, 0.15f);
-        inTween?.TweenProperty(screenNode, "scale", Vector2.One, 0.15f)
+        inTween?.TweenProperty(screenNode, "modulate:a", 1.0f, 0.28f)
                .SetTrans(Tween.TransitionType.Cubic)
+               .SetEase(Tween.EaseType.Out);
+        inTween?.TweenProperty(screenNode, "scale", Vector2.One, 0.36f)
+               .SetTrans(Tween.TransitionType.Quint)
                .SetEase(Tween.EaseType.Out);
 
         if (inTween is not null)
