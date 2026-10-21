@@ -393,7 +393,7 @@ public partial class ScenePickerScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"Showing {filtered.Count} of {_availableScenes.Count} playable scenes";
+            _statusLabel.Text = $"{filtered.Count} / {_availableScenes.Count}";
         }
 
         int index = 0;
@@ -616,7 +616,7 @@ public partial class ScenePickerScreen : BaseScreen
         {
             var iconLabel = new Label
             {
-                Text = "🎬",
+                Text = string.Empty,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
@@ -649,7 +649,7 @@ public partial class ScenePickerScreen : BaseScreen
         var charsText = string.Join(", ", package.Document.Characters.Select(c => c.DisplayName));
         var charsLabel = new Label
         {
-            Text = string.IsNullOrEmpty(charsText) ? "No characters defined" : $"🎭 {charsText}",
+            Text = charsText,
             MouseFilter = Control.MouseFilterEnum.Ignore,
             TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
             AutowrapMode = TextServer.AutowrapMode.Off
@@ -670,7 +670,7 @@ public partial class ScenePickerScreen : BaseScreen
         var durSec = package.Document.DurationMilliseconds / 1000.0;
         var durLabel = new Label
         {
-            Text = $"⏱️ {durSec:F1}s",
+            Text = $"{durSec:F1}s",
             HorizontalAlignment = HorizontalAlignment.Right,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
@@ -698,7 +698,7 @@ public partial class ScenePickerScreen : BaseScreen
         badgePanel.AddThemeStyleboxOverride("panel", badgeStyle);
         var badgeLabel = new Label
         {
-            Text = isCustom ? "Custom" : $"{package.Document.VoiceSlots.Count} Lines",
+            Text = isCustom ? "Custom" : $"{package.Document.VoiceSlots.Count} lines",
             HorizontalAlignment = HorizontalAlignment.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore
         };
@@ -768,7 +768,7 @@ public partial class ScenePickerScreen : BaseScreen
         var skyBg = new Color(0.925f, 0.955f, 0.988f);
         var iceWhite = new Color(0.965f, 0.980f, 1.000f);
 
-        // 1. Dış Katman (Outer Box): Darker on the outside, rich cover accent border & shadow
+        // 1. Outer Box: Darker on the outside, rich cover accent border & shadow
         var outerStyle = new StyleBoxFlat
         {
             BgColor = isSelected
@@ -791,7 +791,7 @@ public partial class ScenePickerScreen : BaseScreen
         };
         card.AddThemeStyleboxOverride("panel", outerStyle);
 
-        // 2. İç Katman (Inner Box): Progressively lighter towards the inside (illuminated soft ice sky surface)
+        // 2. Inner Box: Progressively lighter towards the inside (illuminated soft ice sky surface)
         var innerStyle = new StyleBoxFlat
         {
             BgColor = isHovered ? new Color(0.985f, 0.992f, 1.000f) : (isSelected ? new Color(0.975f, 0.988f, 1.0f) : accent.Lerp(iceWhite, 0.95f)),
@@ -926,7 +926,7 @@ public partial class ScenePickerScreen : BaseScreen
         var durSec = package.Document.DurationMilliseconds / 1000.0;
         if (_durationBadge is not null)
         {
-            _durationBadge.Text = $"⏱️ {durSec:F1}s";
+            _durationBadge.Text = $"{durSec:F1}s";
             var durStyle = new StyleBoxFlat
             {
                 BgColor = accent.Lerp(Colors.White, 0.88f),
@@ -945,7 +945,7 @@ public partial class ScenePickerScreen : BaseScreen
 
         if (_slotsBadge is not null)
         {
-            _slotsBadge.Text = $"🎙️ {package.Document.VoiceSlots.Count} Lines";
+            _slotsBadge.Text = $"{package.Document.VoiceSlots.Count} lines";
             var slotsStyle = new StyleBoxFlat
             {
                 BgColor = accent,
@@ -965,7 +965,7 @@ public partial class ScenePickerScreen : BaseScreen
         var isCustom = package.PackageDirectory is not null && !package.PackageDirectory.Contains("OfficialScenes");
         if (_categoryBadge is not null)
         {
-            _categoryBadge.Text = isCustom ? "Custom Workshop" : "Official Scene";
+            _categoryBadge.Text = isCustom ? "Custom" : "Official";
             var catStyle = new StyleBoxFlat
             {
                 BgColor = isCustom ? new Color(0.561f, 0.396f, 0.973f) : accent,
@@ -985,24 +985,20 @@ public partial class ScenePickerScreen : BaseScreen
         if (_charactersLabel is not null)
         {
             var chars = package.Document.Characters.Select(c => c.DisplayName).ToList();
-            _charactersLabel.Text = chars.Count > 0
-                ? $"Characters: {string.Join(", ", chars)}"
-                : "Characters: None defined";
+            _charactersLabel.Text = string.Join(", ", chars);
         }
 
         if (_linesPreviewLabel is not null)
         {
             var sampleLines = package.Document.VoiceSlots
                 .Take(2)
-                .Select(s => $"• {s.Prompt}")
+                .Select(s => $"\"{s.Prompt}\"")
                 .ToList();
             if (package.Document.VoiceSlots.Count > 2)
             {
-                sampleLines.Add($"• (+{package.Document.VoiceSlots.Count - 2} more dialogue lines)");
+                sampleLines.Add($"+{package.Document.VoiceSlots.Count - 2} more");
             }
-            _linesPreviewLabel.Text = sampleLines.Count > 0
-                ? $"Dialogue Lines:\n{string.Join("\n", sampleLines)}"
-                : "Dialogue Lines: No voice lines in this scene.";
+            _linesPreviewLabel.Text = string.Join("\n", sampleLines);
         }
 
         if (_playSelectedButton is not null)
@@ -1073,7 +1069,7 @@ public partial class ScenePickerScreen : BaseScreen
 
         if (_confirmMessageLabel is not null)
         {
-            _confirmMessageLabel.Text = $"Are you sure you want to permanently delete \"{_selectedPackage.Title}\"?\nThis cannot be undone.";
+            _confirmMessageLabel.Text = $"\"{_selectedPackage.Title}\" will be removed. This can't be undone.";
         }
 
         if (_deleteConfirmModal is not null)

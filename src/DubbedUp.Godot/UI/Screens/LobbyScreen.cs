@@ -276,7 +276,7 @@ public partial class LobbyScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"Starting server on port {port}...";
+            _statusLabel.Text = "Starting...";
         }
 
         if (_lobbyManager is not null)
@@ -299,14 +299,14 @@ public partial class LobbyScreen : BaseScreen
                 UpdatePanelsVisibility(true);
                 if (_statusLabel is not null)
                 {
-                    _statusLabel.Text = $"Hosting lobby on port {port}. Waiting for players...";
+                    _statusLabel.Text = $"Hosting on port {port}";
                 }
             }
             else
             {
                 if (_statusLabel is not null)
                 {
-                    _statusLabel.Text = $"Failed to host server on port {port}: {err}";
+                    _statusLabel.Text = $"Couldn't host on port {port}: {err}";
                 }
             }
         }
@@ -314,7 +314,7 @@ public partial class LobbyScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "Network manager not available.";
+                _statusLabel.Text = "Network unavailable.";
             }
         }
     }
@@ -327,7 +327,7 @@ public partial class LobbyScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"Connecting to host at {addr}:{port}...";
+            _statusLabel.Text = $"Connecting to {addr}:{port}...";
         }
 
         if (_lobbyManager is not null)
@@ -337,7 +337,7 @@ public partial class LobbyScreen : BaseScreen
             {
                 if (_statusLabel is not null)
                 {
-                    _statusLabel.Text = $"Failed to initiate connection: {err}";
+                    _statusLabel.Text = $"Couldn't connect: {err}";
                 }
             }
         }
@@ -356,7 +356,7 @@ public partial class LobbyScreen : BaseScreen
         _lobbyManager?.SetReadyState(_isLocalReady);
         if (_readyButton is not null)
         {
-            _readyButton.Text = _isLocalReady ? "Ready!" : "Set Ready";
+            _readyButton.Text = _isLocalReady ? "Not Ready" : "Ready";
         }
     }
 
@@ -386,11 +386,11 @@ public partial class LobbyScreen : BaseScreen
 
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"Cannot start: {detailText}.";
+                _statusLabel.Text = $"Can't start: {detailText}";
             }
             if (_sceneNoticeLabel is not null)
             {
-                _sceneNoticeLabel.Text = $"Cannot start: {detailText}. Please pick a matching scene.";
+                _sceneNoticeLabel.Text = $"Missing scene: {detailText}";
                 _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
                 _sceneNoticeLabel.Visible = true;
             }
@@ -410,7 +410,7 @@ public partial class LobbyScreen : BaseScreen
         {
             var sceneChars = Coordinator?.SelectedScenePackage?.Document.Characters ?? [];
             var unassignedNames = unassignedChars.Select(id => sceneChars.FirstOrDefault(c => c.CharacterId == id)?.DisplayName ?? id);
-            var notice = $"Cannot start: Unassigned character(s): {string.Join(", ", unassignedNames)}. All characters must be claimed before starting.";
+            var notice = $"Unclaimed: {string.Join(", ", unassignedNames)}";
 
             if (_statusLabel is not null) _statusLabel.Text = notice;
             if (_sceneNoticeLabel is not null)
@@ -595,7 +595,7 @@ public partial class LobbyScreen : BaseScreen
 
                 if (_sceneNoticeLabel is not null)
                 {
-                    _sceneNoticeLabel.Text = $"Cannot start: {detailText}. Please pick a matching scene.";
+                    _sceneNoticeLabel.Text = $"Missing scene: {detailText}";
                     _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
                     _sceneNoticeLabel.Visible = true;
                 }
@@ -618,12 +618,12 @@ public partial class LobbyScreen : BaseScreen
             {
                 if (hasVideo)
                 {
-                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (Synchronized with Host Edit)";
+                    _guestSceneLabel.Text = sceneTitle;
                     _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.18f, 0.65f, 0.35f));
                 }
                 else
                 {
-                    _guestSceneLabel.Text = $"Selected Scene: {sceneTitle} (VIDEO NOT INSTALLED)";
+                    _guestSceneLabel.Text = $"{sceneTitle} (not installed)";
                     _guestSceneLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
                 }
             }
@@ -632,7 +632,7 @@ public partial class LobbyScreen : BaseScreen
             {
                 if (!hasVideo)
                 {
-                    _sceneNoticeLabel.Text = $"You do not have the video for '{sceneTitle}' installed! Host cannot start until you install this scene or the host picks a shared scene.";
+                    _sceneNoticeLabel.Text = $"You don't have \"{sceneTitle}\". The host needs to pick a scene everyone has.";
                     _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
                     _sceneNoticeLabel.Visible = true;
                 }
@@ -679,7 +679,7 @@ public partial class LobbyScreen : BaseScreen
             else if (owner.PeerId == localPeerId)
             {
                 // Claimed by local player (Click to release)
-                btn.Text = $"{charDef.DisplayName} [YOU]";
+                btn.Text = $"{charDef.DisplayName} (you)";
                 StyleActionPill(btn, new Color(0.600f, 0.480f, 0.950f), 14);
                 btn.Disabled = false;
                 var charId = charDef.CharacterId;
@@ -688,7 +688,7 @@ public partial class LobbyScreen : BaseScreen
             else
             {
                 // Claimed by someone else (Locked)
-                btn.Text = $"{charDef.DisplayName} [{owner.PlayerName}]";
+                btn.Text = $"{charDef.DisplayName} ({owner.PlayerName})";
                 StyleDisabledPill(btn, 14);
                 btn.Disabled = true;
             }
@@ -738,13 +738,13 @@ public partial class LobbyScreen : BaseScreen
             var item = new HBoxContainer();
             item.AddThemeConstantOverride("separation", 14);
 
-            var hostBadge = p.IsHost ? "[HOST] " : "";
-            var readyBadge = p.IsReady ? "[READY]" : "[WAITING]";
+            var hostBadge = p.IsHost ? " (host)" : "";
+            var readyBadge = p.IsReady ? "Ready" : "Waiting";
 
             var charNames = p.AssignedCharacterIds
                 .Select(id => sceneChars.FirstOrDefault(c => c.CharacterId == id)?.DisplayName ?? id)
                 .ToList();
-            var charText = charNames.Count > 0 ? string.Join(", ", charNames) : "None";
+            var charText = charNames.Count > 0 ? $" · {string.Join(", ", charNames)}" : "";
 
             var sceneBadge = "";
             var hasIssue = false;
@@ -754,7 +754,7 @@ public partial class LobbyScreen : BaseScreen
                 if (!hasScene)
                 {
                     var reason = _lobbyManager.GetPeerMismatchReason(p.PeerId);
-                    sceneBadge = string.IsNullOrEmpty(reason) ? " - [MISSING SCENE]" : $" - [{reason.ToUpperInvariant()}]";
+                    sceneBadge = string.IsNullOrEmpty(reason) ? " · missing scene" : $" · {reason}";
                     incompatiblePeersCount++;
                     hasIssue = true;
                 }
@@ -762,7 +762,7 @@ public partial class LobbyScreen : BaseScreen
 
             var label = new Label
             {
-                Text = $"{hostBadge}{p.PlayerName} {readyBadge}{sceneBadge} - Character(s): {charText}",
+                Text = $"{p.PlayerName}{hostBadge} · {readyBadge}{charText}{sceneBadge}",
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
 
@@ -808,11 +808,11 @@ public partial class LobbyScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"Cannot start game: Video for scene '{sceneId}' is not installed on your system.";
+                _statusLabel.Text = $"Scene \"{sceneId}\" is not installed.";
             }
             if (_sceneNoticeLabel is not null)
             {
-                _sceneNoticeLabel.Text = $"Cannot start: Video for scene '{sceneId}' is not installed on your system.";
+                _sceneNoticeLabel.Text = $"Scene \"{sceneId}\" is not installed.";
                 _sceneNoticeLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.25f, 0.25f));
                 _sceneNoticeLabel.Visible = true;
             }

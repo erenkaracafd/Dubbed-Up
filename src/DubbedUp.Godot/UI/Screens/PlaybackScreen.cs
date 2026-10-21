@@ -96,7 +96,7 @@ public partial class PlaybackScreen : BaseScreen
             _scenePlayer.Play();
         }
 
-        UpdateStatusText("Playing synchronized scene dub...");
+        UpdateStatusText(string.Empty);
     }
 
     private void OnPlayPausePressed()
@@ -113,7 +113,7 @@ public partial class PlaybackScreen : BaseScreen
             {
                 _playPauseButton.Text = "Play";
             }
-            UpdateStatusText("Playback paused");
+            UpdateStatusText("Paused");
         }
         else
         {
@@ -122,7 +122,7 @@ public partial class PlaybackScreen : BaseScreen
             {
                 _playPauseButton.Text = "Pause";
             }
-            UpdateStatusText("Playing synchronized scene dub...");
+            UpdateStatusText(string.Empty);
         }
     }
 
@@ -139,7 +139,7 @@ public partial class PlaybackScreen : BaseScreen
             {
                 _proceedButton.Text = "Watching dub...";
             }
-            UpdateStatusText("Replaying synchronized scene dub...");
+            UpdateStatusText(string.Empty);
         }
     }
 
@@ -169,7 +169,7 @@ public partial class PlaybackScreen : BaseScreen
                 var charName = charDef?.DisplayName ?? slot?.CharacterId ?? "Character";
                 var prompt = slot?.Prompt ?? "...";
 
-                _subtitleLabel.Text = $"💬 {charName}: \"{prompt}\"";
+                _subtitleLabel.Text = $"{charName}: \"{prompt}\"";
                 _subtitleLabel.Visible = true;
             }
             else
@@ -190,13 +190,11 @@ public partial class PlaybackScreen : BaseScreen
         {
             _proceedButton.Disabled = false;
             _proceedButton.Text = Coordinator?.Mode == DubbedUp.Core.Game.GameMode.CoopDubbing
-                ? "Dub Complete (View Celebration)"
-                : "Proceed to Voting";
+                ? "Results"
+                : "Vote";
         }
 
-        UpdateStatusText(Coordinator?.Mode == DubbedUp.Core.Game.GameMode.CoopDubbing
-            ? "Playback complete! Dubbing success!"
-            : "Playback complete! Ready to vote.");
+        UpdateStatusText(string.Empty);
     }
 
     private void UpdateStatusText(string text)
@@ -238,7 +236,7 @@ public partial class PlaybackScreen : BaseScreen
     {
         if (Coordinator?.CurrentScene is null)
         {
-            UpdateStatusText("❌ No active scene to export.");
+            UpdateStatusText("No scene to export.");
             return;
         }
 
@@ -248,7 +246,7 @@ public partial class PlaybackScreen : BaseScreen
             _exportButton.Text = "Exporting...";
         }
 
-        UpdateStatusText("🎬 Mixing audio tracks and rendering MP4...");
+        UpdateStatusText(string.Empty);
 
         var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
         var exportedFile = await VideoDubExporter.ExportDubbedVideoAsync(
@@ -263,17 +261,17 @@ public partial class PlaybackScreen : BaseScreen
         if (_exportButton is not null)
         {
             _exportButton.Disabled = false;
-            _exportButton.Text = "Export Video (.mp4)";
+            _exportButton.Text = "Export MP4";
         }
 
         if (!string.IsNullOrEmpty(exportedFile) && System.IO.File.Exists(exportedFile))
         {
-            UpdateStatusText($"✅ Video saved: {System.IO.Path.GetFileName(exportedFile)}");
+            UpdateStatusText($"Saved {System.IO.Path.GetFileName(exportedFile)}");
             OS.ShellOpen(System.IO.Path.GetDirectoryName(exportedFile) ?? exportedFile);
         }
         else
         {
-            UpdateStatusText("❌ Video export failed. Check FFmpeg availability.");
+            UpdateStatusText("Export failed. Is FFmpeg installed?");
         }
     }
 

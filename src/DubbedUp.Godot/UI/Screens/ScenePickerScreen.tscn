@@ -49,7 +49,7 @@ text = "Back"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 20
-text = "🎬 CHOOSE YOUR SCENE"
+text = "Scenes"
 
 [node name="CenterContainer" type="CenterContainer" parent="TopBar"]
 layout_mode = 2
@@ -60,7 +60,7 @@ custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
 mouse_filter = 0
 theme_override_font_sizes/font_size = 14
-text = "+ Import Custom Scene"
+text = "Import"
 
 [node name="MainLayoutMargin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -121,7 +121,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_font_sizes/font_size = 48
-text = "🎬"
+text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -143,26 +143,26 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 12
-text = "• Official Scene •"
+text = "Official"
 
 [node name="DurationBadge" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/BadgesHBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.18, 0.20, 0.32, 1)
 theme_override_font_sizes/font_size = 12
-text = "⏱️ 0:00"
+text = "0:00"
 
 [node name="SlotsBadge" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/BadgesHBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 12
-text = "🎙️ 0 Lines"
+text = "0 lines"
 
 [node name="CharactersLabel" type="Label" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox"]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.25, 0.28, 0.40, 1)
 theme_override_font_sizes/font_size = 13
-text = "Characters: Character 1, Character 2"
+text = ""
 autowrap_mode = 3
 text_overrun_behavior = 3
 
@@ -171,7 +171,7 @@ custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.38, 0.50, 1)
 theme_override_font_sizes/font_size = 12
-text = "Dialogue Lines:\n• Prompt preview"
+text = ""
 autowrap_mode = 3
 text_overrun_behavior = 3
 
@@ -189,13 +189,13 @@ custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
-text = "DUB SCENE"
+text = "DUB"
 
 [node name="EditTimelineButton" type="Button" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ShowcaseActionsHBox"]
 custom_minimum_size = Vector2(130, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Edit Box"
+text = "Edit"
 
 [node name="DeleteSceneButton" type="Button" parent="MainLayoutMargin/SplitHBox/ShowcasePanel/ShowcaseMargin/ShowcaseInnerCard/InnerMargin/ShowcaseVBox/ShowcaseActionsHBox"]
 visible = false
@@ -218,13 +218,13 @@ theme_override_constants/separation = 10
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
-placeholder_text = "🔍 Search scenes..."
+placeholder_text = "Search"
 
 [node name="StatusLabel" type="Label" parent="MainLayoutMargin/SplitHBox/CarouselVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
 theme_override_font_sizes/font_size = 13
-text = "Found 3 scenes"
+text = "3 scenes"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="MainLayoutMargin/SplitHBox/CarouselVBox"]
 layout_mode = 2
@@ -282,14 +282,14 @@ theme_override_constants/separation = 16
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 18
-text = "Delete Custom Scene?"
+text = "Delete scene?"
 horizontal_alignment = 1
 
 [node name="ModalDescription" type="Label" parent="DeleteConfirmModal/CenterContainer/ModalCard/ModalMargin/ModalVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.45, 0.55, 1)
 theme_override_font_sizes/font_size = 13
-text = "Are you sure you want to permanently delete this custom scene package?"
+text = "This can't be undone."
 autowrap_mode = 2
 horizontal_alignment = 1
 

@@ -98,7 +98,7 @@ public partial class VotingScreen : BaseScreen
     {
         if (Coordinator?.CurrentVotingRound is null)
         {
-            SetStatus("No voting round available.");
+            SetStatus("Nothing to vote on.");
             return;
         }
 
@@ -121,7 +121,7 @@ public partial class VotingScreen : BaseScreen
 
             var sectionLabel = new Label
             {
-                Text = $"{voterName} — choose the best dub:",
+                Text = voterName,
                 CustomMinimumSize = new Vector2(0, 0),
             };
             sectionLabel.AddThemeFontSizeOverride("font_size", 16);
@@ -183,7 +183,7 @@ public partial class VotingScreen : BaseScreen
             }
         }
 
-        SetStatus($"All players must cast a vote before submitting ({voters.Count} voters, {candidates.Count} candidates).");
+        SetStatus(string.Empty);
     }
 
     private void UpdateSubmitState()
@@ -196,10 +196,6 @@ public partial class VotingScreen : BaseScreen
         var allVoted = _pendingVotes.Count > 0 && _pendingVotes.Values.All(v => v is not null);
         _submitButton.Disabled = !allVoted;
 
-        if (allVoted)
-        {
-            SetStatus("All votes ready — press Submit to finalise.");
-        }
     }
 
     private void OnSubmitPressed()
@@ -230,7 +226,7 @@ public partial class VotingScreen : BaseScreen
         }
         catch (Exception ex)
         {
-            ShowError($"Voting error: {ex.Message}");
+            ShowError(ex.Message);
         }
     }
 

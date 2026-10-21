@@ -48,28 +48,28 @@ theme_override_constants/separation = 12
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 26
-text = "🎉 RESULTS & SCORES"
+text = "Results"
 horizontal_alignment = 1
 
 [node name="WinnerLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(1, 0.54, 0.68, 1)
-text = "👑 Winner: ..."
+text = ""
 horizontal_alignment = 1
 
 [node name="TallyLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.18, 0.20, 0.32, 1)
 theme_override_font_sizes/font_size = 14
-text = "Vote Tallies:"
+text = "Votes"
 horizontal_alignment = 0
 
 [node name="StandingsLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.18, 0.20, 0.32, 1)
 theme_override_font_sizes/font_size = 14
-text = "Cumulative Standings:"
+text = "Standings"
 horizontal_alignment = 0
 
 [node name="ErrorLabel" type="Label" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
@@ -96,7 +96,7 @@ custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
-text = "Replay Dub"
+text = "Replay"
 
 [node name="BottomRow" type="HBoxContainer" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer"]
 layout_mode = 2
@@ -108,7 +108,7 @@ custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 13
-text = "Export Package"
+text = "Export MP4"
 
 [node name="MenuButton" type="Button" parent="CenterArea/ResultsCard/CardMargin/VBoxContainer/BottomRow"]
 custom_minimum_size = Vector2(0, 40)

@@ -32,7 +32,7 @@ theme_override_constants/separation = 12
 [node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
-text = "✏️ Scene & Speech Timeline Editor"
+text = "Scene Editor"
 horizontal_alignment = 1
 
 [node name="HeaderGrid" type="HBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
@@ -42,16 +42,16 @@ theme_override_constants/separation = 16
 
 [node name="TitleNameLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
 layout_mode = 2
-text = "Scene Title:"
+text = "Title"
 
 [node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
 custom_minimum_size = Vector2(340, 36)
 layout_mode = 2
-placeholder_text = "Scene Title..."
+placeholder_text = "Scene title"
 
 [node name="DurationLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
 layout_mode = 2
-text = "Total Duration (sec):"
+text = "Length (s)"
 
 [node name="DurationInput" type="SpinBox" parent="ScrollContainer/CenterContainer/VBoxContainer/HeaderGrid"]
 custom_minimum_size = Vector2(100, 36)
@@ -104,7 +104,7 @@ text = "Reset"
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
-text = "⏱ 00.0s / 22.0s"
+text = "0.0s / 22.0s"
 horizontal_alignment = 2
 
 [node name="TimeSlider" type="HSlider" parent="ScrollContainer/CenterContainer/VBoxContainer"]
@@ -117,7 +117,7 @@ step = 0.1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 15
-text = "📊 Audio Waveform & Speech Slots (Drag & resize boxes over the waveform):"
+text = "Timeline"
 
 [node name="TimelineContainer" type="PanelContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(840, 115)
@@ -131,28 +131,28 @@ theme_override_constants/separation = 12
 [node name="AutoDetectButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(230, 40)
 layout_mode = 2
-text = "Auto-Detect Subtitles (AI)"
+text = "Auto-Detect Lines"
 
 [node name="AddBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(180, 40)
 layout_mode = 2
-text = "Add Speech Box"
+text = "Add Box"
 
 [node name="CutBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(180, 40)
 layout_mode = 2
-text = "Cut Box (C)"
+text = "Split (C)"
 
 [node name="DeleteBoxButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/TimelineButtons"]
 custom_minimum_size = Vector2(170, 40)
 layout_mode = 2
-text = "Delete Selected"
+text = "Delete"
 
 [node name="SectionLabel" type="Label" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 18
-text = "🎭 Dialogue Lines & Subtitles:"
+text = "Lines"
 
 [node name="SlotsContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -172,12 +172,12 @@ theme_override_constants/separation = 16
 [node name="SaveAndProceedButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(280, 44)
 layout_mode = 2
-text = "Save & Go to Scene Selection"
+text = "Save & Exit"
 
 [node name="SaveButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(180, 44)
 layout_mode = 2
-text = "Save Changes"
+text = "Save"
 
 [node name="BackButton" type="Button" parent="ScrollContainer/CenterContainer/VBoxContainer/ActionsContainer"]
 custom_minimum_size = Vector2(160, 44)

@@ -44,7 +44,7 @@ theme_override_constants/separation = 16
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 20
-text = "🎙️ DUBBING STUDIO"
+text = "Recording"
 
 [node name="Spacer" type="Control" parent="CenterArea/VBoxContainer/TopInfoHBox"]
 layout_mode = 2
@@ -54,7 +54,7 @@ size_flags_horizontal = 3
 layout_mode = 2
 theme_override_colors/font_color = Color(0.561, 0.396, 0.973, 1)
 theme_override_font_sizes/font_size = 14
-text = "Line 1/3 | Character: 🎭 Suspect | 4.0s"
+text = "1 / 3 · Suspect · 4.0s"
 
 [node name="VideoContainer" type="AspectRatioContainer" parent="CenterArea/VBoxContainer"]
 custom_minimum_size = Vector2(512, 288)
@@ -76,7 +76,7 @@ expand = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 16
-text = "💬 \"Please Speed I need this, my mom is kinda homeless!\""
+text = "\"Line prompt\""
 horizontal_alignment = 1
 autowrap_mode = 2
 
@@ -85,7 +85,7 @@ visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.54, 0.68, 1)
 theme_override_font_sizes/font_size = 22
-text = "🎙 Recording in: 2..."
+text = "2"
 horizontal_alignment = 1
 
 [node name="WaveformVisualizer" type="Control" parent="CenterArea/VBoxContainer"]
@@ -99,14 +99,14 @@ visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.65, 0.35, 1)
 theme_override_font_sizes/font_size = 14
-text = "⭐ Timing & Rhythm Match: 95%"
+text = "Timing 95%"
 horizontal_alignment = 1
 
 [node name="StatusLabel" type="Label" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
 theme_override_font_sizes/font_size = 13
-text = "Ready. Press 'Listen to Reference' or 'Start Recording'."
+text = ""
 horizontal_alignment = 1
 
 [node name="ErrorLabel" type="Label" parent="CenterArea/VBoxContainer"]
@@ -125,13 +125,13 @@ theme_override_constants/separation = 14
 custom_minimum_size = Vector2(230, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Listen Reference"
+text = "Original"
 
 [node name="RecordButton" type="Button" parent="CenterArea/VBoxContainer/StudioActions"]
 custom_minimum_size = Vector2(230, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Start Recording"
+text = "Record"
 
 [node name="ReviewActions" type="HBoxContainer" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
@@ -143,35 +143,35 @@ visible = false
 custom_minimum_size = Vector2(160, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Listen Take"
+text = "Play Take"
 
 [node name="ReRecordButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(140, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Re-Record"
+text = "Retake"
 
 [node name="PrevSlotButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(130, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Prev Line"
+text = "Previous"
 
 [node name="NextSlotButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(150, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Next Line"
+text = "Next"
 
 [node name="FinishRecordingButton" type="Button" parent="CenterArea/VBoxContainer/ReviewActions"]
 visible = false
 custom_minimum_size = Vector2(190, 38)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Finish & Watch!"
+text = "Watch Dub"
 
 [node name="BottomRow" type="HBoxContainer" parent="CenterArea/VBoxContainer"]
 layout_mode = 2
@@ -181,4 +181,4 @@ alignment = 1
 custom_minimum_size = Vector2(160, 34)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Cancel Session"
+text = "Quit Round"

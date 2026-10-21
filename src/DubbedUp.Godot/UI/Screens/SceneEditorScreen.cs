@@ -101,28 +101,28 @@ public partial class SceneEditorScreen : BaseScreen
         // Video Controls
         if (_seekBackButton is not null)
         {
-            _seekBackButton.Text = "⏪ -5s";
+            _seekBackButton.Text = "-5s";
             _seekBackButton.Pressed += () => SeekRelative(-5.0);
             StyleOutlinePill(_seekBackButton, new Color(0.280f, 0.650f, 0.950f), 18);
             UiSoundManager.Attach(_seekBackButton);
         }
         if (_playPauseButton is not null)
         {
-            _playPauseButton.Text = "▶ Play";
+            _playPauseButton.Text = "Play";
             _playPauseButton.Pressed += OnPlayPausePressed;
             StyleActionPill(_playPauseButton, new Color(0.280f, 0.650f, 0.950f), 18);
             UiSoundManager.Attach(_playPauseButton);
         }
         if (_seekForwardButton is not null)
         {
-            _seekForwardButton.Text = "+5s ⏩";
+            _seekForwardButton.Text = "+5s";
             _seekForwardButton.Pressed += () => SeekRelative(5.0);
             StyleOutlinePill(_seekForwardButton, new Color(0.280f, 0.650f, 0.950f), 18);
             UiSoundManager.Attach(_seekForwardButton);
         }
         if (_stopButton is not null)
         {
-            _stopButton.Text = "🔄 Reset";
+            _stopButton.Text = "Reset";
             _stopButton.Pressed += OnStopPressed;
             StyleOutlinePill(_stopButton, new Color(0.450f, 0.500f, 0.650f), 18);
             UiSoundManager.Attach(_stopButton);
@@ -131,28 +131,28 @@ public partial class SceneEditorScreen : BaseScreen
         // Timeline box buttons
         if (_autoDetectButton is not null)
         {
-            _autoDetectButton.Text = "✨ Auto-Detect Subtitles (AI)";
+            _autoDetectButton.Text = "Auto-Detect Lines";
             _autoDetectButton.Pressed += OnAutoDetectPressed;
             StyleActionPill(_autoDetectButton, new Color(0.600f, 0.480f, 0.950f), 20);
             UiSoundManager.Attach(_autoDetectButton);
         }
         if (_addBoxButton is not null)
         {
-            _addBoxButton.Text = "➕ Add Speech Box";
+            _addBoxButton.Text = "Add Box";
             _addBoxButton.Pressed += OnAddBoxPressed;
             StyleActionPill(_addBoxButton, new Color(0.20f, 0.72f, 0.50f), 20);
             UiSoundManager.Attach(_addBoxButton);
         }
         if (_cutBoxButton is not null)
         {
-            _cutBoxButton.Text = "✂️ Cut Box (C)";
+            _cutBoxButton.Text = "Split (C)";
             _cutBoxButton.Pressed += OnCutSelectedBoxPressed;
             StyleActionPill(_cutBoxButton, new Color(1.0f, 0.650f, 0.250f), 20);
             UiSoundManager.Attach(_cutBoxButton);
         }
         if (_deleteBoxButton is not null)
         {
-            _deleteBoxButton.Text = "🗑 Delete Selected";
+            _deleteBoxButton.Text = "Delete";
             _deleteBoxButton.Pressed += OnDeleteSelectedBoxPressed;
             StyleOutlinePill(_deleteBoxButton, new Color(0.95f, 0.35f, 0.35f), 20);
             UiSoundManager.Attach(_deleteBoxButton);
@@ -161,21 +161,21 @@ public partial class SceneEditorScreen : BaseScreen
         // Bottom Screen Actions
         if (_saveAndProceedButton is not null)
         {
-            _saveAndProceedButton.Text = "🚀 Save & Go to Scene Selection";
+            _saveAndProceedButton.Text = "Save & Exit";
             _saveAndProceedButton.Pressed += OnSaveAndProceedPressed;
             StyleActionPill(_saveAndProceedButton, new Color(1.0f, 0.540f, 0.680f), 22);
             UiSoundManager.Attach(_saveAndProceedButton);
         }
         if (_saveButton is not null)
         {
-            _saveButton.Text = "💾 Save Changes";
+            _saveButton.Text = "Save";
             _saveButton.Pressed += OnSavePressed;
             StyleActionPill(_saveButton, new Color(0.280f, 0.650f, 0.950f), 22);
             UiSoundManager.Attach(_saveButton);
         }
         if (_backButton is not null)
         {
-            _backButton.Text = "← Back";
+            _backButton.Text = "Back";
             _backButton.Pressed += OnBackPressed;
             StyleOutlinePill(_backButton, new Color(0.350f, 0.400f, 0.550f), 20);
             UiSoundManager.Attach(_backButton);
@@ -211,7 +211,7 @@ public partial class SceneEditorScreen : BaseScreen
         var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
         if (doc is null)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "❌ No scene loaded to edit.";
+            if (_statusLabel is not null) _statusLabel.Text = "No scene loaded.";
             return;
         }
 
@@ -240,7 +240,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"💡 Scene loaded: '{doc.Title}' (Duration: {_totalDuration:F1}s, {_editableSlots.Count} speech slots)";
+            _statusLabel.Text = string.Empty;
         }
     }
 
@@ -394,7 +394,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"⏱ Total duration set to {_totalDuration:F1}s. Waveform updated.";
+            _statusLabel.Text = string.Empty;
         }
     }
 
@@ -428,7 +428,7 @@ public partial class SceneEditorScreen : BaseScreen
             var slot = _editableSlots[slotIndex];
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"👉 Selected Line #{slotIndex + 1}: {slot.CharacterName} ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s)";
+                _statusLabel.Text = $"#{slotIndex + 1} {slot.CharacterName} · {slot.StartSeconds:F1}–{slot.EndSeconds:F1}s";
             }
         }
     }
@@ -481,7 +481,7 @@ public partial class SceneEditorScreen : BaseScreen
             _videoPlayer.Play();
         }
 
-        if (_playPauseButton is not null) _playPauseButton.Text = "⏸ Pause";
+        if (_playPauseButton is not null) _playPauseButton.Text = "Pause";
     }
 
     private void PauseVideo()
@@ -490,7 +490,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         _isPlaying = false;
         _videoPlayer.Paused = true;
-        if (_playPauseButton is not null) _playPauseButton.Text = "▶ Play";
+        if (_playPauseButton is not null) _playPauseButton.Text = "Play";
     }
 
     private void OnStopPressed()
@@ -520,7 +520,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_videoTimeLabel is not null)
         {
-            _videoTimeLabel.Text = $"⏱ {clamped:F1}s / {_totalDuration:F1}s";
+            _videoTimeLabel.Text = $"{clamped:F1}s / {_totalDuration:F1}s";
         }
 
         _timelineEditor?.SetPlayhead(clamped);
@@ -541,7 +541,7 @@ public partial class SceneEditorScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "❌ No audio stream found to analyze.";
+                _statusLabel.Text = "No audio found.";
             }
             return;
         }
@@ -562,7 +562,7 @@ public partial class SceneEditorScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "⚠️ No spoken dialogue found in audio (silence/music skipped). You can add boxes manually.";
+                _statusLabel.Text = "No speech detected.";
             }
             return;
         }
@@ -587,7 +587,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"✨ AI extracted {detected.Count} dialogue lines with subtitles (silence skipped)!";
+            _statusLabel.Text = $"{detected.Count} lines detected";
         }
     }
 
@@ -598,7 +598,7 @@ public partial class SceneEditorScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = "⚠️ Please select a speech box first to cut/split it.";
+                _statusLabel.Text = "Select a box to split.";
             }
             return;
         }
@@ -618,7 +618,7 @@ public partial class SceneEditorScreen : BaseScreen
         {
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"⚠️ Playhead ({splitSec:F1}s) must be inside the selected box ({slot.StartSeconds:F1}s - {slot.EndSeconds:F1}s) to cut.";
+                _statusLabel.Text = "Move the playhead inside the box to split it.";
             }
             return;
         }
@@ -645,7 +645,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"✂️ Cut speech box at {splitSec:F1}s into two boxes!";
+            _statusLabel.Text = $"Split at {splitSec:F1}s";
         }
     }
 
@@ -676,7 +676,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"✨ Added new speech slot at {start:F1}s!";
+            _statusLabel.Text = string.Empty;
         }
     }
 
@@ -705,7 +705,7 @@ public partial class SceneEditorScreen : BaseScreen
             _timelineEditor?.SelectSlot(_selectedSlotIndex);
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = $"🗑️ Deleted speech slot #{index + 1} ({charName}).";
+                _statusLabel.Text = string.Empty;
             }
         }
     }
@@ -737,7 +737,7 @@ public partial class SceneEditorScreen : BaseScreen
 
             if (_videoTimeLabel is not null)
             {
-                _videoTimeLabel.Text = $"⏱ {pos:F1}s / {_totalDuration:F1}s";
+                _videoTimeLabel.Text = $"{pos:F1}s / {_totalDuration:F1}s";
             }
 
             _timelineEditor?.SetPlayhead(pos);
@@ -788,7 +788,7 @@ public partial class SceneEditorScreen : BaseScreen
 
             var emptyLabel = new Label
             {
-                Text = "ℹ️ No speech boxes yet. Click 'Add Speech Box' or 'Auto-Detect Subtitles (AI)' above to add dialogue.",
+                Text = "No lines yet.",
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -891,7 +891,7 @@ public partial class SceneEditorScreen : BaseScreen
             // 2. Character Name
             var charLabel = new Label
             {
-                Text = "Character:",
+                Text = "Character",
                 VerticalAlignment = VerticalAlignment.Center
             };
             charLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.40f));
@@ -901,7 +901,7 @@ public partial class SceneEditorScreen : BaseScreen
             var charNameInput = new LineEdit
             {
                 Text = slot.CharacterName,
-                PlaceholderText = "Character Name...",
+                PlaceholderText = "Name",
                 CustomMinimumSize = new Vector2(170, 34),
                 SizeFlagsVertical = Control.SizeFlags.ShrinkCenter
             };
@@ -918,7 +918,7 @@ public partial class SceneEditorScreen : BaseScreen
             // 3. Timing Section
             var startLabel = new Label
             {
-                Text = "Start:",
+                Text = "Start",
                 VerticalAlignment = VerticalAlignment.Center
             };
             startLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.40f));
@@ -944,7 +944,7 @@ public partial class SceneEditorScreen : BaseScreen
 
             var endLabel = new Label
             {
-                Text = "End:",
+                Text = "End",
                 VerticalAlignment = VerticalAlignment.Center
             };
             endLabel.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.40f));
@@ -1007,7 +1007,7 @@ public partial class SceneEditorScreen : BaseScreen
             // 4. Preview Button
             var previewBtn = new Button
             {
-                Text = "▶ Preview",
+                Text = "Preview",
                 CustomMinimumSize = new Vector2(105, 34),
                 SizeFlagsVertical = Control.SizeFlags.ShrinkCenter
             };
@@ -1023,7 +1023,7 @@ public partial class SceneEditorScreen : BaseScreen
             // 5. Delete Button
             var deleteBtn = new Button
             {
-                Text = "🗑 Delete",
+                Text = "Delete",
                 CustomMinimumSize = new Vector2(88, 34),
                 SizeFlagsVertical = Control.SizeFlags.ShrinkCenter
             };
@@ -1039,7 +1039,7 @@ public partial class SceneEditorScreen : BaseScreen
 
             var promptLabel = new Label
             {
-                Text = "💬 Dialogue Subtitle / Prompt:",
+                Text = "Line",
                 VerticalAlignment = VerticalAlignment.Center
             };
             promptLabel.AddThemeColorOverride("font_color", new Color(0.118f, 0.106f, 0.294f));
@@ -1049,7 +1049,7 @@ public partial class SceneEditorScreen : BaseScreen
             var promptInput = new LineEdit
             {
                 Text = slot.Prompt,
-                PlaceholderText = "Enter character dialogue subtitle / prompt...",
+                PlaceholderText = "What the character says",
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 CustomMinimumSize = new Vector2(0, 36)
             };
@@ -1277,7 +1277,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = $"🎧 Previewing with 3s lead-in: {slot.CharacterName} ({leadInStart:F1}s → {slot.EndSeconds:F1}s)";
+            _statusLabel.Text = string.Empty;
         }
     }
 
@@ -1305,13 +1305,13 @@ public partial class SceneEditorScreen : BaseScreen
         var doc = Coordinator?.SelectedScenePackage?.Document ?? Coordinator?.CurrentScene;
         if (doc is null)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "❌ No scene loaded to save.";
+            if (_statusLabel is not null) _statusLabel.Text = "No scene loaded.";
             return false;
         }
 
         if (_editableSlots.Count == 0)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "❌ At least 1 speech slot is required.";
+            if (_statusLabel is not null) _statusLabel.Text = "Add at least one line.";
             return false;
         }
 
@@ -1388,7 +1388,7 @@ public partial class SceneEditorScreen : BaseScreen
         catch (Exception ex)
         {
             GD.PrintErr($"[SceneEditor] Validation failed: {ex.Message}");
-            if (_statusLabel is not null) _statusLabel.Text = $"❌ Validation error: {ex.Message}";
+            if (_statusLabel is not null) _statusLabel.Text = ex.Message;
             return false;
         }
 
@@ -1420,7 +1420,7 @@ public partial class SceneEditorScreen : BaseScreen
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = "✅ Scene, speech timeline, and subtitles saved successfully!";
+            _statusLabel.Text = "Saved";
         }
 
         return true;

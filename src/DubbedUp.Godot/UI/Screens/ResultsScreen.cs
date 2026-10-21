@@ -132,14 +132,13 @@ public partial class ResultsScreen : BaseScreen
 
         if (mode == DubbedUp.Core.Game.GameMode.CoopDubbing)
         {
-            SetWinner("🎬 Scene Dubbed Successfully!");
+            SetWinner("Dub complete");
             var playerNames = session?.Players.Select(p => p.DisplayName) ?? [];
-            var charNames = Coordinator?.CurrentScene?.Characters.Select(c => c.DisplayName) ?? [];
-            SetTally($"Players: {string.Join(" & ", playerNames)}\nCharacters: {string.Join(" & ", charNames)}");
-            SetStandings("Mode: Co-op Dubbing (Teamwork Win!)");
+            SetTally(string.Join(" & ", playerNames));
+            SetStandings(string.Empty);
             if (_nextRoundButton is not null)
             {
-                _nextRoundButton.Text = "Pick Another Scene";
+                _nextRoundButton.Text = "New Scene";
             }
             return;
         }
@@ -149,7 +148,7 @@ public partial class ResultsScreen : BaseScreen
 
         if (result is null)
         {
-            SetWinner("No voting result available.");
+            SetWinner("No votes recorded.");
             return;
         }
 
@@ -160,17 +159,17 @@ public partial class ResultsScreen : BaseScreen
 
         var isTie = winnerNames.Length > 1;
         var winnerText = isTie
-            ? $"🤝 Tie! Winners: {string.Join(" & ", winnerNames)}"
-            : $"🏆 Winner: {winnerNames[0]}";
+            ? $"Tie: {string.Join(" & ", winnerNames)}"
+            : $"{winnerNames[0]} wins";
         SetWinner(winnerText);
 
         // Vote tallies
         var tallyLines = result.Tallies.Select(tally =>
         {
             var playerName = session?.Players.FirstOrDefault(p => p.PlayerId == tally.PlayerId)?.DisplayName ?? tally.PlayerId;
-            return $"  {playerName} ({tally.PerformanceId}): {tally.VoteCount} vote(s)";
+            return $"{playerName}  {tally.VoteCount}";
         });
-        SetTally("Vote Tallies:\n" + string.Join("\n", tallyLines));
+        SetTally(string.Join("\n", tallyLines));
 
         // Scoreboard standings
         if (scoreBoard is not null)
@@ -178,9 +177,9 @@ public partial class ResultsScreen : BaseScreen
             var standingLines = scoreBoard.Standings.Select((s, i) =>
             {
                 var playerName = session?.Players.FirstOrDefault(p => p.PlayerId == s.PlayerId)?.DisplayName ?? s.PlayerId;
-                return $"  #{i + 1} {playerName}: {s.Points} pt(s)";
+                return $"{i + 1}. {playerName}  {s.Points} pts";
             });
-            SetStandings("Cumulative Standings:\n" + string.Join("\n", standingLines));
+            SetStandings(string.Join("\n", standingLines));
         }
     }
 
@@ -214,17 +213,15 @@ public partial class ResultsScreen : BaseScreen
     {
         if (Coordinator?.CurrentScene is null)
         {
-            ShowError("No active scene to export.");
+            ShowError("No scene to export.");
             return;
         }
 
         if (_exportButton is not null)
         {
             _exportButton.Disabled = true;
-            _exportButton.Text = "Rendering MP4...";
+            _exportButton.Text = "Exporting...";
         }
-
-        SetStandings("🎬 Rendering & mixing dubbed MP4 video with FFmpeg...");
 
         try
         {
@@ -241,17 +238,17 @@ public partial class ResultsScreen : BaseScreen
             if (_exportButton is not null)
             {
                 _exportButton.Disabled = false;
-                _exportButton.Text = "Export Dubbed Video (.mp4)";
+                _exportButton.Text = "Export MP4";
             }
 
             if (!string.IsNullOrEmpty(exportedFile) && System.IO.File.Exists(exportedFile))
             {
-                SetStandings($"✅ Video exported: {System.IO.Path.GetFileName(exportedFile)}");
+                SetStandings($"Saved {System.IO.Path.GetFileName(exportedFile)}");
                 OS.ShellOpen(System.IO.Path.GetDirectoryName(exportedFile) ?? exportedFile);
             }
             else
             {
-                ShowError("Export failed. Please check if FFmpeg is installed.");
+                ShowError("Export failed. Is FFmpeg installed?");
             }
         }
         catch (Exception ex)
@@ -260,7 +257,7 @@ public partial class ResultsScreen : BaseScreen
             if (_exportButton is not null)
             {
                 _exportButton.Disabled = false;
-                _exportButton.Text = "Export Dubbed Video (.mp4)";
+                _exportButton.Text = "Export MP4";
             }
         }
     }

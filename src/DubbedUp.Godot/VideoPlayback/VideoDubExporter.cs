@@ -23,7 +23,7 @@ public static class VideoDubExporter
         {
             try
             {
-                onStatusUpdate?.Invoke("🔍 Locating scene media and voice takes...");
+                onStatusUpdate?.Invoke("Preparing...");
 
                 // 1. Determine Source Video
                 string? sourceVideo = ResolveSourceVideo(scene, packageDirectory);
@@ -65,7 +65,7 @@ public static class VideoDubExporter
                 var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
                 var exportMp4 = System.IO.Path.Combine(exportDir, $"DubbedUp_{safeTitle}_{timestamp}.mp4");
 
-                onStatusUpdate?.Invoke("🎬 Rendering & mixing dubbed MP4 video with FFmpeg...");
+                onStatusUpdate?.Invoke("Rendering...");
 
                 // 5. Construct FFmpeg command
                 var cmdBuilder = new StringBuilder();
@@ -148,7 +148,7 @@ public static class VideoDubExporter
                 if (System.IO.File.Exists(exportMp4) && new System.IO.FileInfo(exportMp4).Length > 1000)
                 {
                     GD.Print($"[VideoDubExporter] Successfully exported dubbed video: '{exportMp4}'");
-                    onStatusUpdate?.Invoke($"✅ Export complete! Video saved to: {System.IO.Path.GetFileName(exportMp4)}");
+                    onStatusUpdate?.Invoke($"Saved {System.IO.Path.GetFileName(exportMp4)}");
                     return exportMp4;
                 }
 

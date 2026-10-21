@@ -96,7 +96,7 @@ public partial class SettingsScreen : BaseScreen
 			{
 				if (_countdownValueLabel is not null)
 				{
-					_countdownValueLabel.Text = val > 0 ? $"{val:F0}s" : "Off (0s)";
+					_countdownValueLabel.Text = val > 0 ? $"{val:F0}s" : "Off";
 				}
 				AutoSaveSettings();
 			};
@@ -150,7 +150,7 @@ public partial class SettingsScreen : BaseScreen
 		var currentDevice = Microphone.GodotLiveMicrophoneService.Instance.CurrentInputDevice;
 
 		// Always add default first
-		_micDeviceOption.AddItem("Default Microphone (System Default)", 0);
+		_micDeviceOption.AddItem("Default", 0);
 
 		int selectIdx = 0;
 		for (int i = 0; i < devices.Count; i++)
@@ -175,12 +175,12 @@ public partial class SettingsScreen : BaseScreen
 		if (index == 0 || selectedText.StartsWith("Default"))
 		{
 			Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice("");
-			if (_statusLabel is not null) _statusLabel.Text = "🎙 Switched to Default Microphone.";
+			if (_statusLabel is not null) _statusLabel.Text = string.Empty;
 		}
 		else
 		{
 			Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice(selectedText);
-			if (_statusLabel is not null) _statusLabel.Text = $"🎙 Selected Microphone: {selectedText}";
+			if (_statusLabel is not null) _statusLabel.Text = string.Empty;
 		}
 	}
 
@@ -239,14 +239,12 @@ public partial class SettingsScreen : BaseScreen
 
 		if (_micTestButton is not null)
 		{
-			_micTestButton.Text = _isTestingMic ? "Stop Microphone Test" : "Test Microphone Level";
+			_micTestButton.Text = _isTestingMic ? "Stop Test" : "Test Mic";
 		}
 
 		if (_statusLabel is not null)
 		{
-			_statusLabel.Text = _isTestingMic
-				? "🎙 Mic test active — speak into your microphone to see the level bar move!"
-				: "Mic test stopped.";
+			_statusLabel.Text = string.Empty;
 		}
 	}
 
@@ -291,14 +289,14 @@ public partial class SettingsScreen : BaseScreen
 
 			if (_statusLabel is not null)
 			{
-				_statusLabel.Text = "🔊 Speaker test beep played! Did you hear it?";
+				_statusLabel.Text = string.Empty;
 			}
 		}
 		catch (Exception ex)
 		{
 			if (_statusLabel is not null)
 			{
-				_statusLabel.Text = $"Speaker test failed: {ex.Message}";
+				_statusLabel.Text = ex.Message;
 			}
 		}
 	}
@@ -344,7 +342,7 @@ public partial class SettingsScreen : BaseScreen
 				_countdownSlider.Value = countdown;
 				if (_countdownValueLabel is not null)
 				{
-					_countdownValueLabel.Text = countdown > 0 ? $"{countdown:F0}s" : "Off (0s)";
+					_countdownValueLabel.Text = countdown > 0 ? $"{countdown:F0}s" : "Off";
 				}
 			}
 
@@ -404,7 +402,7 @@ public partial class SettingsScreen : BaseScreen
 
 		if (_statusLabel is not null)
 		{
-			_statusLabel.Text = "✅ Settings saved!";
+			_statusLabel.Text = "Saved";
 		}
 	}
 

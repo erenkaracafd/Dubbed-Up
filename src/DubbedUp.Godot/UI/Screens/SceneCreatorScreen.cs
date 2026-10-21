@@ -368,20 +368,20 @@ public partial class SceneCreatorScreen : BaseScreen
 
         if (string.IsNullOrWhiteSpace(title))
         {
-            ShowError("Please enter a scene title.");
+            ShowError("Enter a title.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(sceneId))
         {
-            ShowError("Please enter a valid scene ID.");
+            ShowError("Enter a valid ID.");
             return;
         }
 
         var sourceMediaFile = _selectedSourceMediaFile;
         if (string.IsNullOrWhiteSpace(sourceMediaFile) || !System.IO.File.Exists(sourceMediaFile))
         {
-            ShowError("Please select a video card from above before creating the scene.");
+            ShowError("Pick a video.");
             return;
         }
 
@@ -389,11 +389,11 @@ public partial class SceneCreatorScreen : BaseScreen
         if (_saveButton is not null)
         {
             _saveButton.Disabled = true;
-            _saveButton.Text = "Transcoding Video & Separating Stems...";
+            _saveButton.Text = "Importing...";
         }
         if (_statusInfoLabel is not null)
         {
-            _statusInfoLabel.Text = "Transcoding video & separating vocals... Please wait.";
+            _statusInfoLabel.Text = string.Empty;
         }
 
         try
@@ -479,13 +479,13 @@ public partial class SceneCreatorScreen : BaseScreen
         {
             if (_errorLabel is not null)
             {
-                _errorLabel.Text = $"Creation failed: {ex.Message}";
+                _errorLabel.Text = $"Import failed: {ex.Message}";
                 _errorLabel.Visible = true;
             }
             if (_saveButton is not null)
             {
                 _saveButton.Disabled = false;
-                _saveButton.Text = "Save & Open in Editor";
+                _saveButton.Text = "Create";
             }
         }
     }

@@ -142,8 +142,8 @@ public partial class WaveformVisualizer : Control
             DrawLine(new Vector2(leadInWidth, 0), new Vector2(leadInWidth, height), new Color(1.0f, 0.35f, 0.35f, 0.95f), 2.5f);
 
             // Zone Labels
-            DrawString(ThemeDB.FallbackFont, new Vector2(6, 16), "⏳ 3s Hazırlık (Akış)", HorizontalAlignment.Left, -1, 10, new Color(0.5f, 0.6f, 0.7f, 0.7f));
-            DrawString(ThemeDB.FallbackFont, new Vector2(leadInWidth + 8, 16), "🎙️ KAYIT ALANI (Senin Replik)", HorizontalAlignment.Left, -1, 11, new Color(0.3f, 1.0f, 0.6f, 0.95f));
+            DrawString(ThemeDB.FallbackFont, new Vector2(6, 16), "Lead-in", HorizontalAlignment.Left, -1, 10, new Color(0.5f, 0.6f, 0.7f, 0.7f));
+            DrawString(ThemeDB.FallbackFont, new Vector2(leadInWidth + 8, 16), "Your line", HorizontalAlignment.Left, -1, 11, new Color(0.3f, 1.0f, 0.6f, 0.95f));
         }
         else
         {

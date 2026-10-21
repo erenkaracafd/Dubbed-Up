@@ -48,7 +48,7 @@ theme_override_constants/separation = 16
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 22
-text = "⚙️ AUDIO, MICROPHONE & DISPLAY SETTINGS"
+text = "Settings"
 horizontal_alignment = 1
 
 [node name="ColumnsHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer"]
@@ -65,18 +65,18 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
-text = "🖥 Display Mode:"
+text = "Display"
 
 [node name="FullscreenCheck" type="CheckButton" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
-text = "Fullscreen Mode (Tam Ekran - F11)"
+text = "Fullscreen (F11)"
 
 [node name="MasterVolLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
-text = "🔊 Master Playback Volume:"
+text = "Volume"
 
 [node name="MasterVolHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
@@ -100,13 +100,13 @@ text = "100%"
 custom_minimum_size = Vector2(0, 34)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Test Speaker Output (Beep)"
+text = "Test Speakers"
 
 [node name="LeadInLabel" type="Label" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
-text = "⏳ Pre-Roll Video Lead-in (Maks: 3s):"
+text = "Lead-in"
 
 [node name="LeadInHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
@@ -131,7 +131,7 @@ text = "3.0s"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
-text = "⏲️ Record Countdown (Geri Sayım):"
+text = "Countdown"
 
 [node name="CountdownHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol"]
 layout_mode = 2
@@ -161,7 +161,7 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
-text = "🎙 Microphone Device:"
+text = "Microphone"
 
 [node name="MicDeviceOption" type="OptionButton" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
 custom_minimum_size = Vector2(0, 38)
@@ -171,7 +171,7 @@ layout_mode = 2
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
-text = "🎚 Microphone Input Gain:"
+text = "Mic Gain"
 
 [node name="MicGainHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
 layout_mode = 2
@@ -195,7 +195,7 @@ text = "100%"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 14
-text = "⏱ Mic Sync & Latency Offset:"
+text = "Mic Latency"
 
 [node name="MicLatencyHBox" type="HBoxContainer" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
 layout_mode = 2
@@ -220,7 +220,7 @@ text = "-150ms"
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Test Microphone Level"
+text = "Test Mic"
 
 [node name="TestMeterBar" type="ProgressBar" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol"]
 visible = false
@@ -238,13 +238,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
 theme_override_font_sizes/font_size = 13
-text = "Configure audio, mic sync, and display."
+text = ""
 
 [node name="SaveButton" type="Button" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow"]
 custom_minimum_size = Vector2(170, 44)
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
-text = "Save Settings"
+text = "Save"
 
 [node name="BackButton" type="Button" parent="CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow"]
 custom_minimum_size = Vector2(140, 44)

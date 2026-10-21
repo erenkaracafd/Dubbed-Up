@@ -253,7 +253,7 @@ public partial class RecordingScreen : BaseScreen
             if (_countdownLabel is not null)
             {
                 var count = (int)Math.Ceiling(_countdownTimer);
-                _countdownLabel.Text = count > 0 ? $"🎙️ COUNTDOWN: {count}" : "🎬 STARTING!";
+                _countdownLabel.Text = count > 0 ? $"{count}" : "Go";
                 _countdownLabel.Visible = true;
             }
 
@@ -277,12 +277,12 @@ public partial class RecordingScreen : BaseScreen
                 var remaining = _leadInSec - _recordingElapsed;
                 if (_countdownLabel is not null)
                 {
-                    _countdownLabel.Text = remaining > 0.2 ? $"⏳ PRE-ROLL LEAD-IN: {remaining:F1}s" : "🔴 SPEAK NOW!";
+                    _countdownLabel.Text = remaining > 0.2 ? $"{remaining:F1}" : "Speak";
                     _countdownLabel.Visible = true;
                 }
                 if (_statusLabel is not null)
                 {
-                    _statusLabel.Text = $"🎬 Video playing ({_leadInSec:F1}s lead-in)... Get ready to speak in {remaining:F1}s!";
+                    _statusLabel.Text = $"Your line starts in {remaining:F1}s";
                 }
             }
             // Stage 2: Speech Box (Live Microphone Capture with original sound muted)
@@ -303,12 +303,12 @@ public partial class RecordingScreen : BaseScreen
 
                     if (_countdownLabel is not null)
                     {
-                        _countdownLabel.Text = "🔴 RECORDING LIVE — SPEAK NOW!";
+                        _countdownLabel.Text = "Recording";
                         _countdownLabel.Visible = true;
                     }
                     if (_statusLabel is not null)
                     {
-                        _statusLabel.Text = "🔴 RECORDING LIVE — Speak your line!";
+                        _statusLabel.Text = string.Empty;
                     }
                 }
 
@@ -337,8 +337,8 @@ public partial class RecordingScreen : BaseScreen
                 _isPreviewingOriginal = false;
                 _previewOriginalDuration = 0.0;
                 _waveformVisualizer?.SetPlayhead(0, false);
-                if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Listen to Original Reference";
-                if (_statusLabel is not null) _statusLabel.Text = "Ready. Press 'Listen to Original' or 'Start Recording'.";
+                if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Original";
+                if (_statusLabel is not null) _statusLabel.Text = string.Empty;
             }
             return;
         }
@@ -365,8 +365,8 @@ public partial class RecordingScreen : BaseScreen
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
 
         _waveformVisualizer?.SetPlayhead(0.0, false);
-        if (_previewTakeButton is not null) _previewTakeButton.Text = "Listen to My Take";
-        if (_statusLabel is not null) _statusLabel.Text = "Take preview finished.";
+        if (_previewTakeButton is not null) _previewTakeButton.Text = "Play Take";
+        if (_statusLabel is not null) _statusLabel.Text = string.Empty;
     }
 
     private void UpdateUiState()
@@ -405,12 +405,12 @@ public partial class RecordingScreen : BaseScreen
 
         if (_slotInfoLabel is not null)
         {
-            _slotInfoLabel.Text = $"Line {_currentSlotIndex + 1} / {voiceSlots.Count}  |  Character: 🎭 {charName}  ({playerName})  |  Duration: {_maxSlotDuration:F1}s";
+            _slotInfoLabel.Text = $"{_currentSlotIndex + 1} / {voiceSlots.Count} · {charName} ({playerName}) · {_maxSlotDuration:F1}s";
         }
 
         if (_promptSubtitleLabel is not null)
         {
-            _promptSubtitleLabel.Text = $"💬 \"{currentSlot.Prompt}\"";
+            _promptSubtitleLabel.Text = $"\"{currentSlot.Prompt}\"";
         }
 
         // Reset Waveform visualizer with REAL audio waveform extracted from video audio
@@ -427,13 +427,11 @@ public partial class RecordingScreen : BaseScreen
         {
             if (isRecorded)
             {
-                _recordButton.Text = "Re-Record (Overwrite)";
+                _recordButton.Text = "Retake";
             }
             else
             {
-                _recordButton.Text = _settingCountdownSeconds > 0
-                    ? $"Start Recording ({_settingCountdownSeconds:F0}s Countdown)"
-                    : "Start Recording";
+                _recordButton.Text = "Record";
             }
         }
         if (_previewTakeButton is not null) _previewTakeButton.Visible = isRecorded;
@@ -451,14 +449,12 @@ public partial class RecordingScreen : BaseScreen
         if (_proceedButton is not null)
         {
             _proceedButton.Visible = allDone;
-            _proceedButton.Text = "All Lines Recorded — Watch Full Playback!";
+            _proceedButton.Text = "Watch Dub";
         }
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = isRecorded
-                ? "✅ Take recorded! You can preview your take, re-record, or proceed to the next line."
-                : "Ready. Press 'Listen to Original' or 'Start Recording'.";
+            _statusLabel.Text = isRecorded ? "Take saved" : string.Empty;
         }
     }
 
@@ -588,7 +584,7 @@ public partial class RecordingScreen : BaseScreen
 
         if (_videoPlayer is null || _videoPlayer.Stream is null)
         {
-            if (_statusLabel is not null) _statusLabel.Text = "ℹ️ No video stream found for this scene.";
+            if (_statusLabel is not null) _statusLabel.Text = "No video for this scene.";
             return;
         }
 
@@ -596,7 +592,7 @@ public partial class RecordingScreen : BaseScreen
         {
             _videoPlayer.Stop();
             _isPreviewingOriginal = false;
-            if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Listen to Original Reference";
+            if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Original";
             return;
         }
 
@@ -611,8 +607,8 @@ public partial class RecordingScreen : BaseScreen
         _videoPlayer.Play();
         _videoPlayer.StreamPosition = _leadInStartSec;
 
-        if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Stop Playing";
-        if (_statusLabel is not null) _statusLabel.Text = $"🎧 Playing clip with {_leadInSec:F1}s context lead-in ({_leadInStartSec:F1}s → {_slotEndSec:F1}s)...";
+        if (_previewOriginalButton is not null) _previewOriginalButton.Text = "Stop";
+        if (_statusLabel is not null) _statusLabel.Text = string.Empty;
     }
 
     private void OnRecordButtonPressed()
@@ -642,11 +638,11 @@ public partial class RecordingScreen : BaseScreen
             _countdownTimer = _settingCountdownSeconds;
             if (_countdownLabel is not null)
             {
-                _countdownLabel.Text = $"🎙️ COUNTDOWN: {(int)Math.Ceiling(_countdownTimer)}";
+                _countdownLabel.Text = $"{(int)Math.Ceiling(_countdownTimer)}";
                 _countdownLabel.Visible = true;
             }
             if (_recordButton is not null) _recordButton.Text = "Cancel";
-            if (_statusLabel is not null) _statusLabel.Text = $"Countdown ({_settingCountdownSeconds:F0}s) started... Get ready!";
+            if (_statusLabel is not null) _statusLabel.Text = string.Empty;
         }
         else
         {
@@ -684,17 +680,15 @@ public partial class RecordingScreen : BaseScreen
                 _videoPlayer.StreamPosition = _leadInStartSec;
             }
 
-            if (_recordButton is not null) _recordButton.Text = "Cancel Recording";
+            if (_recordButton is not null) _recordButton.Text = "Cancel";
             if (_countdownLabel is not null)
             {
-                _countdownLabel.Text = _leadInSec > 0 ? $"⏳ PRE-ROLL LEAD-IN: {_leadInSec:F1}s" : "🔴 RECORDING LIVE — SPEAK NOW!";
+                _countdownLabel.Text = _leadInSec > 0 ? $"{_leadInSec:F1}" : "Recording";
                 _countdownLabel.Visible = true;
             }
             if (_statusLabel is not null)
             {
-                _statusLabel.Text = _leadInSec > 0
-                    ? $"🎬 Video starting ({_leadInSec:F1}s lead-in)... Focus on actor timing!"
-                    : "🔴 RECORDING LIVE — Speak your line!";
+                _statusLabel.Text = string.Empty;
             }
         }
         catch (Exception ex)
@@ -731,7 +725,7 @@ public partial class RecordingScreen : BaseScreen
             var matchPercent = _waveformVisualizer?.CalculateSyncMatchPercentage() ?? 90.0f;
             if (_syncScoreLabel is not null && take is not null)
             {
-                _syncScoreLabel.Text = $"⭐ Timing & Rhythm Match: {matchPercent:F0}%";
+                _syncScoreLabel.Text = $"Timing {matchPercent:F0}%";
                 _syncScoreLabel.Visible = true;
             }
 
@@ -822,8 +816,8 @@ public partial class RecordingScreen : BaseScreen
                     _previewTakeDuration = 0.0;
                     _waveformVisualizer?.SetPlayhead(0.0, false);
 
-                    if (_previewTakeButton is not null) _previewTakeButton.Text = "Stop Preview";
-                    if (_statusLabel is not null) _statusLabel.Text = "▶ Playing your take in sync with video...";
+                    if (_previewTakeButton is not null) _previewTakeButton.Text = "Stop";
+                    if (_statusLabel is not null) _statusLabel.Text = string.Empty;
                 }
             }
         }

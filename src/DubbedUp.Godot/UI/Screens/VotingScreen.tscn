@@ -48,14 +48,14 @@ theme_override_constants/separation = 14
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 26
-text = "🏆 VOTE FOR BEST DUB"
+text = "Vote"
 horizontal_alignment = 1
 
 [node name="StatusLabel" type="Label" parent="CenterArea/VotingCard/CardMargin/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.294, 0.322, 0.439, 1)
 theme_override_font_sizes/font_size = 14
-text = "Select your favorite voice acting performance!"
+text = ""
 horizontal_alignment = 1
 
 [node name="VoterContainer" type="VBoxContainer" parent="CenterArea/VotingCard/CardMargin/VBoxContainer"]
@@ -78,7 +78,7 @@ theme_override_constants/separation = 16
 custom_minimum_size = Vector2(220, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
-text = "Submit All Votes"
+text = "Submit"
 
 [node name="MenuButton" type="Button" parent="CenterArea/VotingCard/CardMargin/VBoxContainer/ActionsHBox"]
 custom_minimum_size = Vector2(150, 46)

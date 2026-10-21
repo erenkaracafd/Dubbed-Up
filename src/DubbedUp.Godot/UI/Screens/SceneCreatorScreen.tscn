@@ -49,7 +49,7 @@ text = "Back"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
 theme_override_font_sizes/font_size = 20
-text = "CREATE CUSTOM SCENE"
+text = "New Scene"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="."]
 layout_mode = 1
@@ -88,20 +88,6 @@ theme_override_constants/margin_bottom = 28
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.118, 0.106, 0.294, 1)
-theme_override_font_sizes/font_size = 24
-text = "Create Custom Scene"
-horizontal_alignment = 1
-
-[node name="SubtitleLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.38, 0.42, 0.54, 1)
-theme_override_font_sizes/font_size = 13
-text = "Import video or audio clips to create a custom playable dubbing scene."
-horizontal_alignment = 1
-
 [node name="FolderInfoContainer" type="VBoxContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
 custom_minimum_size = Vector2(756, 0)
 layout_mode = 2
@@ -111,7 +97,7 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_colors/font_color = Color(0.18, 0.16, 0.38, 1)
 theme_override_font_sizes/font_size = 15
-text = "Step 1: Choose Video File (.mp4, .webm, .mov, .mkv)"
+text = "Video"
 
 [node name="FolderButtonsHBox" type="HBoxContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer"]
 layout_mode = 2
@@ -121,26 +107,20 @@ theme_override_constants/separation = 12
 custom_minimum_size = Vector2(200, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Open Videos Folder"
+text = "Open Folder"
 
 [node name="RefreshMediaButton" type="Button" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer/FolderButtonsHBox"]
 custom_minimum_size = Vector2(160, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "Refresh Videos"
-
-[node name="SelectMediaLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.38, 0.42, 0.54, 1)
-theme_override_font_sizes/font_size = 13
-text = "Click a video card below to select it:"
+text = "Refresh"
 
 [node name="NoVideosLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer"]
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.45, 0.2, 1)
 theme_override_font_sizes/font_size = 13
-text = "No videos found in custom_videos folder. Click 'Open Videos Folder' and drop your video files (.mp4 / .webm / .mov / .mkv) there."
+text = "No videos yet. Add .mp4, .webm, .mov or .mkv files to the videos folder."
 autowrap_mode = 2
 
 [node name="VideoCardsScroll" type="ScrollContainer" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FolderInfoContainer"]
@@ -165,20 +145,20 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_colors/font_color = Color(0.18, 0.16, 0.38, 1)
 theme_override_font_sizes/font_size = 15
-text = "Step 2: Scene Title"
+text = "Title"
 
 [node name="TitleInput" type="LineEdit" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FormContainer"]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-placeholder_text = "e.g. Kurtlar Vadisi Sahnesi"
+placeholder_text = "Scene title"
 text = "My Custom Scene"
 
 [node name="SceneIdHeading" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FormContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.48, 0.6, 1)
 theme_override_font_sizes/font_size = 13
-text = "Folder / Package ID (auto-generated):"
+text = "ID"
 
 [node name="SceneIdInput" type="LineEdit" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/FormContainer"]
 custom_minimum_size = Vector2(0, 38)
@@ -190,7 +170,7 @@ text = "my-custom-scene"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.38, 0.42, 0.54, 1)
 theme_override_font_sizes/font_size = 13
-text = "Characters, voice lines, and dialogue boxes will be customized on the next screen (Scene Editor)."
+text = ""
 horizontal_alignment = 1
 
 [node name="ErrorLabel" type="Label" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer"]
@@ -209,7 +189,7 @@ theme_override_constants/separation = 16
 custom_minimum_size = Vector2(260, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Create Scene & Open Editor"
+text = "Create"
 
 [node name="CancelButton" type="Button" parent="ScrollContainer/CenterContainer/CardPadding/CreatorCard/CardMargin/VBoxContainer/ButtonsHBox"]
 custom_minimum_size = Vector2(140, 46)

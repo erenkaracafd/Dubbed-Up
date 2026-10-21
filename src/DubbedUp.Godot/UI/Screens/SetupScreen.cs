@@ -57,9 +57,9 @@ public partial class SetupScreen : BaseScreen
         if (_gameModeOption is not null)
         {
             _gameModeOption.Clear();
-            _gameModeOption.AddItem("👤 Solo Dubbing (1 Player — Voice All Characters)", 0);
-            _gameModeOption.AddItem("👥 Co-op Dubbing (2 Players — Watch Together)", 1);
-            _gameModeOption.AddItem("🏆 Competitive Voting (2 Players — Party Scoring)", 2);
+            _gameModeOption.AddItem("Solo", 0);
+            _gameModeOption.AddItem("Co-op", 1);
+            _gameModeOption.AddItem("Versus", 2);
             _gameModeOption.ItemSelected += OnGameModeSelected;
             _gameModeOption.Select(0);
             OnGameModeSelected(0);
@@ -208,8 +208,8 @@ public partial class SetupScreen : BaseScreen
         if (_sceneTitleLabel is not null)
         {
             _sceneTitleLabel.Text = selectedScene is not null
-                ? $"🎬 {selectedScene.Title}  ({selectedScene.Document.DurationMilliseconds / 1000.0:F1}s  |  {selectedScene.Document.VoiceSlots.Count} Lines)"
-                : "🎬 Scene: Default (Museum Mix-up)";
+                ? $"{selectedScene.Title}  ·  {selectedScene.Document.DurationMilliseconds / 1000.0:F1}s  ·  {selectedScene.Document.VoiceSlots.Count} lines"
+                : "Museum Mix-up";
         }
 
         if (_thumbnailTexture is not null && selectedScene is not null)
@@ -253,14 +253,13 @@ public partial class SetupScreen : BaseScreen
 
         if (isSolo)
         {
-            var lines = chars.Select(c => $"   🎭 {c.DisplayName}").ToList();
-            _characterPreviewLabel.Text = $"Characters you will voice (Solo):\n{string.Join("\n", lines)}";
+            _characterPreviewLabel.Text = string.Join("\n", chars.Select(c => c.DisplayName));
         }
         else
         {
             var p1Char = chars.FirstOrDefault()?.DisplayName ?? "Character 1";
             var p2Char = chars.Skip(1).FirstOrDefault()?.DisplayName ?? "Character 2";
-            _characterPreviewLabel.Text = $"Character Assignment:\n   🎭 Player 1 -> {p1Char}\n   🎭 Player 2 -> {p2Char}";
+            _characterPreviewLabel.Text = $"Player 1 · {p1Char}\nPlayer 2 · {p2Char}";
         }
     }
 
