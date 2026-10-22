@@ -37,6 +37,10 @@ public sealed record VoiceTakeTransferManifest
     [JsonPropertyName("sha256")]
     public string Sha256Checksum { get; init; } = string.Empty;
 
+    /// <summary>Payload encoding (<see cref="VoiceTakeCodec"/>); missing in protocol v1 manifests, which always carried WAV.</summary>
+    [JsonPropertyName("codec")]
+    public string Codec { get; init; } = VoiceTakeCodec.Wav;
+
     public static VoiceTakeTransferManifest Create(
         string transferId,
         string voiceSlotId,
@@ -44,7 +48,8 @@ public sealed record VoiceTakeTransferManifest
         string senderName,
         byte[] audioData,
         float durationSeconds = 0f,
-        int chunkSize = DefaultChunkSizeBytes)
+        int chunkSize = DefaultChunkSizeBytes,
+        string codec = VoiceTakeCodec.Wav)
     {
         ArgumentNullException.ThrowIfNull(audioData);
 
@@ -63,6 +68,7 @@ public sealed record VoiceTakeTransferManifest
             TotalChunks = totalChunks,
             DurationSeconds = durationSeconds,
             Sha256Checksum = checksum,
+            Codec = codec,
         };
     }
 }

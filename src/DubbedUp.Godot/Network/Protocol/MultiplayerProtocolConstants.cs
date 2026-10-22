@@ -6,9 +6,11 @@ namespace DubbedUp.Godot.Network.Protocol;
 /// </summary>
 public static class MultiplayerProtocolConstants
 {
-    public const int CurrentProtocolVersion = 1;
+    // v2: voice take manifests carry a "codec" field and takes are Opus-encoded;
+    // v1 peers would store Opus bytes as WAV, so they are rejected.
+    public const int CurrentProtocolVersion = 2;
 
-    public const int MinProtocolVersion = 1;
+    public const int MinProtocolVersion = 2;
 
     public const int MaxPlayerNameLength = 32;
 

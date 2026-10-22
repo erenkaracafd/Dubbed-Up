@@ -8,20 +8,20 @@ public sealed class MultiplayerProtocolTests
     [Fact]
     public void HandshakeRequest_Serialization_And_Validation_RoundTrip_Succeeds()
     {
-        var msg = new HandshakeRequestMessage(1, "PlayerOne");
+        var msg = new HandshakeRequestMessage(MultiplayerProtocolConstants.CurrentProtocolVersion, "PlayerOne");
         var json = MultiplayerMessageSerializer.SerializeEnvelope(MultiplayerMessageType.HandshakeRequest, msg);
 
         var successEnvelope = MultiplayerMessageSerializer.TryDeserializeEnvelope(json, out var envelope, out var envError);
         Assert.True(successEnvelope, envError);
         Assert.NotNull(envelope);
         Assert.Equal(MultiplayerMessageType.HandshakeRequest, envelope.Type);
-        Assert.Equal(1, envelope.Version);
+        Assert.Equal(MultiplayerProtocolConstants.CurrentProtocolVersion, envelope.Version);
 
         var successPayload = MultiplayerMessageSerializer.TryDeserializePayload<HandshakeRequestMessage>(envelope.Payload, out var deserialized, out var payloadError);
         Assert.True(successPayload, payloadError);
         Assert.NotNull(deserialized);
         Assert.Equal("PlayerOne", deserialized.PlayerName);
-        Assert.Equal(1, deserialized.ClientProtocolVersion);
+        Assert.Equal(MultiplayerProtocolConstants.CurrentProtocolVersion, deserialized.ClientProtocolVersion);
 
         var isValid = MultiplayerMessageValidator.ValidateHandshakeRequest(deserialized, out var valError);
         Assert.True(isValid, valError);
@@ -34,11 +34,11 @@ public sealed class MultiplayerProtocolTests
         Assert.False(MultiplayerMessageValidator.ValidateHandshakeRequest(incompatibleMsg, out var verError));
         Assert.Contains("incompatible", verError, StringComparison.OrdinalIgnoreCase);
 
-        var oversizedMsg = new HandshakeRequestMessage(1, new string('A', MultiplayerProtocolConstants.MaxPlayerNameLength + 1));
+        var oversizedMsg = new HandshakeRequestMessage(MultiplayerProtocolConstants.CurrentProtocolVersion, new string('A', MultiplayerProtocolConstants.MaxPlayerNameLength + 1));
         Assert.False(MultiplayerMessageValidator.ValidateHandshakeRequest(oversizedMsg, out var nameError));
         Assert.Contains("exceeds maximum length", nameError, StringComparison.OrdinalIgnoreCase);
 
-        var emptyNameMsg = new HandshakeRequestMessage(1, "   ");
+        var emptyNameMsg = new HandshakeRequestMessage(MultiplayerProtocolConstants.CurrentProtocolVersion, "   ");
         Assert.False(MultiplayerMessageValidator.ValidateHandshakeRequest(emptyNameMsg, out var emptyError));
         Assert.Contains("cannot be empty", emptyError, StringComparison.OrdinalIgnoreCase);
     }

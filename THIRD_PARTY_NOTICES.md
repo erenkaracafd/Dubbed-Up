@@ -26,6 +26,7 @@ The following development/runtime dependencies are referenced by project files. 
 | Microsoft Visual C++ 2015-2022 Redistributable (x64) | Native runtime required by PyTorch on Windows | Microsoft Software License Terms |
 | Fredoka (variable, from google/fonts) | Display font for headings and buttons; bundled in `src/DubbedUp.Godot/Content/Fonts` | SIL Open Font License 1.1 (`Fredoka-OFL.txt`) |
 | Nunito (variable, from google/fonts) | Body/UI font; bundled in `src/DubbedUp.Godot/Content/Fonts` | SIL Open Font License 1.1 (`Nunito-OFL.txt`) |
+| Concentus 2.2.2 | Managed (pure C#) Opus encoder/decoder for compressing voice takes sent between players; the native libopus probe is disabled | BSD-3-Clause-style Opus license (see the package `LICENSE`) |
 | Lucide icons (lucide-static 0.460.0) | UI icon SVGs, recolored to white for tinting; bundled in `src/DubbedUp.Godot/Content/Icons` | ISC (`LICENSE-lucide.txt`) |
 
 Apart from the fonts and icons listed above, no third-party media is included. Official scene media requires separate provenance and commercial-rights approval under `docs/CONTENT_POLICY.md`.

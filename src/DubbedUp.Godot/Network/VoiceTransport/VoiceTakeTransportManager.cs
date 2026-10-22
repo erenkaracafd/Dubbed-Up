@@ -29,6 +29,7 @@ public partial class VoiceTakeTransportManager : Node
         string senderName,
         byte[] audioData,
         float durationSeconds = 0f,
+        string codec = VoiceTakeCodec.Wav,
         int chunkSize = VoiceTakeTransferManifest.DefaultChunkSizeBytes)
     {
         ArgumentNullException.ThrowIfNull(audioData);
@@ -41,7 +42,8 @@ public partial class VoiceTakeTransportManager : Node
             senderName,
             audioData,
             durationSeconds,
-            chunkSize);
+            chunkSize,
+            codec);
 
         var manifestJson = JsonSerializer.Serialize(manifest);
 
@@ -115,13 +117,29 @@ public partial class VoiceTakeTransportManager : Node
         {
             if (session.TryGetVerifiedAudio(out var verifiedAudio, out var verifyError))
             {
+                byte[] wav;
+                try
+                {
+                    wav = VoiceTakeCodec.DecodeToWav(verifiedAudio, session.Manifest.Codec);
+                }
+                catch (InvalidDataException ex)
+                {
+                    GD.PrintErr($"[VoiceTransport] Could not decode {transferId} ({session.Manifest.Codec}): {ex.Message}");
+                    EmitSignal(SignalName.TransferFailed, transferId, session.Manifest.VoiceSlotId, ex.Message);
+                    lock (_lock)
+                    {
+                        _activeTransfers.Remove(transferId);
+                    }
+                    return;
+                }
+
                 EmitSignal(
                     SignalName.TransferCompleted,
                     transferId,
                     session.Manifest.VoiceSlotId,
                     session.Manifest.SenderPeerId,
                     session.Manifest.SenderName,
-                    verifiedAudio);
+                    wav);
             }
             else
             {

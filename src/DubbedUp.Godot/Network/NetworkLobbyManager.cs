@@ -305,9 +305,19 @@ public partial class NetworkLobbyManager : Node
         Rpc(nameof(RpcStartGame), sceneId, SelectedSceneChecksum);
     }
 
-    public void BroadcastAudioTake(string voiceSlotId, byte[] audioData, float durationSeconds = 0f)
+    public async void BroadcastAudioTake(string voiceSlotId, byte[] audioData, float durationSeconds = 0f)
     {
-        _voiceTransport.SendVoiceTake(voiceSlotId, _localPlayerName, audioData, durationSeconds);
+        // Mic captures are stereo 48 kHz WAV; mono 24 kHz Opus is ~70x smaller and plenty for dialogue.
+        // Encoding takes ~0.1 s (longer on first use), so do it off the main thread; the await
+        // resumes on the main thread, where RPCs must be sent.
+        var (payload, codec) = await Task.Run(() => VoiceTakeCodec.EncodeForTransfer(audioData));
+        if (!IsInsideTree() || !IsConnectedToLobby)
+        {
+            return;
+        }
+
+        GD.Print($"[NetworkLobbyManager] Voice take {voiceSlotId}: {audioData.Length / 1024} KB -> {payload.Length / 1024.0:F1} KB ({codec})");
+        _voiceTransport.SendVoiceTake(voiceSlotId, _localPlayerName, payload, durationSeconds, codec);
     }
 
     public void StartClockSync() => _syncCoordinator.StartClockSync();
@@ -483,6 +493,12 @@ public partial class NetworkLobbyManager : Node
 
     private void OnVoiceTakeTransferCompleted(string transferId, string voiceSlotId, long senderPeerId, string senderName, byte[] audioData)
     {
+        // Transfers are also delivered locally (CallLocal); the sender keeps its lossless original instead.
+        if (senderPeerId == LocalPeerId)
+        {
+            return;
+        }
+
         EmitSignal(SignalName.AudioTakeReceived, voiceSlotId, senderName, audioData);
     }
 

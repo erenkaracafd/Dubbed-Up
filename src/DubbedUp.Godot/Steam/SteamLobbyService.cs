@@ -182,7 +182,7 @@ public sealed class SteamLobbyService : IDisposable
         }
 
         _currentLobbyId = new CSteamID(result.m_ulSteamIDLobby);
-        SetMetadata(SteamLobbyMetadata.ProtocolVersionKey, "1");
+        SetMetadata(SteamLobbyMetadata.ProtocolVersionKey, Network.Protocol.MultiplayerProtocolConstants.CurrentProtocolVersion.ToString());
         RefreshMembers();
     }
 
