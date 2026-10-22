@@ -92,6 +92,23 @@ public sealed class PlaybackReadyBarrier
         }
     }
 
+    /// <summary>
+    /// Clears every peer's readiness while keeping them registered, so the next round
+    /// (or replay) waits for fresh scene/take/clock reports instead of starting at once.
+    /// </summary>
+    public void ClearReadiness()
+    {
+        lock (_lock)
+        {
+            foreach (var state in _peerStates.Values)
+            {
+                state.SceneReady = false;
+                state.TakesReady = false;
+                state.ClockSynced = false;
+            }
+        }
+    }
+
     public IReadOnlyList<long> GetUnreadyPeers()
     {
         lock (_lock)

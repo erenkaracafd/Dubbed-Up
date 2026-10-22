@@ -320,6 +320,16 @@ public partial class NetworkLobbyManager : Node
         _voiceTransport.SendVoiceTake(voiceSlotId, _localPlayerName, payload, durationSeconds, codec);
     }
 
+    /// <summary>The local player's lobby name, or null when not connected.</summary>
+    public string? LocalPlayerName =>
+        IsConnectedToLobby && _players.TryGetValue(LocalPeerId, out var me) ? me.PlayerName : null;
+
+    /// <summary>Number of other connected peers (0 when playing alone or offline).</summary>
+    public int RemotePeerCount => IsConnectedToLobby ? Multiplayer.GetPeers().Length : 0;
+
+    /// <summary>Host only: every remote peer has the scene, all takes and a synced clock.</summary>
+    public bool IsPlaybackBarrierReady => _syncCoordinator.ReadyBarrier.IsAllReady;
+
     public void StartClockSync() => _syncCoordinator.StartClockSync();
 
     public void ReportSceneReady(string sceneId) => _syncCoordinator.ReportSceneReady(sceneId);

@@ -75,6 +75,23 @@ public sealed class PlaybackSyncTests
     }
 
     [Fact]
+    public void ReadyBarrier_ClearReadiness_Requires_Fresh_Reports_For_Next_Round()
+    {
+        var barrier = new PlaybackReadyBarrier();
+        barrier.RegisterPeer(2);
+        barrier.SetPeerSceneReady(2, true);
+        barrier.SetPeerTakesReady(2, true);
+        barrier.SetPeerClockSynced(2, true);
+        Assert.True(barrier.IsAllReady);
+
+        barrier.ClearReadiness();
+
+        Assert.Equal(1, barrier.RegisteredPeerCount); // still registered
+        Assert.False(barrier.IsAllReady);
+        Assert.Contains(2, barrier.GetUnreadyPeers());
+    }
+
+    [Fact]
     public void ScheduledPlaybackCommand_Serialization_RoundTrip_Succeeds()
     {
         var cmd = new ScheduledPlaybackCommand

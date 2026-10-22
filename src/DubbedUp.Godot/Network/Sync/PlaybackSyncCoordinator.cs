@@ -113,6 +113,9 @@ public partial class PlaybackSyncCoordinator : Node
 
         var commandJson = JsonSerializer.Serialize(command);
         Rpc(nameof(RpcSchedulePlaybackStart), commandJson);
+
+        // This start consumed everyone's readiness; the next one needs new reports.
+        _readyBarrier.ClearReadiness();
         return true;
     }
 

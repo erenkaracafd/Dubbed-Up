@@ -55,9 +55,46 @@ public partial class RecordingScreen : BaseScreen
     public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
     {
         base.Initialize(navigator, coordinator);
+
+        // _Ready runs before Initialize (Navigator is still null there), so hook the lobby here.
+        if (navigator is LocalNavigationController navCtrl && _lobbyManager is null)
+        {
+            _lobbyManager = navCtrl.LobbyManager;
+            if (_lobbyManager.IsConnectedToLobby)
+            {
+                _lobbyManager.AudioTakeReceived += OnRemoteAudioTakeReceived;
+            }
+        }
+
         LoadGameplaySettings();
         LoadSceneVideo();
         UpdateUiState();
+    }
+
+    /// <summary>
+    /// Indices into the scene's voice slots that the local player records. Offline (local party)
+    /// everyone shares this screen, so all slots are returned; online only our own characters' lines.
+    /// </summary>
+    private List<int> GetMySlotIndices()
+    {
+        var slots = Coordinator?.CurrentScene?.VoiceSlots;
+        if (slots is null) return [];
+
+        var all = Enumerable.Range(0, slots.Count).ToList();
+        var localName = _lobbyManager?.LocalPlayerName;
+        if (localName is null || Coordinator?.ActiveRound is null || Coordinator.CurrentSession is null)
+        {
+            return all;
+        }
+
+        var assignments = Coordinator.ActiveRound.GetVoiceSlotAssignments();
+        var players = Coordinator.CurrentSession.Players;
+        return all.Where(i =>
+        {
+            var assignment = assignments.FirstOrDefault(a => a.VoiceSlotId == slots[i].VoiceSlotId);
+            var player = players.FirstOrDefault(p => p.PlayerId == assignment?.PlayerId);
+            return player is not null && string.Equals(player.DisplayName, localName, StringComparison.OrdinalIgnoreCase);
+        }).ToList();
     }
 
     private void LoadGameplaySettings()
@@ -122,15 +159,6 @@ public partial class RecordingScreen : BaseScreen
 
         _previewPlayer = new AudioStreamPlayer();
         AddChild(_previewPlayer);
-
-        if (Navigator is LocalNavigationController navCtrl)
-        {
-            _lobbyManager = navCtrl.LobbyManager;
-            if (_lobbyManager.IsConnectedToLobby)
-            {
-                _lobbyManager.AudioTakeReceived += OnRemoteAudioTakeReceived;
-            }
-        }
 
         if (_previewOriginalButton is not null) SetupButton(_previewOriginalButton, OnPreviewOriginalPressed);
         if (_recordButton is not null) SetupButton(_recordButton, OnRecordButtonPressed);
@@ -389,7 +417,25 @@ public partial class RecordingScreen : BaseScreen
         var voiceSlots = Coordinator.CurrentScene.VoiceSlots;
         if (voiceSlots.Count == 0) return;
 
-        _currentSlotIndex = Math.Clamp(_currentSlotIndex, 0, voiceSlots.Count - 1);
+        var mySlots = GetMySlotIndices();
+        var allDone = voiceSlots.All(s => Coordinator.TakeStore.HasTakeForSlot(s.VoiceSlotId));
+        if (_proceedButton is not null)
+        {
+            _proceedButton.Visible = allDone;
+            _proceedButton.Text = "Watch Dub";
+        }
+
+        if (mySlots.Count == 0)
+        {
+            ShowNoLinesState(allDone);
+            return;
+        }
+
+        if (!mySlots.Contains(_currentSlotIndex))
+        {
+            _currentSlotIndex = mySlots[0];
+        }
+        var myPosition = mySlots.IndexOf(_currentSlotIndex);
         var currentSlot = voiceSlots[_currentSlotIndex];
 
         // Resolve timeline entry & durations
@@ -415,7 +461,7 @@ public partial class RecordingScreen : BaseScreen
 
         if (_slotInfoLabel is not null)
         {
-            _slotInfoLabel.Text = $"{_currentSlotIndex + 1} / {voiceSlots.Count} · {charName} ({playerName}) · {_maxSlotDuration:F1}s";
+            _slotInfoLabel.Text = $"{myPosition + 1} / {mySlots.Count} · {charName} ({playerName}) · {_maxSlotDuration:F1}s";
         }
 
         if (_promptSubtitleLabel is not null)
@@ -435,6 +481,7 @@ public partial class RecordingScreen : BaseScreen
         if (_previewOriginalButton is not null) _previewOriginalButton.Visible = true;
         if (_recordButton is not null)
         {
+            _recordButton.Visible = true;
             if (isRecorded)
             {
                 _recordButton.Text = "Retake";
@@ -450,24 +497,42 @@ public partial class RecordingScreen : BaseScreen
         if (_reRecordButton is not null) _reRecordButton.Visible = isRecorded;
         if (_prevSlotButton is not null)
         {
-            _prevSlotButton.Visible = _currentSlotIndex > 0;
+            _prevSlotButton.Visible = myPosition > 0;
         }
         if (_nextSlotButton is not null)
         {
-            _nextSlotButton.Visible = isRecorded && _currentSlotIndex < voiceSlots.Count - 1;
-        }
-
-        var allDone = voiceSlots.All(s => Coordinator.TakeStore.HasTakeForSlot(s.VoiceSlotId));
-        if (_proceedButton is not null)
-        {
-            _proceedButton.Visible = allDone;
-            _proceedButton.Text = "Watch Dub";
+            _nextSlotButton.Visible = isRecorded && myPosition < mySlots.Count - 1;
         }
 
         if (_statusLabel is not null)
         {
-            _statusLabel.Text = isRecorded ? "Take saved" : string.Empty;
+            var mineDone = mySlots.All(i => Coordinator.TakeStore.HasTakeForSlot(voiceSlots[i].VoiceSlotId));
+            _statusLabel.Text = mineDone && !allDone
+                ? WaitingForOthersText(voiceSlots)
+                : isRecorded ? "Take saved" : string.Empty;
         }
+    }
+
+    /// <summary>Online player without lines in this scene: nothing to record, just wait for the others.</summary>
+    private void ShowNoLinesState(bool allDone)
+    {
+        foreach (var button in new[] { _previewOriginalButton, _recordButton, _previewTakeButton, _reRecordButton, _prevSlotButton, _nextSlotButton })
+        {
+            if (button is not null) button.Visible = false;
+        }
+
+        if (_slotInfoLabel is not null) _slotInfoLabel.Text = "No lines for you in this scene";
+        if (_promptSubtitleLabel is not null) _promptSubtitleLabel.Text = string.Empty;
+        if (_statusLabel is not null && Coordinator?.CurrentScene is not null)
+        {
+            _statusLabel.Text = allDone ? string.Empty : WaitingForOthersText(Coordinator.CurrentScene.VoiceSlots);
+        }
+    }
+
+    private string WaitingForOthersText(IReadOnlyList<DubbedUp.Core.Characters.VoiceSlotDefinition> voiceSlots)
+    {
+        var missing = voiceSlots.Count(s => Coordinator?.TakeStore.HasTakeForSlot(s.VoiceSlotId) != true);
+        return missing == 1 ? "Waiting for 1 line from the others" : $"Waiting for {missing} lines from the others";
     }
 
     private string? FindVocalsWavPath()
@@ -862,9 +927,11 @@ public partial class RecordingScreen : BaseScreen
         if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
 
-        if (_currentSlotIndex > 0)
+        var mySlots = GetMySlotIndices();
+        var position = mySlots.IndexOf(_currentSlotIndex);
+        if (position > 0)
         {
-            _currentSlotIndex--;
+            _currentSlotIndex = mySlots[position - 1];
             if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
             UpdateUiState();
         }
@@ -876,9 +943,11 @@ public partial class RecordingScreen : BaseScreen
         if (_previewPlayer is not null && _previewPlayer.Playing) _previewPlayer.Stop();
         if (_videoPlayer is not null && _videoPlayer.IsPlaying()) _videoPlayer.Stop();
 
-        if (Coordinator?.CurrentScene is not null && _currentSlotIndex < Coordinator.CurrentScene.VoiceSlots.Count - 1)
+        var mySlots = GetMySlotIndices();
+        var position = mySlots.IndexOf(_currentSlotIndex);
+        if (position >= 0 && position < mySlots.Count - 1)
         {
-            _currentSlotIndex++;
+            _currentSlotIndex = mySlots[position + 1];
             if (_syncScoreLabel is not null) _syncScoreLabel.Visible = false;
             UpdateUiState();
         }
@@ -890,7 +959,9 @@ public partial class RecordingScreen : BaseScreen
 
         try
         {
-            var takeId = $"take-remote-{slotId}-{senderPlayerId}";
+            // Unique per transfer: a retake from the same player must become the slot's new latest take
+            // instead of colliding with the previous take id and being rejected.
+            var takeId = $"take-remote-{slotId}-{Guid.NewGuid():N}";
             var userDir = ProjectSettings.GlobalizePath("user://recordings");
             if (!System.IO.Directory.Exists(userDir))
             {
@@ -903,10 +974,25 @@ public partial class RecordingScreen : BaseScreen
             var relativePath = $"user://recordings/{takeId}.wav";
             var roundId = Coordinator.ActiveRound?.RoundId ?? "round-1";
             var characterId = Coordinator.CurrentScene?.VoiceSlots.FirstOrDefault(s => s.VoiceSlotId == slotId)?.CharacterId ?? "char-1";
-            var remoteTake = new VoiceTake(takeId, slotId, senderPlayerId, characterId, roundId, relativePath, 3000, DateTimeOffset.UtcNow);
+
+            // The transport identifies senders by lobby name; takes are keyed by session player id.
+            var playerId = Coordinator.CurrentSession?.Players
+                .FirstOrDefault(p => string.Equals(p.DisplayName, senderPlayerId, StringComparison.OrdinalIgnoreCase))?.PlayerId
+                ?? senderPlayerId;
+
+            var durationMs = 3000;
+            if (VoiceTakeAudioCompactor.TryReadPcm16(audioBytes, out var rate, out var channels, out var pcm) && rate > 0)
+            {
+                durationMs = Math.Max(1, (int)(pcm.Length * 1000L / (rate * channels * 2L)));
+            }
+
+            var remoteTake = new VoiceTake(takeId, slotId, playerId, characterId, roundId, relativePath, durationMs, DateTimeOffset.UtcNow);
 
             Coordinator.TakeStore.AddTake(remoteTake);
-            Coordinator.ActiveRound?.MarkVoiceSlotRecorded(slotId);
+            if (Coordinator.ActiveRound is not null && !Coordinator.ActiveRound.RecordedVoiceSlotIds.Contains(slotId))
+            {
+                Coordinator.ActiveRound.MarkVoiceSlotRecorded(slotId);
+            }
 
             CallDeferred(nameof(UpdateUiState));
         }

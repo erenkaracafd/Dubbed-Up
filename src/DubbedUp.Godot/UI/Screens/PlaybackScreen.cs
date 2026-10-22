@@ -20,10 +20,89 @@ public partial class PlaybackScreen : BaseScreen
     private Button? _proceedButton;
     private Button? _menuButton;
 
+    // Online synced start: wait until the host schedules a common start time.
+    private const double SyncTimeoutSeconds = 20.0;
+    private Network.NetworkLobbyManager? _lobbyManager;
+    private UI.Controls.BusyOverlay? _syncOverlay;
+    private bool _waitingForSync;
+    private bool _startScheduled;
+    private double _syncWaitSeconds;
+
     public override void Initialize(IScreenNavigator navigator, LocalSessionCoordinator coordinator)
     {
         base.Initialize(navigator, coordinator);
+        if (navigator is LocalNavigationController navCtrl)
+        {
+            _lobbyManager = navCtrl.LobbyManager;
+        }
         StartPlaybackSession();
+    }
+
+    public override void _ExitTree()
+    {
+        if (_lobbyManager is not null)
+        {
+            _lobbyManager.PlaybackStartTriggered -= OnSyncedPlaybackStart;
+            _lobbyManager.PlaybackScheduled -= OnSyncedPlaybackScheduled;
+        }
+    }
+
+    private bool IsOnlineSession => _lobbyManager is { IsConnectedToLobby: true, RemotePeerCount: > 0 };
+
+    /// <summary>
+    /// Every peer reports scene + takes ready and syncs its clock with the host; the host then
+    /// schedules a start time a moment ahead and all players begin together.
+    /// </summary>
+    private void BeginSyncedStart()
+    {
+        if (_lobbyManager is null || Coordinator?.CurrentScene is null) return;
+
+        _waitingForSync = true;
+        _startScheduled = false;
+        _syncWaitSeconds = 0;
+        _syncOverlay = UI.Controls.BusyOverlay.Open(this, "Getting everyone ready", "Waiting for all players to finish loading.");
+
+        _lobbyManager.PlaybackStartTriggered += OnSyncedPlaybackStart;
+        _lobbyManager.PlaybackScheduled += OnSyncedPlaybackScheduled;
+
+        _lobbyManager.StartClockSync();
+        _lobbyManager.ReportSceneReady(Coordinator.CurrentScene.SceneId);
+        _lobbyManager.ReportTakesReady(); // Watch Dub only appears once every slot has a take
+    }
+
+    private void UpdateSyncedStart(double delta)
+    {
+        if (!_waitingForSync || _lobbyManager is null) return;
+
+        _syncWaitSeconds += delta;
+        if (_lobbyManager.IsHost && !_startScheduled && _lobbyManager.IsPlaybackBarrierReady && Coordinator?.CurrentScene is not null)
+        {
+            _startScheduled = _lobbyManager.HostSchedulePlayback(Coordinator.CurrentScene.SceneId);
+        }
+
+        if (_syncWaitSeconds > SyncTimeoutSeconds)
+        {
+            StartPlaybackNow("Couldn't sync with everyone; playing here.");
+        }
+    }
+
+    private void OnSyncedPlaybackScheduled(string sceneId, string idempotencyToken, float delaySeconds)
+    {
+        _syncOverlay?.SetDetail("Starting together...");
+    }
+
+    private void OnSyncedPlaybackStart(string sceneId, string idempotencyToken)
+    {
+        if (_waitingForSync) StartPlaybackNow(string.Empty);
+    }
+
+    private void StartPlaybackNow(string status)
+    {
+        _waitingForSync = false;
+        _syncOverlay?.Close();
+        _syncOverlay = null;
+        _scenePlayer?.Play();
+        UpdateStatusText(status);
     }
 
     public override void _Ready()
@@ -61,6 +140,8 @@ public partial class PlaybackScreen : BaseScreen
 
     public override void _Process(double delta)
     {
+        UpdateSyncedStart(delta);
+
         if (_scenePlayer is not null && _videoContainer is not null)
         {
             var tex = _scenePlayer.GetVideoTexture();
@@ -96,6 +177,12 @@ public partial class PlaybackScreen : BaseScreen
             else
             {
                 _scenePlayer.SetDuration(8.0);
+            }
+
+            if (IsOnlineSession)
+            {
+                BeginSyncedStart();
+                return;
             }
 
             _scenePlayer.Play();
