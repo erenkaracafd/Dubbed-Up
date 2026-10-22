@@ -37,6 +37,7 @@ public partial class SceneEditorScreen : BaseScreen
     private double _previewEndSec = 0.0;
     private bool _isSliderDragging = false;
     private bool _isPlaying = false;
+    private bool _isDetecting = false;
     private double _totalDuration = 22.0;
 
     private float[]? _currentWaveform;
@@ -57,11 +58,18 @@ public partial class SceneEditorScreen : BaseScreen
     {
         base.Initialize(navigator, coordinator);
         LoadSceneData();
+
+        // Dev aid alongside --start-screen: `-- --start-screen=SceneEditor --start-scene=<id> --auto-detect`.
+        if (OS.GetCmdlineUserArgs().Contains("--auto-detect"))
+        {
+            Callable.From(OnAutoDetectPressed).CallDeferred();
+        }
     }
 
     public override void _Ready()
     {
         BuildLayout();
+        LocalAiSceneExtractor.WarmUpWhisper();
 
         if (Coordinator is not null)
         {
@@ -803,18 +811,48 @@ public partial class SceneEditorScreen : BaseScreen
 
     // ───────────────────────── Line editing ─────────────────────────
 
-    private void OnAutoDetectPressed()
+    private async void OnAutoDetectPressed()
     {
-        if (string.IsNullOrEmpty(_currentWavPath) || !System.IO.File.Exists(_currentWavPath))
-        {
-            var folderPath = Coordinator?.SelectedScenePackage?.PackageDirectory;
-            if (!string.IsNullOrEmpty(folderPath))
-            {
-                _currentWavPath = VideoPlayback.MediaTranscoder.EnsureAudioExtracted(folderPath);
-            }
-        }
+        if (_isDetecting) return;
+        _isDetecting = true;
+        PauseVideo();
 
-        if (string.IsNullOrEmpty(_currentWavPath) || !System.IO.File.Exists(_currentWavPath))
+        var packageDir = Coordinator?.SelectedScenePackage?.PackageDirectory;
+        var wavPath = _currentWavPath;
+        var overlay = BusyOverlay.Open(this, "Detecting lines", "Listening to the dialogue and writing subtitles.");
+
+        // Audio extraction and Whisper both run external processes; keep them off the main thread.
+        var (resolvedWav, detected) = await System.Threading.Tasks.Task.Run(() =>
+        {
+            if ((string.IsNullOrEmpty(wavPath) || !System.IO.File.Exists(wavPath)) && !string.IsNullOrEmpty(packageDir))
+            {
+                wavPath = VideoPlayback.MediaTranscoder.EnsureAudioExtracted(packageDir);
+            }
+
+            if (string.IsNullOrEmpty(wavPath) || !System.IO.File.Exists(wavPath))
+            {
+                return (wavPath, (IReadOnlyList<DubbedUp.Core.Ai.DetectedSpeechSegment>?)null);
+            }
+
+            // Prioritize isolated vocals.wav stem if available for clean speech recognition
+            if (!string.IsNullOrEmpty(packageDir))
+            {
+                var vocalsWav = System.IO.Path.Combine(packageDir, "media", "vocals.wav");
+                if (System.IO.File.Exists(vocalsWav))
+                {
+                    wavPath = vocalsWav;
+                }
+            }
+
+            return (wavPath, LocalAiSceneExtractor.DetectSpeechFromWavFile(wavPath, maxSlots: 30));
+        });
+
+        overlay.Close();
+        _isDetecting = false;
+        if (!IsInsideTree()) return;
+
+        _currentWavPath = resolvedWav;
+        if (detected is null)
         {
             if (_statusLabel is not null)
             {
@@ -823,18 +861,6 @@ public partial class SceneEditorScreen : BaseScreen
             return;
         }
 
-        // Prioritize isolated vocals.wav stem if available for clean speech recognition
-        var packageDir = Coordinator?.SelectedScenePackage?.PackageDirectory;
-        if (!string.IsNullOrEmpty(packageDir))
-        {
-            var vocalsWav = System.IO.Path.Combine(packageDir, "media", "vocals.wav");
-            if (System.IO.File.Exists(vocalsWav))
-            {
-                _currentWavPath = vocalsWav;
-            }
-        }
-
-        var detected = LocalAiSceneExtractor.DetectSpeechFromWavFile(_currentWavPath, maxSlots: 30);
         if (detected.Count == 0)
         {
             if (_statusLabel is not null)

@@ -400,6 +400,8 @@ public partial class SceneCreatorScreen : BaseScreen
             _statusInfoLabel.Text = string.Empty;
         }
 
+        var overlay = Controls.BusyOverlay.Open(this, "Importing video", "Converting the video and separating the voices from the background.");
+
         try
         {
             long durationMs = 20000;
@@ -469,6 +471,8 @@ public partial class SceneCreatorScreen : BaseScreen
                 GD.Print($"[SceneCreator] Custom scene package created: {jsonFilePath}");
             });
 
+            overlay.Close();
+
             // Load new package into session coordinator
             if (Coordinator is not null)
             {
@@ -481,6 +485,7 @@ public partial class SceneCreatorScreen : BaseScreen
         }
         catch (Exception ex)
         {
+            overlay.Close();
             if (_errorLabel is not null)
             {
                 _errorLabel.Text = $"Import failed: {ex.Message}";

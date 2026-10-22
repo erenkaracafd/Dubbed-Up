@@ -227,6 +227,7 @@ public partial class ResultsScreen : BaseScreen
             _exportButton.Text = "Exporting...";
         }
 
+        var overlay = UI.Controls.BusyOverlay.Open(this, "Exporting video", "Mixing your voices into the scene.");
         try
         {
             var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
@@ -234,10 +235,9 @@ public partial class ResultsScreen : BaseScreen
                 Coordinator.CurrentScene,
                 folderPath,
                 Coordinator.TakeStore,
-                status =>
-                {
-                    SetStandings(status);
-                });
+                overlay.SetDetail); // invoked on the export thread; SetDetail marshals to the main thread
+
+            overlay.Close();
 
             if (_exportButton is not null)
             {
@@ -247,7 +247,7 @@ public partial class ResultsScreen : BaseScreen
 
             if (!string.IsNullOrEmpty(exportedFile) && System.IO.File.Exists(exportedFile))
             {
-                SetStandings($"Saved {System.IO.Path.GetFileName(exportedFile)}");
+                if (_exportButton is not null) _exportButton.Text = "Saved";
                 OS.ShellOpen(System.IO.Path.GetDirectoryName(exportedFile) ?? exportedFile);
             }
             else
@@ -257,6 +257,7 @@ public partial class ResultsScreen : BaseScreen
         }
         catch (Exception ex)
         {
+            overlay.Close();
             ShowError($"Export failed: {ex.Message}");
             if (_exportButton is not null)
             {

@@ -96,6 +96,11 @@ public partial class LocalNavigationController : Node, IScreenNavigator
     private static string? GetUserArg(string prefix) =>
         OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith(prefix, StringComparison.Ordinal))?[prefix.Length..];
 
+    public override void _ExitTree()
+    {
+        Ai.WhisperWorker.Stop();
+    }
+
     public void NavigateTo(AppScreen screen)
     {
         if (_screenContainer is null)

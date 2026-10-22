@@ -256,16 +256,16 @@ public partial class PlaybackScreen : BaseScreen
         }
 
         UpdateStatusText(string.Empty);
+        var overlay = UI.Controls.BusyOverlay.Open(this, "Exporting video", "Mixing your voices into the scene.");
 
         var folderPath = Coordinator.SelectedScenePackage?.PackageDirectory;
         var exportedFile = await VideoDubExporter.ExportDubbedVideoAsync(
             Coordinator.CurrentScene,
             folderPath,
             Coordinator.TakeStore,
-            status =>
-            {
-                UpdateStatusText(status);
-            });
+            overlay.SetDetail); // invoked on the export thread; SetDetail marshals to the main thread
+
+        overlay.Close();
 
         if (_exportButton is not null)
         {

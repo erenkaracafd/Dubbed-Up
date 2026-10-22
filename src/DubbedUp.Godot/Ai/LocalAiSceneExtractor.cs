@@ -124,26 +124,34 @@ public static class LocalAiSceneExtractor
         {
             if (string.IsNullOrWhiteSpace(wavFilePath) || !System.IO.File.Exists(wavFilePath)) return null;
 
-            // Find whisper_transcribe.py
-            var possiblePaths = new[]
-            {
-                ProjectSettings.GlobalizePath("res://Scripts/whisper_transcribe.py"),
-                System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "whisper_transcribe.py"),
-                System.IO.Path.GetFullPath("src/DubbedUp.Godot/Scripts/whisper_transcribe.py"),
-                System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "src", "DubbedUp.Godot", "Scripts", "whisper_transcribe.py")
-            };
+            var scriptPath = ResolveWhisperScript();
+            if (scriptPath is null) return null;
 
-            string? scriptPath = null;
-            foreach (var p in possiblePaths)
+            var model = ExternalToolLocator.ResolveWhisperModel();
+            var cachePath = GetWhisperCachePath(wavFilePath, model);
+            if (cachePath is not null && System.IO.File.Exists(cachePath))
             {
-                if (System.IO.File.Exists(p))
+                var cached = ParseWhisperJson(System.IO.File.ReadAllText(cachePath), maxSlots);
+                if (cached.Count > 0)
                 {
-                    scriptPath = p;
-                    break;
+                    GD.Print($"[LocalAiSceneExtractor] Reused cached Whisper result ({cached.Count} lines).");
+                    return cached;
                 }
             }
 
-            if (scriptPath is null) return null;
+            // Fast path: the warm worker already has torch and the model loaded.
+            var workerJson = WhisperWorker.Transcribe(scriptPath, wavFilePath, TimeSpan.FromSeconds(120));
+            if (workerJson is not null)
+            {
+                var workerSegments = ParseWhisperJson(workerJson, maxSlots);
+                if (workerSegments.Count > 0)
+                {
+                    SaveWhisperCache(cachePath, workerJson);
+                    GD.Print($"[LocalAiSceneExtractor] Whisper worker extracted {workerSegments.Count} lines.");
+                    return workerSegments;
+                }
+                return null; // worker ran fine but heard no speech; don't pay for a second run
+            }
 
             var psi = new System.Diagnostics.ProcessStartInfo
             {
@@ -159,7 +167,7 @@ public static class LocalAiSceneExtractor
             // Force Python to run in full UTF-8 mode on Windows for Turkish characters (ç, ğ, ı, ö, ş, ü, vb.)
             psi.EnvironmentVariables["PYTHONUTF8"] = "1";
             psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
-            psi.EnvironmentVariables["DUBBEDUP_WHISPER_MODEL"] = ExternalToolLocator.ResolveWhisperModel();
+            psi.EnvironmentVariables["DUBBEDUP_WHISPER_MODEL"] = model;
             ExternalToolLocator.AddFfmpegToPath(psi);
             psi.ArgumentList.Add(scriptPath);
             psi.ArgumentList.Add(wavFilePath);
@@ -192,33 +200,11 @@ public static class LocalAiSceneExtractor
             if (startIdx >= 0 && endIdx > startIdx)
             {
                 var json = stdout.Substring(startIdx + 24, endIdx - (startIdx + 24)).Trim();
-                var jsonDoc = System.Text.Json.JsonDocument.Parse(json);
-                var segments = new List<DetectedSpeechSegment>();
-                int speakerIdx = 0;
-
-                foreach (var el in jsonDoc.RootElement.EnumerateArray())
-                {
-                    if (segments.Count >= maxSlots) break;
-
-                    long startMs = el.GetProperty("startMs").GetInt64();
-                    long endMs = el.GetProperty("endMs").GetInt64();
-                    string text = el.GetProperty("text").GetString()?.Trim() ?? string.Empty;
-
-                    if (!string.IsNullOrWhiteSpace(text) && endMs > startMs)
-                    {
-                        var speakerNum = (speakerIdx % 2) + 1;
-                        segments.Add(new DetectedSpeechSegment(
-                            $"char-{speakerNum}",
-                            $"Character {speakerNum}",
-                            text,
-                            startMs,
-                            endMs));
-                        speakerIdx++;
-                    }
-                }
+                var segments = ParseWhisperJson(json, maxSlots);
 
                 if (segments.Count > 0)
                 {
+                    SaveWhisperCache(cachePath, json);
                     GD.Print($"[LocalAiSceneExtractor] Whisper extracted {segments.Count} spoken subtitle lines!");
                     return segments;
                 }
@@ -230,6 +216,89 @@ public static class LocalAiSceneExtractor
         }
 
         return null;
+    }
+
+    /// <summary>Starts the background Whisper worker so the first auto-detect doesn't pay the start-up cost.</summary>
+    public static void WarmUpWhisper()
+    {
+        var scriptPath = ResolveWhisperScript();
+        if (scriptPath is not null) WhisperWorker.WarmUp(scriptPath);
+    }
+
+    private static string? ResolveWhisperScript()
+    {
+        var possiblePaths = new[]
+        {
+            ProjectSettings.GlobalizePath("res://Scripts/whisper_transcribe.py"),
+            System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scripts", "whisper_transcribe.py"),
+            System.IO.Path.GetFullPath("src/DubbedUp.Godot/Scripts/whisper_transcribe.py"),
+            System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "src", "DubbedUp.Godot", "Scripts", "whisper_transcribe.py")
+        };
+
+        return possiblePaths.FirstOrDefault(System.IO.File.Exists);
+    }
+
+    private static void SaveWhisperCache(string? cachePath, string json)
+    {
+        if (cachePath is null) return;
+        try
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(cachePath)!);
+            System.IO.File.WriteAllText(cachePath, json);
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[LocalAiSceneExtractor] Could not cache Whisper result: {ex.Message}");
+        }
+    }
+
+    private static List<DetectedSpeechSegment> ParseWhisperJson(string json, int maxSlots)
+    {
+        var segments = new List<DetectedSpeechSegment>();
+        using var jsonDoc = System.Text.Json.JsonDocument.Parse(json);
+        int speakerIdx = 0;
+
+        foreach (var el in jsonDoc.RootElement.EnumerateArray())
+        {
+            if (segments.Count >= maxSlots) break;
+
+            long startMs = el.GetProperty("startMs").GetInt64();
+            long endMs = el.GetProperty("endMs").GetInt64();
+            string text = el.GetProperty("text").GetString()?.Trim() ?? string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(text) && endMs > startMs)
+            {
+                var speakerNum = (speakerIdx % 2) + 1;
+                segments.Add(new DetectedSpeechSegment(
+                    $"char-{speakerNum}",
+                    $"Character {speakerNum}",
+                    text,
+                    startMs,
+                    endMs));
+                speakerIdx++;
+            }
+        }
+
+        return segments;
+    }
+
+    /// <summary>
+    /// Cache file for a transcription, keyed by audio path, size, modification time and model,
+    /// so re-running auto-detect on unchanged audio is instant.
+    /// </summary>
+    private static string? GetWhisperCachePath(string wavFilePath, string model)
+    {
+        try
+        {
+            var info = new System.IO.FileInfo(wavFilePath);
+            var key = $"{info.FullName}|{info.Length}|{info.LastWriteTimeUtc.Ticks}|{model}";
+            var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key)))[..24];
+            return System.IO.Path.Combine(ProjectSettings.GlobalizePath("user://cache/whisper"), $"{hash}.json");
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
