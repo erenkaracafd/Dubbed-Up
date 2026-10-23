@@ -233,6 +233,76 @@ public static class UiKit
         input.AddThemeFontSizeOverride("font_size", 15);
     }
 
+    /// <summary>Pill-shaped dropdown matching the inputs.</summary>
+    public static void StyleOptionButton(OptionButton button)
+    {
+        StyleBoxFlat Make(Color bg, Color border) => new()
+        {
+            BgColor = bg,
+            CornerRadiusTopLeft = 21,
+            CornerRadiusTopRight = 21,
+            CornerRadiusBottomLeft = 21,
+            CornerRadiusBottomRight = 21,
+            CornerDetail = 12,
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            BorderColor = border,
+            ContentMarginLeft = 18,
+            ContentMarginRight = 14,
+            AntiAliasing = true,
+        };
+
+        button.AddThemeStyleboxOverride("normal", Make(Soft, Line));
+        button.AddThemeStyleboxOverride("hover", Make(Colors.White, Lilac));
+        button.AddThemeStyleboxOverride("pressed", Make(Soft, Lilac));
+        button.AddThemeStyleboxOverride("focus", Make(new Color(1, 1, 1, 0), Lilac with { A = 0.5f }));
+        foreach (var name in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_focus_color" })
+        {
+            button.AddThemeColorOverride(name, Ink);
+        }
+        button.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+    }
+
+    /// <summary>Thin rounded slider with a colored fill and a round white-ringed knob.</summary>
+    public static void StyleSlider(HSlider slider, Color color)
+    {
+        var track = RoundedBox(new Color(0.88f, 0.90f, 0.96f), 3);
+        track.ContentMarginTop = 3;
+        track.ContentMarginBottom = 3;
+        var fill = RoundedBox(color, 3);
+        fill.ContentMarginTop = 3;
+        fill.ContentMarginBottom = 3;
+        slider.AddThemeStyleboxOverride("slider", track);
+        slider.AddThemeStyleboxOverride("grabber_area", fill);
+        slider.AddThemeStyleboxOverride("grabber_area_highlight", fill);
+
+        var knob = CreateKnobTexture(color);
+        slider.AddThemeIconOverride("grabber", knob);
+        slider.AddThemeIconOverride("grabber_highlight", knob);
+        slider.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+    }
+
+    private static ImageTexture CreateKnobTexture(Color color)
+    {
+        const int size = 18;
+        var image = Image.CreateEmpty(size, size, false, Image.Format.Rgba8);
+        var center = new Vector2(size / 2f - 0.5f, size / 2f - 0.5f);
+        for (var y = 0; y < size; y++)
+        {
+            for (var x = 0; x < size; x++)
+            {
+                var d = new Vector2(x, y).DistanceTo(center);
+                var outer = Mathf.Clamp(size / 2f - d, 0, 1);       // anti-aliased white ring
+                var inner = Mathf.Clamp(size / 2f - 3 - d, 0, 1);   // coloured core
+                var pixel = Colors.White.Lerp(color, inner);
+                image.SetPixel(x, y, pixel with { A = outer });
+            }
+        }
+        return ImageTexture.CreateFromImage(image);
+    }
+
     public static void StyleScrollBar(ScrollBar bar)
     {
         StyleBoxFlat Grabber(float alpha) => new()

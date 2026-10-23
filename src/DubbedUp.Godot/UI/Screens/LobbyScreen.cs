@@ -285,7 +285,7 @@ public partial class LobbyScreen : BaseScreen
 
         _sceneOptionButton = new OptionButton { CustomMinimumSize = new Vector2(0, 42), FitToLongestItem = false };
         _sceneOptionButton.AddThemeFontSizeOverride("font_size", 14);
-        StyleOptionButton(_sceneOptionButton);
+        UiKit.StyleOptionButton(_sceneOptionButton);
         _sceneOptionButton.ItemSelected += OnSceneOptionSelected;
         sceneInfo.AddChild(_sceneOptionButton);
 
@@ -1079,36 +1079,5 @@ public partial class LobbyScreen : BaseScreen
                 _statusLabel.Text = $"Launch error: {ex.Message}";
             }
         }
-    }
-
-    private static void StyleOptionButton(OptionButton btn)
-    {
-        StyleBoxFlat Make(Color bg, Color border, int width) => new()
-        {
-            BgColor = bg,
-            CornerRadiusTopLeft = 21,
-            CornerRadiusTopRight = 21,
-            CornerRadiusBottomLeft = 21,
-            CornerRadiusBottomRight = 21,
-            CornerDetail = 12,
-            BorderWidthLeft = width,
-            BorderWidthTop = width,
-            BorderWidthRight = width,
-            BorderWidthBottom = width,
-            BorderColor = border,
-            ContentMarginLeft = 18,
-            ContentMarginRight = 14,
-            AntiAliasing = true,
-        };
-
-        btn.AddThemeStyleboxOverride("normal", Make(UiKit.Soft, UiKit.Line, 2));
-        btn.AddThemeStyleboxOverride("hover", Make(Colors.White, UiKit.Lilac, 2));
-        btn.AddThemeStyleboxOverride("pressed", Make(UiKit.Soft, UiKit.Lilac, 2));
-        btn.AddThemeStyleboxOverride("focus", Make(new Color(1, 1, 1, 0), UiKit.Lilac with { A = 0.5f }, 2));
-        btn.AddThemeColorOverride("font_color", UiKit.Ink);
-        btn.AddThemeColorOverride("font_hover_color", UiKit.Ink);
-        btn.AddThemeColorOverride("font_pressed_color", UiKit.Ink);
-        btn.AddThemeColorOverride("font_focus_color", UiKit.Ink);
-        btn.MouseDefaultCursorShape = CursorShape.PointingHand;
     }
 }

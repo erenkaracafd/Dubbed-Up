@@ -197,7 +197,7 @@ public partial class SceneEditorScreen : BaseScreen
         row.AddChild(UiKit.CreateIconButton("rotate-ccw", UiKit.Soft, UiKit.Ink, OnStopPressed, 40));
 
         _timeSlider = new HSlider { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter, Step = 0.1, MaxValue = 22.0 };
-        StyleSlider(_timeSlider);
+        UiKit.StyleSlider(_timeSlider, UiKit.Sky);
         _timeSlider.DragStarted += () => _isSliderDragging = true;
         _timeSlider.DragEnded += _ =>
         {
@@ -378,42 +378,6 @@ public partial class SceneEditorScreen : BaseScreen
         input.AddThemeColorOverride("font_color", UiKit.Ink);
         input.AddThemeColorOverride("font_placeholder_color", UiKit.Muted with { A = 0.8f });
         input.AddThemeFontSizeOverride("font_size", 14);
-    }
-
-    private static void StyleSlider(HSlider slider)
-    {
-        var track = UiKit.RoundedBox(new Color(0.88f, 0.90f, 0.96f), 3);
-        track.ContentMarginTop = 3;
-        track.ContentMarginBottom = 3;
-        var fill = UiKit.RoundedBox(UiKit.Sky, 3);
-        fill.ContentMarginTop = 3;
-        fill.ContentMarginBottom = 3;
-        slider.AddThemeStyleboxOverride("slider", track);
-        slider.AddThemeStyleboxOverride("grabber_area", fill);
-        slider.AddThemeStyleboxOverride("grabber_area_highlight", fill);
-
-        var knob = CreateKnobTexture(UiKit.Sky);
-        slider.AddThemeIconOverride("grabber", knob);
-        slider.AddThemeIconOverride("grabber_highlight", knob);
-    }
-
-    private static ImageTexture CreateKnobTexture(Color color)
-    {
-        const int size = 18;
-        var image = Image.CreateEmpty(size, size, false, Image.Format.Rgba8);
-        var center = new Vector2(size / 2f - 0.5f, size / 2f - 0.5f);
-        for (var y = 0; y < size; y++)
-        {
-            for (var x = 0; x < size; x++)
-            {
-                var d = new Vector2(x, y).DistanceTo(center);
-                var outer = Mathf.Clamp(size / 2f - d, 0, 1);       // anti-aliased white ring
-                var inner = Mathf.Clamp(size / 2f - 3 - d, 0, 1);   // coloured core
-                var pixel = Colors.White.Lerp(color, inner);
-                image.SetPixel(x, y, pixel with { A = outer });
-            }
-        }
-        return ImageTexture.CreateFromImage(image);
     }
 
     private void UpdateMeta()

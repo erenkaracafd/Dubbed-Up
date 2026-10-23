@@ -1,506 +1,492 @@
 using Godot;
 using DubbedUp.Godot.AudioPlayback;
 using DubbedUp.Godot.LocalSession;
+using DubbedUp.Godot.UI.Controls;
 
 namespace DubbedUp.Godot.UI.Screens;
 
+/// <summary>
+/// Settings: sound, recording timing, microphone and display, grouped into cards.
+/// Every change is saved immediately to user://audio_settings.cfg. The layout is built in code with <see cref="UiKit"/>.
+/// </summary>
 public partial class SettingsScreen : BaseScreen
 {
-	private CheckButton? _fullscreenCheck;
-	private HSlider? _masterVolumeSlider;
-	private Label? _masterVolumeValueLabel;
-	private HSlider? _micGainSlider;
-	private Label? _micGainValueLabel;
-	private HSlider? _micLatencySlider;
-	private Label? _micLatencyValueLabel;
-	private HSlider? _leadInSlider;
-	private Label? _leadInValueLabel;
-	private HSlider? _countdownSlider;
-	private Label? _countdownValueLabel;
-	private OptionButton? _micDeviceOption;
-	private Label? _micDeviceLabel;
-	private Button? _micTestButton;
-	private ProgressBar? _testMeterBar;
-	private Button? _speakerTestButton;
-	private Label? _statusLabel;
-	private Button? _saveButton;
-	private Button? _backButton;
-
-	private bool _isTestingMic = false;
-	private float _micGainMultiplier = 1.0f;
-	private AudioStreamPlayer? _beepPlayer;
-
-	public override void _Ready()
-	{
-		_fullscreenCheck = GetNodeOrNull<CheckButton>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/FullscreenCheck");
-		_masterVolumeSlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/MasterVolHBox/MasterVolumeSlider");
-		_masterVolumeValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/MasterVolHBox/MasterVolumeValueLabel");
-
-		if (_fullscreenCheck is not null)
-		{
-			_fullscreenCheck.Toggled += OnFullscreenToggled;
-		}
-
-		_speakerTestButton = GetNodeOrNull<Button>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/SpeakerTestButton");
-		_leadInSlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/LeadInHBox/LeadInSlider");
-		_leadInValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/LeadInHBox/LeadInValueLabel");
-		_countdownSlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/CountdownHBox/CountdownSlider");
-		_countdownValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/LeftCol/CountdownHBox/CountdownValueLabel");
-
-		_micDeviceLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicDeviceLabel");
-		_micDeviceOption = GetNodeOrNull<OptionButton>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicDeviceOption");
-		_micGainSlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicGainHBox/MicGainSlider");
-		_micGainValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicGainHBox/MicGainValueLabel");
-		_micLatencySlider = GetNodeOrNull<HSlider>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicLatencyHBox/MicLatencySlider");
-		_micLatencyValueLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicLatencyHBox/MicLatencyValueLabel");
-		_micTestButton = GetNodeOrNull<Button>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/MicTestButton");
-		_testMeterBar = GetNodeOrNull<ProgressBar>("CenterArea/SettingsCard/CardMargin/VBoxContainer/ColumnsHBox/RightCol/TestMeterBar");
-
-		_statusLabel = GetNodeOrNull<Label>("CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow/StatusLabel");
-		_saveButton = GetNodeOrNull<Button>("CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow/SaveButton");
-		_backButton = GetNodeOrNull<Button>("CenterArea/SettingsCard/CardMargin/VBoxContainer/BottomRow/BackButton");
-
-		ApplyStyling();
-		UiIcons.Apply(_speakerTestButton, "volume-2");
-		UiIcons.Apply(_micTestButton, "mic");
-		UiIcons.Apply(_saveButton, "save");
-		UiIcons.Apply(_backButton, "arrow-left");
-
-		// Beep test player
-		_beepPlayer = new AudioStreamPlayer();
-		AddChild(_beepPlayer);
-
-		if (_masterVolumeSlider is not null)
-		{
-			_masterVolumeSlider.ValueChanged += OnMasterVolumeChanged;
-		}
-
-		if (_micGainSlider is not null)
-		{
-			_micGainSlider.ValueChanged += OnMicGainChanged;
-		}
-
-		if (_micLatencySlider is not null)
-		{
-			_micLatencySlider.ValueChanged += OnMicLatencyChanged;
-		}
-
-		if (_leadInSlider is not null)
-		{
-			_leadInSlider.ValueChanged += val =>
-			{
-				if (_leadInValueLabel is not null) _leadInValueLabel.Text = $"{val:F1}s";
-				AutoSaveSettings();
-			};
-		}
-
-		if (_countdownSlider is not null)
-		{
-			_countdownSlider.ValueChanged += val =>
-			{
-				if (_countdownValueLabel is not null)
-				{
-					_countdownValueLabel.Text = val > 0 ? $"{val:F0}s" : "Off";
-				}
-				AutoSaveSettings();
-			};
-		}
-
-		if (_micTestButton is not null)
-		{
-			_micTestButton.Pressed += OnMicTestPressed;
-			UiSoundManager.Attach(_micTestButton);
-		}
-
-		if (_speakerTestButton is not null)
-		{
-			_speakerTestButton.Pressed += OnSpeakerTestPressed;
-			UiSoundManager.Attach(_speakerTestButton);
-		}
-
-		if (_saveButton is not null)
-		{
-			_saveButton.Pressed += OnSavePressed;
-			UiSoundManager.Attach(_saveButton);
-		}
-
-		if (_backButton is not null)
-		{
-			_backButton.Pressed += OnBackPressed;
-			UiSoundManager.Attach(_backButton);
-		}
-
-		Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
-		PopulateMicrophoneDevices();
-		LoadSettings();
-	}
-
-	public override void _Process(double delta)
-	{
-		if (_isTestingMic && _testMeterBar is not null)
-		{
-			var level = Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel(_micGainMultiplier);
-			_testMeterBar.Value = Math.Clamp(level, 0.0, 100.0);
-		}
-	}
-
-	private void PopulateMicrophoneDevices()
-	{
-		if (_micDeviceOption is null) return;
-
-		_micDeviceOption.Clear();
-
-		var devices = Microphone.GodotLiveMicrophoneService.Instance.GetAvailableInputDevices();
-		var currentDevice = Microphone.GodotLiveMicrophoneService.Instance.CurrentInputDevice;
-
-		// Always add default first
-		_micDeviceOption.AddItem("Default", 0);
-
-		int selectIdx = 0;
-		for (int i = 0; i < devices.Count; i++)
-		{
-			var dev = devices[i];
-			_micDeviceOption.AddItem(dev, i + 1);
-			if (dev == currentDevice)
-			{
-				selectIdx = i + 1;
-			}
-		}
-
-		_micDeviceOption.Select(selectIdx);
-		_micDeviceOption.ItemSelected += OnDeviceSelected;
-	}
-
-	private void OnDeviceSelected(long index)
-	{
-		if (_micDeviceOption is null) return;
-
-		var selectedText = _micDeviceOption.GetItemText((int)index);
-		if (index == 0 || selectedText.StartsWith("Default"))
-		{
-			Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice("");
-			if (_statusLabel is not null) _statusLabel.Text = string.Empty;
-		}
-		else
-		{
-			Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice(selectedText);
-			if (_statusLabel is not null) _statusLabel.Text = string.Empty;
-		}
-	}
-
-	private void OnMasterVolumeChanged(double value)
-	{
-		if (_masterVolumeValueLabel is not null)
-		{
-			_masterVolumeValueLabel.Text = $"{value:F0}%";
-		}
-
-		var masterBusIndex = AudioServer.GetBusIndex("Master");
-		if (masterBusIndex >= 0)
-		{
-			if (value <= 0)
-			{
-				AudioServer.SetBusMute(masterBusIndex, true);
-			}
-			else
-			{
-				AudioServer.SetBusMute(masterBusIndex, false);
-				// Linear to dB: 0-100 -> -40dB to +6dB
-				var db = Mathf.LinearToDb((float)(value / 100.0));
-				AudioServer.SetBusVolumeDb(masterBusIndex, db);
-			}
-		}
-	}
-
-	private void OnMicGainChanged(double value)
-	{
-		if (_micGainValueLabel is not null)
-		{
-			_micGainValueLabel.Text = $"{value:F0}%";
-		}
-
-		_micGainMultiplier = (float)(value / 100.0);
-	}
-
-	private void OnMicLatencyChanged(double value)
-	{
-		if (_micLatencyValueLabel is not null)
-		{
-			_micLatencyValueLabel.Text = $"-{value:F0}ms";
-		}
-
-		Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = value / 1000.0;
-	}
-
-	private void OnMicTestPressed()
-	{
-		_isTestingMic = !_isTestingMic;
-
-		if (_testMeterBar is not null)
-		{
-			_testMeterBar.Visible = _isTestingMic;
-		}
-
-		if (_micTestButton is not null)
-		{
-			_micTestButton.Text = _isTestingMic ? "Stop Test" : "Test Mic";
-		}
-
-		if (_statusLabel is not null)
-		{
-			_statusLabel.Text = string.Empty;
-		}
-	}
-
-	private void OnSpeakerTestPressed()
-	{
-		try
-		{
-			// Generate a short 440Hz beep tone programmatically
-			const int sampleRate = 44100;
-			const float frequency = 440.0f; // A4 note
-			const float durationSeconds = 0.4f;
-			const int sampleCount = (int)(sampleRate * durationSeconds);
-			var pcm = new short[sampleCount];
-
-			for (int i = 0; i < sampleCount; i++)
-			{
-				var t = i / (float)sampleRate;
-				var envelope = i < sampleRate * 0.02f
-					? i / (sampleRate * 0.02f)
-					: i > sampleRate * (durationSeconds - 0.05f)
-						? (sampleCount - i) / (sampleRate * 0.05f)
-						: 1.0f;
-				pcm[i] = (short)(Math.Sin(2 * Math.PI * frequency * t) * 28000 * envelope);
-			}
-
-			var byteData = new byte[sampleCount * 2];
-			Buffer.BlockCopy(pcm, 0, byteData, 0, byteData.Length);
-
-			var wav = new AudioStreamWav
-			{
-				Data = byteData,
-				Format = AudioStreamWav.FormatEnum.Format16Bits,
-				MixRate = sampleRate,
-				Stereo = false
-			};
-
-			if (_beepPlayer is not null)
-			{
-				_beepPlayer.Stream = wav;
-				_beepPlayer.Play();
-			}
-
-			if (_statusLabel is not null)
-			{
-				_statusLabel.Text = string.Empty;
-			}
-		}
-		catch (Exception ex)
-		{
-			if (_statusLabel is not null)
-			{
-				_statusLabel.Text = ex.Message;
-			}
-		}
-	}
-
-	private void OnFullscreenToggled(bool isFullscreen)
-	{
-		LocalNavigationController.SetFullscreen(isFullscreen, this);
-	}
-
-	private void LoadSettings()
-	{
-		var config = new ConfigFile();
-		var err = config.Load("user://audio_settings.cfg");
-
-		var currentMode = DisplayServer.WindowGetMode();
-		var isFullscreenNow = currentMode is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen;
-
-		if (err == Error.Ok)
-		{
-			var isFullscreenSaved = (bool)config.GetValue("Display", "Fullscreen", isFullscreenNow);
-			if (_fullscreenCheck is not null) _fullscreenCheck.ButtonPressed = isFullscreenSaved;
-
-			var masterVol = (double)config.GetValue("Audio", "MasterVolume", 100.0);
-			var micGain = (double)config.GetValue("Audio", "MicGain", 100.0);
-			var micLatency = (double)config.GetValue("Audio", "MicLatencyMs", 150.0);
-			var micDevice = (string)config.GetValue("Audio", "MicDevice", "Default");
-
-			var leadIn = (double)config.GetValue("Gameplay", "LeadInSeconds", 3.0);
-			var countdown = (double)config.GetValue("Gameplay", "CountdownSeconds", 0.0);
-
-			if (_masterVolumeSlider is not null) _masterVolumeSlider.Value = masterVol;
-			if (_micGainSlider is not null) _micGainSlider.Value = micGain;
-			if (_micLatencySlider is not null) _micLatencySlider.Value = micLatency;
-
-			if (_leadInSlider is not null)
-			{
-				_leadInSlider.Value = leadIn;
-				if (_leadInValueLabel is not null) _leadInValueLabel.Text = $"{leadIn:F1}s";
-			}
-
-			if (_countdownSlider is not null)
-			{
-				_countdownSlider.Value = countdown;
-				if (_countdownValueLabel is not null)
-				{
-					_countdownValueLabel.Text = countdown > 0 ? $"{countdown:F0}s" : "Off";
-				}
-			}
-
-			Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = micLatency / 1000.0;
-
-			if (micDevice != "Default" && _micDeviceOption is not null)
-			{
-				for (int i = 0; i < _micDeviceOption.ItemCount; i++)
-				{
-					if (_micDeviceOption.GetItemText(i) == micDevice)
-					{
-						_micDeviceOption.Select(i);
-						Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice(micDevice);
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			if (_fullscreenCheck is not null) _fullscreenCheck.ButtonPressed = isFullscreenNow;
-			if (_masterVolumeSlider is not null) _masterVolumeSlider.Value = 100.0;
-			if (_micGainSlider is not null) _micGainSlider.Value = 100.0;
-			if (_micLatencySlider is not null) _micLatencySlider.Value = 150.0;
-			if (_leadInSlider is not null) _leadInSlider.Value = 3.0;
-			if (_countdownSlider is not null) _countdownSlider.Value = 0.0;
-			Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = 0.15;
-		}
-	}
-
-	private void OnSavePressed()
-	{
-		var config = new ConfigFile();
-		config.Load("user://audio_settings.cfg");
-
-		var isFullscreen = _fullscreenCheck?.ButtonPressed ?? false;
-		var masterVol = _masterVolumeSlider?.Value ?? 100.0;
-		var micGain = _micGainSlider?.Value ?? 100.0;
-		var micLatency = _micLatencySlider?.Value ?? 150.0;
-		var micDevice = _micDeviceOption is not null
-			? _micDeviceOption.GetItemText(_micDeviceOption.Selected)
-			: "Default";
-
-		var leadIn = _leadInSlider?.Value ?? 3.0;
-		var countdown = _countdownSlider?.Value ?? 0.0;
-
-		config.SetValue("Display", "Fullscreen", isFullscreen);
-		config.SetValue("Audio", "MasterVolume", masterVol);
-		config.SetValue("Audio", "MicGain", micGain);
-		config.SetValue("Audio", "MicLatencyMs", micLatency);
-		config.SetValue("Audio", "MicDevice", micDevice);
-		config.SetValue("Gameplay", "LeadInSeconds", leadIn);
-		config.SetValue("Gameplay", "CountdownSeconds", countdown);
-		config.Save("user://audio_settings.cfg");
-
-		Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = micLatency / 1000.0;
-
-		if (_statusLabel is not null)
-		{
-			_statusLabel.Text = "Saved";
-		}
-	}
-
-	private void AutoSaveSettings()
-	{
-		var config = new ConfigFile();
-		config.Load("user://audio_settings.cfg");
-
-		var isFullscreen = _fullscreenCheck?.ButtonPressed ?? false;
-		var masterVol = _masterVolumeSlider?.Value ?? 100.0;
-		var micGain = _micGainSlider?.Value ?? 100.0;
-		var micLatency = _micLatencySlider?.Value ?? 150.0;
-		var micDevice = _micDeviceOption is not null
-			? _micDeviceOption.GetItemText(_micDeviceOption.Selected)
-			: "Default";
-
-		var leadIn = _leadInSlider?.Value ?? 3.0;
-		var countdown = _countdownSlider?.Value ?? 0.0;
-
-		config.SetValue("Display", "Fullscreen", isFullscreen);
-		config.SetValue("Audio", "MasterVolume", masterVol);
-		config.SetValue("Audio", "MicGain", micGain);
-		config.SetValue("Audio", "MicLatencyMs", micLatency);
-		config.SetValue("Audio", "MicDevice", micDevice);
-		config.SetValue("Gameplay", "LeadInSeconds", leadIn);
-		config.SetValue("Gameplay", "CountdownSeconds", countdown);
-		config.Save("user://audio_settings.cfg");
-
-		Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = micLatency / 1000.0;
-	}
-
-	private void OnBackPressed()
-	{
-		_isTestingMic = false;
-		AutoSaveSettings();
-		Navigator?.NavigateTo(AppScreen.MainMenu);
-	}
-
-	private void ApplyStyling()
-	{
-		var card = GetNodeOrNull<PanelContainer>("CenterArea/SettingsCard");
-		if (card is not null)
-		{
-			var cardStyle = new StyleBoxFlat
-			{
-				BgColor = new Color(0.965f, 0.980f, 1.000f),
-				BorderWidthLeft = 2,
-				BorderWidthTop = 2,
-				BorderWidthRight = 2,
-				BorderWidthBottom = 2,
-				BorderColor = new Color(0.780f, 0.850f, 0.950f),
-				CornerRadiusTopLeft = 24,
-				CornerRadiusTopRight = 24,
-				CornerRadiusBottomLeft = 24,
-				CornerRadiusBottomRight = 24,
-				ShadowColor = new Color(0.12f, 0.18f, 0.35f, 0.10f),
-				ShadowSize = 18,
-				ShadowOffset = new Vector2(0, 6)
-			};
-			card.AddThemeStyleboxOverride("panel", cardStyle);
-		}
-
-		if (_saveButton is not null)
-		{
-			var normal = new StyleBoxFlat { BgColor = new Color(1.0f, 0.540f, 0.680f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22, ShadowSize = 8, ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.35f) };
-			var hover = new StyleBoxFlat { BgColor = new Color(1.0f, 0.660f, 0.780f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22, ShadowSize = 12, ShadowColor = new Color(1.0f, 0.540f, 0.680f, 0.45f) };
-			var pressed = new StyleBoxFlat { BgColor = new Color(0.900f, 0.420f, 0.560f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22, ShadowSize = 2 };
-			_saveButton.AddThemeStyleboxOverride("normal", normal);
-			_saveButton.AddThemeStyleboxOverride("hover", hover);
-			_saveButton.AddThemeStyleboxOverride("pressed", pressed);
-			_saveButton.AddThemeStyleboxOverride("focus", hover);
-			_saveButton.AddThemeColorOverride("font_color", Colors.White);
-			AudioPlayback.UiSoundManager.Attach(_saveButton);
-		}
-
-		if (_backButton is not null)
-		{
-			var normal = new StyleBoxFlat { BgColor = new Color(0.955f, 0.975f, 1.0f), BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1, BorderColor = new Color(0.780f, 0.850f, 0.950f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22 };
-			var hover = new StyleBoxFlat { BgColor = new Color(0.910f, 0.945f, 0.990f), BorderWidthLeft = 2, BorderWidthTop = 2, BorderWidthRight = 2, BorderWidthBottom = 2, BorderColor = new Color(0.38f, 0.71f, 1.0f), CornerRadiusTopLeft = 22, CornerRadiusTopRight = 22, CornerRadiusBottomLeft = 22, CornerRadiusBottomRight = 22 };
-			_backButton.AddThemeStyleboxOverride("normal", normal);
-			_backButton.AddThemeStyleboxOverride("hover", hover);
-			_backButton.AddThemeStyleboxOverride("focus", hover);
-			_backButton.AddThemeColorOverride("font_color", new Color(0.25f, 0.28f, 0.42f));
-			AudioPlayback.UiSoundManager.Attach(_backButton);
-		}
-
-		if (_speakerTestButton is not null)
-		{
-			AudioPlayback.UiSoundManager.Attach(_speakerTestButton);
-		}
-
-		if (_micTestButton is not null)
-		{
-			AudioPlayback.UiSoundManager.Attach(_micTestButton);
-		}
-	}
+    private const string ConfigPath = "user://audio_settings.cfg";
+
+    private ToggleSwitch? _fullscreenSwitch;
+    private HSlider? _masterVolumeSlider;
+    private HSlider? _micGainSlider;
+    private HSlider? _micLatencySlider;
+    private HSlider? _leadInSlider;
+    private HSlider? _countdownSlider;
+    private OptionButton? _micDeviceOption;
+    private Button? _micTestButton;
+    private LevelMeter? _levelMeter;
+    private Label? _statusLabel;
+
+    private bool _isTestingMic;
+    private bool _isLoading;
+    private float _micGainMultiplier = 1.0f;
+    private AudioStreamPlayer? _beepPlayer;
+
+    public override void _Ready()
+    {
+        _beepPlayer = new AudioStreamPlayer();
+        AddChild(_beepPlayer);
+
+        BuildLayout();
+
+        Microphone.GodotLiveMicrophoneService.Instance.Initialize(this);
+        PopulateMicrophoneDevices();
+        LoadSettings();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_isTestingMic && _levelMeter is not null)
+        {
+            _levelMeter.SetLevel(Microphone.GodotLiveMicrophoneService.Instance.GetLivePeakLevel(_micGainMultiplier));
+        }
+    }
+
+    // ───────────────────────── Layout ─────────────────────────
+
+    private void BuildLayout()
+    {
+        var margin = new MarginContainer();
+        margin.SetAnchorsPreset(LayoutPreset.FullRect);
+        margin.AddThemeConstantOverride("margin_left", 40);
+        margin.AddThemeConstantOverride("margin_right", 40);
+        margin.AddThemeConstantOverride("margin_top", 28);
+        margin.AddThemeConstantOverride("margin_bottom", 28);
+        AddChild(margin);
+
+        var column = new VBoxContainer();
+        column.AddThemeConstantOverride("separation", 22);
+        margin.AddChild(column);
+
+        // Header
+        var header = new HBoxContainer();
+        header.AddThemeConstantOverride("separation", 16);
+        column.AddChild(header);
+
+        var back = UiKit.CreateButton("Back", "arrow-left", outline: true, UiKit.Soft, UiKit.Ink, OnBackPressed);
+        back.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        header.AddChild(back);
+
+        var titleBox = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        titleBox.AddThemeConstantOverride("separation", 0);
+        header.AddChild(titleBox);
+        titleBox.AddChild(UiKit.Heading("Settings", 32));
+        titleBox.AddChild(UiKit.Body("Changes are saved automatically", 13));
+
+        _statusLabel = UiKit.Body(string.Empty, 14, UiKit.Mint.Darkened(0.15f));
+        _statusLabel.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        header.AddChild(_statusLabel);
+
+        // Two columns of cards
+        var columns = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
+        columns.AddThemeConstantOverride("separation", 22);
+        column.AddChild(columns);
+
+        var left = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        left.AddThemeConstantOverride("separation", 18);
+        columns.AddChild(left);
+
+        var right = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        right.AddThemeConstantOverride("separation", 18);
+        columns.AddChild(right);
+
+        left.AddChild(BuildSoundCard());
+        left.AddChild(BuildRecordingCard());
+        right.AddChild(BuildMicrophoneCard());
+        right.AddChild(BuildDisplayCard());
+    }
+
+    private Control BuildSoundCard()
+    {
+        var test = UiKit.CreateButton("Test", "volume-2", outline: true, UiKit.Soft, UiKit.Ink, OnSpeakerTestPressed);
+        test.CustomMinimumSize = new Vector2(0, 36);
+        test.AddThemeFontSizeOverride("font_size", 14);
+        var (card, content) = CreateCard("volume-2", UiKit.Sky, "Sound", test);
+
+        _masterVolumeSlider = CreateSlider(0, 100, 1, UiKit.Sky);
+        content.AddChild(CreateSliderRow("Volume", null, _masterVolumeSlider, v => $"{v:F0}%"));
+        _masterVolumeSlider.ValueChanged += OnMasterVolumeChanged;
+        return card;
+    }
+
+    private Control BuildRecordingCard()
+    {
+        var (card, content) = CreateCard("clapperboard", UiKit.Lilac, "Recording", null);
+
+        _leadInSlider = CreateSlider(0, 3, 0.5, UiKit.Lilac);
+        content.AddChild(CreateSliderRow("Lead-in", "How much of the scene plays before your line", _leadInSlider, v => $"{v:F1} s"));
+        _leadInSlider.ValueChanged += _ => SaveIfReady();
+
+        _countdownSlider = CreateSlider(0, 5, 1, UiKit.Lilac);
+        content.AddChild(CreateSliderRow("Countdown", "Seconds to wait after pressing Record", _countdownSlider, v => v > 0 ? $"{v:F0} s" : "Off"));
+        _countdownSlider.ValueChanged += _ => SaveIfReady();
+        return card;
+    }
+
+    private Control BuildMicrophoneCard()
+    {
+        var (card, content) = CreateCard("mic", UiKit.Pink, "Microphone", null);
+
+        _micDeviceOption = new OptionButton { CustomMinimumSize = new Vector2(0, 42), FitToLongestItem = false, ClipText = true };
+        _micDeviceOption.AddThemeFontSizeOverride("font_size", 14);
+        UiKit.StyleOptionButton(_micDeviceOption);
+        content.AddChild(_micDeviceOption);
+
+        _micGainSlider = CreateSlider(50, 300, 1, UiKit.Pink);
+        content.AddChild(CreateSliderRow("Input gain", null, _micGainSlider, v => $"{v:F0}%"));
+        _micGainSlider.ValueChanged += OnMicGainChanged;
+
+        _micLatencySlider = CreateSlider(0, 400, 10, UiKit.Pink);
+        content.AddChild(CreateSliderRow("Latency fix", "Shifts your takes earlier to line up with the video", _micLatencySlider, v => $"{v:F0} ms"));
+        _micLatencySlider.ValueChanged += OnMicLatencyChanged;
+
+        var testRow = new HBoxContainer();
+        testRow.AddThemeConstantOverride("separation", 14);
+        content.AddChild(testRow);
+
+        _micTestButton = UiKit.CreateButton("Test mic", "mic", outline: true, UiKit.Soft, UiKit.Ink, OnMicTestPressed);
+        _micTestButton.CustomMinimumSize = new Vector2(132, 38);
+        _micTestButton.AddThemeFontSizeOverride("font_size", 14);
+        testRow.AddChild(_micTestButton);
+
+        _levelMeter = new LevelMeter { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        testRow.AddChild(_levelMeter);
+        return card;
+    }
+
+    private Control BuildDisplayCard()
+    {
+        var (card, content) = CreateCard("maximize", UiKit.Mint, "Display", null);
+
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 12);
+        content.AddChild(row);
+
+        var text = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        text.AddThemeConstantOverride("separation", 0);
+        row.AddChild(text);
+        text.AddChild(UiKit.Heading("Fullscreen", 16));
+        text.AddChild(UiKit.Body("Toggle anytime with F11", 12));
+
+        _fullscreenSwitch = new ToggleSwitch();
+        _fullscreenSwitch.Toggled += OnFullscreenToggled;
+        row.AddChild(_fullscreenSwitch);
+        return card;
+    }
+
+    private static (PanelContainer Card, VBoxContainer Content) CreateCard(string icon, Color accent, string title, Control? headerAction)
+    {
+        var card = new PanelContainer();
+        card.AddThemeStyleboxOverride("panel", UiKit.CardBox(padding: 20));
+
+        var stack = new VBoxContainer();
+        stack.AddThemeConstantOverride("separation", 14);
+        card.AddChild(stack);
+
+        var header = new HBoxContainer();
+        header.AddThemeConstantOverride("separation", 12);
+        stack.AddChild(header);
+
+        var bubble = new PanelContainer { CustomMinimumSize = new Vector2(38, 38), SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        var bubbleBox = UiKit.RoundedBox(accent, 19, padding: 9);
+        bubbleBox.CornerDetail = 16;
+        bubbleBox.ShadowColor = accent with { A = 0.3f };
+        bubbleBox.ShadowSize = 8;
+        bubble.AddThemeStyleboxOverride("panel", bubbleBox);
+        bubble.AddChild(new TextureRect
+        {
+            Texture = UiIcons.Get(icon),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            CustomMinimumSize = new Vector2(20, 20),
+        });
+        header.AddChild(bubble);
+
+        var heading = UiKit.Heading(title, 20);
+        heading.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        heading.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        header.AddChild(heading);
+
+        if (headerAction is not null)
+        {
+            headerAction.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            header.AddChild(headerAction);
+        }
+
+        var content = new VBoxContainer();
+        content.AddThemeConstantOverride("separation", 14);
+        stack.AddChild(content);
+        return (card, content);
+    }
+
+    private static HSlider CreateSlider(double min, double max, double step, Color color)
+    {
+        var slider = new HSlider { MinValue = min, MaxValue = max, Step = step, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        UiKit.StyleSlider(slider, color);
+        return slider;
+    }
+
+    /// <summary>Label (+ optional caption) with a live value chip above a slider.</summary>
+    private static Control CreateSliderRow(string title, string? caption, HSlider slider, Func<double, string> format)
+    {
+        var row = new VBoxContainer();
+        row.AddThemeConstantOverride("separation", 6);
+
+        var top = new HBoxContainer();
+        row.AddChild(top);
+
+        var text = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        text.AddThemeConstantOverride("separation", 0);
+        top.AddChild(text);
+        text.AddChild(UiKit.Heading(title, 16));
+        if (caption is not null) text.AddChild(UiKit.Body(caption, 12));
+
+        var value = UiKit.Heading(format(slider.Value), 15);
+        value.SizeFlagsVertical = SizeFlags.ShrinkEnd;
+        top.AddChild(value);
+        slider.ValueChanged += v => value.Text = format(v);
+
+        row.AddChild(slider);
+        return row;
+    }
+
+    // ───────────────────────── Behaviour ─────────────────────────
+
+    private void PopulateMicrophoneDevices()
+    {
+        if (_micDeviceOption is null) return;
+
+        _micDeviceOption.Clear();
+
+        var devices = Microphone.GodotLiveMicrophoneService.Instance.GetAvailableInputDevices();
+        var currentDevice = Microphone.GodotLiveMicrophoneService.Instance.CurrentInputDevice;
+
+        // Always add default first
+        _micDeviceOption.AddItem("Default", 0);
+
+        int selectIdx = 0;
+        for (int i = 0; i < devices.Count; i++)
+        {
+            var dev = devices[i];
+            _micDeviceOption.AddItem(dev, i + 1);
+            if (dev == currentDevice)
+            {
+                selectIdx = i + 1;
+            }
+        }
+
+        _micDeviceOption.Select(selectIdx);
+        _micDeviceOption.ItemSelected += OnDeviceSelected;
+    }
+
+    private void OnDeviceSelected(long index)
+    {
+        if (_micDeviceOption is null) return;
+
+        var selectedText = _micDeviceOption.GetItemText((int)index);
+        Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice(index == 0 || selectedText.StartsWith("Default") ? "" : selectedText);
+        SaveIfReady();
+    }
+
+    private void OnMasterVolumeChanged(double value)
+    {
+        var masterBusIndex = AudioServer.GetBusIndex("Master");
+        if (masterBusIndex >= 0)
+        {
+            if (value <= 0)
+            {
+                AudioServer.SetBusMute(masterBusIndex, true);
+            }
+            else
+            {
+                AudioServer.SetBusMute(masterBusIndex, false);
+                AudioServer.SetBusVolumeDb(masterBusIndex, Mathf.LinearToDb((float)(value / 100.0)));
+            }
+        }
+
+        SaveIfReady();
+    }
+
+    private void OnMicGainChanged(double value)
+    {
+        _micGainMultiplier = (float)(value / 100.0);
+        SaveIfReady();
+    }
+
+    private void OnMicLatencyChanged(double value)
+    {
+        Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = value / 1000.0;
+        SaveIfReady();
+    }
+
+    private void OnMicTestPressed()
+    {
+        _isTestingMic = !_isTestingMic;
+        if (_levelMeter is not null) _levelMeter.Active = _isTestingMic;
+        if (_micTestButton is not null)
+        {
+            _micTestButton.Text = _isTestingMic ? "Stop" : "Test mic";
+            UiIcons.Swap(_micTestButton, _isTestingMic ? "square" : "mic");
+        }
+    }
+
+    private void OnSpeakerTestPressed()
+    {
+        try
+        {
+            // Generate a short 440Hz beep tone programmatically
+            const int sampleRate = 44100;
+            const float frequency = 440.0f; // A4 note
+            const float durationSeconds = 0.4f;
+            const int sampleCount = (int)(sampleRate * durationSeconds);
+            var pcm = new short[sampleCount];
+
+            for (int i = 0; i < sampleCount; i++)
+            {
+                var t = i / (float)sampleRate;
+                var envelope = i < sampleRate * 0.02f
+                    ? i / (sampleRate * 0.02f)
+                    : i > sampleRate * (durationSeconds - 0.05f)
+                        ? (sampleCount - i) / (sampleRate * 0.05f)
+                        : 1.0f;
+                pcm[i] = (short)(Math.Sin(2 * Math.PI * frequency * t) * 28000 * envelope);
+            }
+
+            var byteData = new byte[sampleCount * 2];
+            Buffer.BlockCopy(pcm, 0, byteData, 0, byteData.Length);
+
+            var wav = new AudioStreamWav
+            {
+                Data = byteData,
+                Format = AudioStreamWav.FormatEnum.Format16Bits,
+                MixRate = sampleRate,
+                Stereo = false
+            };
+
+            if (_beepPlayer is not null)
+            {
+                _beepPlayer.Stream = wav;
+                _beepPlayer.Play();
+            }
+        }
+        catch (Exception ex)
+        {
+            if (_statusLabel is not null) _statusLabel.Text = ex.Message;
+        }
+    }
+
+    private void OnFullscreenToggled(bool isFullscreen)
+    {
+        LocalNavigationController.SetFullscreen(isFullscreen, this);
+        SaveIfReady();
+    }
+
+    private void LoadSettings()
+    {
+        _isLoading = true;
+
+        var config = new ConfigFile();
+        var err = config.Load(ConfigPath);
+
+        var currentMode = DisplayServer.WindowGetMode();
+        var isFullscreenNow = currentMode is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen;
+
+        if (err == Error.Ok)
+        {
+            var isFullscreenSaved = (bool)config.GetValue("Display", "Fullscreen", isFullscreenNow);
+            if (_fullscreenSwitch is not null) _fullscreenSwitch.IsOn = isFullscreenSaved;
+
+            var masterVol = (double)config.GetValue("Audio", "MasterVolume", 100.0);
+            var micGain = (double)config.GetValue("Audio", "MicGain", 100.0);
+            var micLatency = (double)config.GetValue("Audio", "MicLatencyMs", 150.0);
+            var micDevice = (string)config.GetValue("Audio", "MicDevice", "Default");
+
+            var leadIn = (double)config.GetValue("Gameplay", "LeadInSeconds", 3.0);
+            var countdown = (double)config.GetValue("Gameplay", "CountdownSeconds", 0.0);
+
+            if (_masterVolumeSlider is not null) _masterVolumeSlider.Value = masterVol;
+            if (_micGainSlider is not null) _micGainSlider.Value = micGain;
+            if (_micLatencySlider is not null) _micLatencySlider.Value = micLatency;
+            if (_leadInSlider is not null) _leadInSlider.Value = leadIn;
+            if (_countdownSlider is not null) _countdownSlider.Value = countdown;
+
+            Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = micLatency / 1000.0;
+
+            if (micDevice != "Default" && _micDeviceOption is not null)
+            {
+                for (int i = 0; i < _micDeviceOption.ItemCount; i++)
+                {
+                    if (_micDeviceOption.GetItemText(i) == micDevice)
+                    {
+                        _micDeviceOption.Select(i);
+                        Microphone.GodotLiveMicrophoneService.Instance.SetInputDevice(micDevice);
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (_fullscreenSwitch is not null) _fullscreenSwitch.IsOn = isFullscreenNow;
+            if (_masterVolumeSlider is not null) _masterVolumeSlider.Value = 100.0;
+            if (_micGainSlider is not null) _micGainSlider.Value = 100.0;
+            if (_micLatencySlider is not null) _micLatencySlider.Value = 150.0;
+            if (_leadInSlider is not null) _leadInSlider.Value = 3.0;
+            if (_countdownSlider is not null) _countdownSlider.Value = 0.0;
+            Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = 0.15;
+        }
+
+        _isLoading = false;
+    }
+
+    private void SaveIfReady()
+    {
+        if (_isLoading) return;
+        SaveSettings();
+
+        if (_statusLabel is not null)
+        {
+            _statusLabel.Text = "Saved";
+            _statusLabel.Modulate = Colors.White;
+            var tween = _statusLabel.CreateTween();
+            tween.TweenInterval(1.2);
+            tween.TweenProperty(_statusLabel, "modulate:a", 0.0f, 0.4f);
+        }
+    }
+
+    private void SaveSettings()
+    {
+        var config = new ConfigFile();
+        config.Load(ConfigPath);
+
+        var micLatency = _micLatencySlider?.Value ?? 150.0;
+        var micDevice = _micDeviceOption is not null && _micDeviceOption.Selected >= 0
+            ? _micDeviceOption.GetItemText(_micDeviceOption.Selected)
+            : "Default";
+
+        config.SetValue("Display", "Fullscreen", _fullscreenSwitch?.IsOn ?? false);
+        config.SetValue("Audio", "MasterVolume", _masterVolumeSlider?.Value ?? 100.0);
+        config.SetValue("Audio", "MicGain", _micGainSlider?.Value ?? 100.0);
+        config.SetValue("Audio", "MicLatencyMs", micLatency);
+        config.SetValue("Audio", "MicDevice", micDevice);
+        config.SetValue("Gameplay", "LeadInSeconds", _leadInSlider?.Value ?? 3.0);
+        config.SetValue("Gameplay", "CountdownSeconds", _countdownSlider?.Value ?? 0.0);
+        config.Save(ConfigPath);
+
+        Microphone.GodotLiveMicrophoneService.Instance.LatencyCompensationSeconds = micLatency / 1000.0;
+    }
+
+    private void OnBackPressed()
+    {
+        _isTestingMic = false;
+        SaveSettings();
+        Navigator?.NavigateTo(AppScreen.MainMenu);
+    }
 }
